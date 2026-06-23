@@ -1,0 +1,12 @@
+[agents]
+max_threads = 6
+max_depth = 1
+default_parallel_mode = "read-only"
+write_tasks_require_manifest = true
+long_lived_write_worktree = true
+
+[governance]
+task_manifest_dir = "coordination/tasks"
+validator = "uv run python scripts/validate_agent_tasks.py"
+shared_files_owner = "integrator"
+

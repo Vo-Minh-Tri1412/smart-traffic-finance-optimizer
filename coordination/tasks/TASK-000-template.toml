@@ -1,0 +1,19 @@
+id = "TASK-000"
+owner = "integrator"
+branch = "main"
+base_commit = "REPLACE_WITH_BASE_COMMIT"
+allowed_paths = [
+  "coordination/tasks/TASK-000-template.toml",
+]
+dependencies = []
+acceptance_commands = [
+  "uv run python -m ai_quantum_hvtc doctor",
+]
+status = "planned"
+
+[handoff]
+summary = "Template only; copy this file for real tasks."
+validation = []
+risks = []
+next_steps = []
+
