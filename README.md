@@ -34,3 +34,18 @@ uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/<t
 The first scaffold commit is allowed on `main`. After that, long-running write work should use a
 separate branch/worktree and a handoff manifest.
 
+## Data & Drive Workflow
+
+This project connects the CS (Computer Science) team and the Economics team via Google Drive.
+
+1. **Google Drive Setup**: Both teams mount `AI Quantum HVTC — Team Workspace` using Google Drive Desktop.
+2. **Economics Handoff**: The Economics team places finalized datasets in `03_Shared_Handoffs/From_Econ_To_CS/01_Final_Training_Data`.
+3. **CS Pull Data**: The CS team runs the sync script locally to pull this data:
+   ```powershell
+   uv run python scripts/cloud/sync_drive.py --pull-data --apply
+   ```
+4. **CS Push Reports**: After training and generating CSV reports in the local `outputs/` folder, the CS team pushes them back to Economics:
+   ```powershell
+   uv run python scripts/cloud/sync_drive.py --push-reports --apply
+   ```
+5. **Colab Integration**: When using Google Colab for heavy training, the CS team can natively mount Drive (`drive.mount('/content/drive')`) and read/write directly to `02_CS_Workspace` and `03_Shared_Handoffs` without needing the sync script.

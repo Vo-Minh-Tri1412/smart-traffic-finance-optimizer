@@ -1,0 +1,19 @@
+id = "002_document_workflow"
+owner = "integrator"
+branch = "main"
+base_commit = "9f34032ecb10c0d101a3acb715a89e117e8a6193"
+allowed_paths = [
+  "coordination/tasks/002_document_workflow.toml",
+  "README.md"
+]
+dependencies = ["001_setup_infrastructure"]
+acceptance_commands = [
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/002_document_workflow.toml"
+]
+status = "done"
+
+[handoff]
+summary = "Cập nhật tài liệu README.md bổ sung luồng làm việc Data & Drive Workflow."
+validation = "Nội dung phản ánh chính xác cấu trúc Google Drive và cách dùng sync_drive.py."
+risks = "Không có."
+follow_up = "Đã hoàn thành document."
