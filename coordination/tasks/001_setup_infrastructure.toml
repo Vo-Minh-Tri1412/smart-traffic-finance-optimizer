@@ -1,0 +1,21 @@
+id = "001_setup_infrastructure"
+owner = "integrator"
+branch = "main"
+base_commit = "6ab498f6d0c333663e7b7a5adb9c08242de2b0f5"
+allowed_paths = [
+  "scripts/**",
+  "coordination/tasks/001_setup_infrastructure.toml",
+  "README.md",
+  "AGENTS.md"
+]
+dependencies = []
+acceptance_commands = [
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/001_setup_infrastructure.toml"
+]
+status = "done"
+
+[handoff]
+summary = "Thiết lập cấu trúc thư mục Google Drive (AI Quantum HVTC — Team Workspace) và script đồng bộ hai chiều."
+validation = "Đã chạy thành công validate_agent_tasks.py và kiểm tra lệnh sync_drive.py --status trả về kết nối [OK]."
+risks = "Không có rủi ro. Script đồng bộ sử dụng OS-independent Path logic để tìm Drive."
+follow_up = "Các Agent sau có thể gọi trực tiếp script scripts/cloud/sync_drive.py để pull/push dữ liệu."

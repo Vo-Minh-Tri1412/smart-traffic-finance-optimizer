@@ -1,9 +1,8 @@
 # AI Quantum HVTC Challenge
 
-Technical scaffold; product direction pending.
+Technical scaffold for Vietnam Inflation Radar 2026.
 
-This repository is a private, neutral bootstrap for the AI Quantum HVTC challenge. It does not yet
-contain data, models, dashboards, notebooks, or a committed product idea.
+This repository is a private bootstrap for the AI Quantum HVTC challenge. It now contains automated Google Drive sync scripts for cross-team collaboration between Economics and CS.
 
 ## Current scope
 
@@ -29,7 +28,7 @@ Read `AGENTS.md` before changing files. Future write tasks must have a manifest 
 `coordination/tasks/` and must pass:
 
 ```powershell
-uv run python scripts/validate_agent_tasks.py --task coordination/tasks/<task>.toml
+uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/<task>.toml
 ```
 
 The first scaffold commit is allowed on `main`. After that, long-running write work should use a

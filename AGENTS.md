@@ -32,7 +32,7 @@ integrator records an approved direction.
 3. Declare narrow `allowed_paths`; avoid shared paths unless `owner = "integrator"`.
 4. Make changes only on the declared branch/worktree.
 5. Run every command in `acceptance_commands`.
-6. Run `uv run python scripts/validate_agent_tasks.py --task <manifest>`.
+6. Run `uv run python scripts/admin/validate_agent_tasks.py --task <manifest>`.
 7. Fill `handoff` with summary, validation, risks, and follow-up before requesting integration.
 
 ## Git safety
