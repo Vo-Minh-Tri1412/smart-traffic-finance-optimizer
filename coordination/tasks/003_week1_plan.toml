@@ -1,0 +1,19 @@
+id = "003_week1_plan"
+owner = "integrator"
+branch = "main"
+base_commit = "8f6eb417f26d6f9f4b7772b86b21ee2901507838"
+allowed_paths = [
+  "coordination/tasks/003_week1_plan.toml",
+  "docs/WEEK1_PLAN.md"
+]
+dependencies = ["002_document_workflow"]
+acceptance_commands = [
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/003_week1_plan.toml"
+]
+status = "done"
+
+[handoff]
+summary = "Tạo file docs/WEEK1_PLAN.md định hướng chi tiết công việc cho team Kinh tế và Kỹ thuật trong Tuần 1."
+validation = "Đã lưu thành công file docs/WEEK1_PLAN.md đúng thư mục."
+risks = "Không có rủi ro kỹ thuật."
+follow_up = "Các subagents có thể đọc file docs/WEEK1_PLAN.md để nắm bối cảnh chia việc của dự án."

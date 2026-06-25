@@ -1,0 +1,22 @@
+id = "004_update_docs_mews"
+owner = "integrator"
+branch = "main"
+base_commit = "8f6eb417f26d6f9f4b7772b86b21ee2901507838"
+allowed_paths = [
+  "coordination/tasks/004_update_docs_mews.toml",
+  "docs/01_VISION_AND_STRATEGY/VN_MEWS_CORE_IDEA.md",
+  "docs/02_WEEKLY_PLANS/WEEK1_PLAN.md",
+  "docs/WEEK1_PLAN.md",
+  "README.md"
+]
+dependencies = ["003_week1_plan"]
+acceptance_commands = [
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/004_update_docs_mews.toml"
+]
+status = "done"
+
+[handoff]
+summary = "Cập nhật docs cho hệ thống Cảnh báo sớm VN-MEWS."
+validation = "Các file docs mới đã được tạo và phân cấp thư mục. README được cập nhật."
+risks = "Không"
+follow_up = ""
