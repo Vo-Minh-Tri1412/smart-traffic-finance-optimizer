@@ -1,0 +1,30 @@
+id = "007_cleanup_coordination_history"
+owner = "integrator"
+branch = "main"
+base_commit = "f14630a0b3fcf6fd6d63fa46c6fb192e56fe92ae"
+allowed_paths = [
+  "coordination/tasks/**",
+  "coordination/archive/**"
+]
+dependencies = ["006_reset_to_sumo_rl_traffic_finance"]
+acceptance_commands = [
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/007_cleanup_coordination_history.toml",
+  "uv run python -m ai_quantum_hvtc doctor"
+]
+status = "handoff"
+
+[handoff]
+summary = "Clean coordination task manifests so future agents see the SUMO-RL public-finance direction without old pre-reset task noise."
+validation = [
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/007_cleanup_coordination_history.toml",
+  "uv run python -m ai_quantum_hvtc doctor",
+  "rg --files coordination",
+]
+risks = [
+  "Old pre-reset task TOML files were removed from active task discovery; a short archive note remains in coordination/archive/README.md.",
+  "Custom agent role definitions in .codex/agents were intentionally preserved because they are current multi-agent roles, not completed task records.",
+]
+next_steps = [
+  "Future write work should create task 008+ from TASK-000-template.toml.",
+  "If the team later wants fewer custom agent roles, update AGENTS.md and .codex/agents under a separate manifest.",
+]

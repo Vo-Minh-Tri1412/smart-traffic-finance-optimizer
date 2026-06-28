@@ -15,7 +15,7 @@ allowed_paths = [
   "tests/**",
   "uv.lock"
 ]
-dependencies = ["005_data_template_scaffold"]
+dependencies = []
 acceptance_commands = [
   "uv sync --frozen",
   "uv run python -m ai_quantum_hvtc doctor",
@@ -25,7 +25,7 @@ acceptance_commands = [
   "uv run pytest",
   "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/006_reset_to_sumo_rl_traffic_finance.toml"
 ]
-status = "handoff"
+status = "done"
 
 [handoff]
 summary = "Reset repository direction from the previous macro warning idea to SUMO-RL smart traffic public finance optimization. Local docs, dependency stack, doctor checks, data templates, Drive folders, Drive handoff convention, weekly tracker, Economics templates, and the team contract now match the selected direction."

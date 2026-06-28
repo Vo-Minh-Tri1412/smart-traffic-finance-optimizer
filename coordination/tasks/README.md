@@ -11,6 +11,16 @@ Validate a task with:
 uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/<task>.toml
 ```
 
-Current active project direction is recorded in
-`006_reset_to_sumo_rl_traffic_finance.toml`. Earlier task manifests are historical setup records and
-must not be used to infer the current product direction.
+## Current direction
+
+The current product direction is **Smart Traffic Public Finance Optimization with SUMO-RL**.
+
+Active/reader-relevant manifests:
+
+- `006_reset_to_sumo_rl_traffic_finance.toml`: reset repo, docs, dependency stack, Drive
+  workspace, deadlines, and contract to the current direction.
+- `007_cleanup_coordination_history.toml`: cleanup record for removing pre-reset task noise.
+
+Do not infer the current product direction from archived or deleted pre-reset task manifests.
+The custom agent role files in `.codex/agents/` are still current role definitions, not old task
+records.
