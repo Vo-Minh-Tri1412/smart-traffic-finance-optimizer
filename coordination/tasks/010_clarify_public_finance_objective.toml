@@ -1,0 +1,40 @@
+id = "010_clarify_public_finance_objective"
+owner = "integrator"
+branch = "main"
+base_commit = "1150c64496a902185239d4827ea157c53db8a7e9"
+allowed_paths = [
+  "coordination/tasks/010_clarify_public_finance_objective.toml",
+  "docs/01_PROJECT_BRIEF/SMART_TRAFFIC_PUBLIC_FINANCE.md",
+  "docs/02_ARCHITECTURE/SUMO_RL_SYSTEM_DESIGN.md",
+  "docs/05_TEAM_GUIDES/ECONOMICS_TASKS.md",
+  "README.md"
+]
+dependencies = ["009_commit_codex_agent_schema"]
+acceptance_commands = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/010_clarify_public_finance_objective.toml"
+]
+status = "handoff"
+
+[handoff]
+summary = "Clarify that public-finance logic is part of the technical objective and scoring layer, not only a presentation narrative."
+validation = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/010_clarify_public_finance_objective.toml --changed-file ... -> passed for 5 changed files",
+  "rg confirmed docs mention public_value_score, mini-city, and economics as a technical objective layer.",
+]
+risks = [
+  "The actual scoring implementation is not built yet; this task only clarifies the documented architecture and handoff contract.",
+]
+next_steps = [
+  "Create task 011 for implementing the public-value scoring contract and baseline-vs-policy output schema.",
+  "Ask Economics to fill the scoring assumptions before CS hard-codes any monetary values.",
+]

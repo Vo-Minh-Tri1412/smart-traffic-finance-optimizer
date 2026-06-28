@@ -2,9 +2,9 @@
 
 SUMO-RL traffic signal optimization for the AI Quantum HVTC challenge.
 
-The project uses reinforcement learning to control traffic lights in SUMO simulations, then turns
-simulation improvements into public-finance evidence: social cost saved, budget-priority reasoning,
-and policy scenarios for public-sector decision makers.
+The project uses reinforcement learning to control traffic lights in SUMO simulations, then feeds
+the resulting traffic metrics into a public-value scoring and budget-allocation layer. The economics
+logic is part of the technical objective, not only the final presentation.
 
 Primary competition track: **AI for Public Policy and Public Finance**.
 
@@ -16,6 +16,12 @@ Read these first:
 - `docs/02_ARCHITECTURE/SUMO_RL_SYSTEM_DESIGN.md`
 - `docs/03_COMPETITION/AI_QUANTUM_HVTC_FACTS.md`
 - `docs/04_WEEKLY_PLANS/WEEK1_PLAN.md`
+
+Core decision objective:
+
+```text
+traffic control policy -> simulation metrics -> public-value score -> budget priority
+```
 
 ## Quick start
 
