@@ -1,0 +1,52 @@
+id = "006_reset_to_sumo_rl_traffic_finance"
+owner = "integrator"
+branch = "main"
+base_commit = "b251d7628c4456bfee08d2c6c96a1950055be755"
+allowed_paths = [
+  ".gitignore",
+  "AGENTS.md",
+  "README.md",
+  "ai_quantum_hvtc/**",
+  "coordination/tasks/**",
+  "data/**",
+  "docs/**",
+  "pyproject.toml",
+  "scripts/**",
+  "tests/**",
+  "uv.lock"
+]
+dependencies = ["005_data_template_scaffold"]
+acceptance_commands = [
+  "uv sync --frozen",
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/006_reset_to_sumo_rl_traffic_finance.toml"
+]
+status = "handoff"
+
+[handoff]
+summary = "Reset repository direction from the previous macro warning idea to SUMO-RL smart traffic public finance optimization. Local docs, dependency stack, doctor checks, data templates, Drive folders, Drive handoff convention, weekly tracker, Economics templates, and the team contract now match the selected direction."
+validation = [
+  "uv sync --frozen",
+  "uv run python -m ai_quantum_hvtc doctor (passes with expected SUMO runtime warning)",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/006_reset_to_sumo_rl_traffic_finance.toml",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/006_reset_to_sumo_rl_traffic_finance.toml --changed-file ... (30 changed files)",
+  "Google Drive readback confirmed renamed Economics/CS/Shared folders, tracker week-1 rows, Economics template tabs, and contract update section.",
+]
+risks = [
+  "External SUMO runtime is not installed locally yet: sumo, sumo-gui, and SUMO_HOME are missing. This is a runtime setup blocker for actual simulations, not a Python dependency failure.",
+  "The competition rules appear compatible with interdisciplinary teams, but the HCMUS/UEH composition should be confirmed with organizers if the team needs official assurance.",
+  "Drive files still have anyone-writer permissions because the user chose to fix sharing gradually.",
+]
+next_steps = [
+  "Install SUMO and set SUMO_HOME on the CS machine before attempting a real SUMO-RL run.",
+  "Have Economics fill the three no-code templates: public finance assumptions, traffic policy scenarios, and storyteller/defender.",
+  "After the next meeting, create a new manifest for the first real SUMO-RL environment smoke test and keep writes inside the assigned paths.",
+]

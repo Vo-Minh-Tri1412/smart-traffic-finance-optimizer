@@ -2,41 +2,35 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import json
-import os
 import shutil
 import string
 import sys
+from collections.abc import Iterable
 from datetime import datetime
 from pathlib import Path
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-# Thư mục gốc của project
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-# Cấu hình các đường dẫn Local
 DATA_DIR = PROJECT_ROOT / "data"
 MODELS_DIR = PROJECT_ROOT / "models"
 OUTPUTS_DIR = PROJECT_ROOT / "outputs"
-REPORTS_DIR = PROJECT_ROOT / "reports"
 
-# Tên thư mục dùng chung trên Google Drive
 DRIVE_WORKSPACE_NAME = "AI Quantum HVTC — Team Workspace"
 
-def relative_or_absolute(path: Path) -> str:
-    try:
-        return path.resolve().relative_to(PROJECT_ROOT).as_posix()
-    except ValueError:
-        return str(path.resolve())
+ECON_TO_CS = Path("03_Shared_Handoffs") / "From_Econ_To_CS"
+CS_TO_ECON = Path("03_Shared_Handoffs") / "From_CS_To_Econ"
+
 
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
-    with path.open("rb") as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+    with path.open("rb") as file:
+        for chunk in iter(lambda: file.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
 
 def files_equal(source: Path, target: Path) -> bool:
     if not source.exists() or not target.exists():
@@ -45,34 +39,38 @@ def files_equal(source: Path, target: Path) -> bool:
         return False
     return sha256_file(source) == sha256_file(target)
 
+
 def candidate_drive_roots() -> list[Path]:
     candidates: list[Path] = []
-    
-    # Duyệt qua các ổ đĩa phổ biến
     for letter in string.ascii_uppercase:
         drive = Path(f"{letter}:/")
-        candidates.extend([
-            drive / "My Drive" / DRIVE_WORKSPACE_NAME,
-            drive / "MyDrive" / DRIVE_WORKSPACE_NAME,
-            drive / "Drive của tôi" / DRIVE_WORKSPACE_NAME,
-            drive / "Shared drives" / DRIVE_WORKSPACE_NAME,
-        ])
-    
-    # Duyệt qua thư mục Home
+        candidates.extend(
+            [
+                drive / "My Drive" / DRIVE_WORKSPACE_NAME,
+                drive / "MyDrive" / DRIVE_WORKSPACE_NAME,
+                drive / "Drive của tôi" / DRIVE_WORKSPACE_NAME,
+                drive / "Shared drives" / DRIVE_WORKSPACE_NAME,
+            ]
+        )
+
     home = Path.home()
-    candidates.extend([
-        home / "Google Drive" / "My Drive" / DRIVE_WORKSPACE_NAME,
-        home / "Google Drive" / DRIVE_WORKSPACE_NAME,
-        home / "My Drive" / DRIVE_WORKSPACE_NAME,
-    ])
-    
+    candidates.extend(
+        [
+            home / "Google Drive" / "My Drive" / DRIVE_WORKSPACE_NAME,
+            home / "Google Drive" / DRIVE_WORKSPACE_NAME,
+            home / "My Drive" / DRIVE_WORKSPACE_NAME,
+        ]
+    )
+
     unique: list[Path] = []
     seen: set[str] = set()
     for path in candidates:
-        if str(path) not in seen:
-            seen.add(str(path))
+        key = str(path)
+        if key not in seen:
             unique.append(path)
+            seen.add(key)
     return unique
+
 
 def resolve_drive_root(value: str | None) -> Path:
     if value:
@@ -84,106 +82,158 @@ def resolve_drive_root(value: str | None) -> Path:
     for candidate in candidate_drive_roots():
         if candidate.exists():
             return candidate.resolve()
-    
+
     checked = "\n".join(str(path) for path in candidate_drive_roots()[:10])
     raise FileNotFoundError(
-        f"Không thể tự động tìm thấy thư mục '{DRIVE_WORKSPACE_NAME}' trên Google Drive Desktop.\n"
-        f"Hãy đảm bảo bạn đã cài Google Drive Desktop và Add Shortcut thư mục này.\n"
-        f"Các đường dẫn đã thử tìm:\n{checked}"
+        f"Could not find '{DRIVE_WORKSPACE_NAME}' through Google Drive Desktop.\n"
+        "Install Google Drive Desktop or pass --drive-root explicitly.\n"
+        f"Checked examples:\n{checked}"
     )
 
-def copy_tree_sync(source: Path, target: Path, *, apply: bool, description: str) -> list[dict[str, object]]:
-    rows = []
+
+def copy_tree_sync(
+    source: Path,
+    target: Path,
+    *,
+    apply: bool,
+    description: str,
+) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
     if not source.exists():
-        print(f"Bỏ qua {description}: Source không tồn tại ({source})")
+        print(f"[SKIP] {description}: source does not exist: {source}")
         return rows
-        
+
     for src_file in source.rglob("*"):
         if not src_file.is_file():
             continue
-            
+
         rel_path = src_file.relative_to(source)
         tgt_file = target / rel_path
-        
-        row = {
-            "action": f"sync_{description}",
-            "source": str(src_file),
-            "target": str(tgt_file),
-            "status": "planned"
-        }
-        
-        if tgt_file.exists() and files_equal(src_file, tgt_file):
-            row["status"] = "same"
-            continue
-            
-        if apply:
+        status = "same" if tgt_file.exists() and files_equal(src_file, tgt_file) else "planned"
+
+        if status == "planned" and apply:
             tgt_file.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src_file, tgt_file)
-            row["status"] = "copied"
-        rows.append(row)
-        print(f"[{row['status'].upper()}] {rel_path}")
-        
+            status = "copied"
+
+        rows.append(
+            {
+                "action": description,
+                "source": str(src_file),
+                "target": str(tgt_file),
+                "status": status,
+            }
+        )
+        print(f"[{status.upper()}] {rel_path}")
+
     return rows
 
-def pull_data(drive_root: Path, apply: bool) -> list[dict]:
-    print("\n--- KÉO DỮ LIỆU TỪ KINH TẾ (PULL DATA) ---")
-    source = drive_root / "03_Shared_Handoffs" / "From_Econ_To_CS" / "01_Final_Training_Data"
-    target = DATA_DIR / "01_Final_Training_Data"
-    return copy_tree_sync(source, target, apply=apply, description="pull_data")
 
-def push_reports(drive_root: Path, apply: bool) -> list[dict]:
-    print("\n--- ĐẨY BÁO CÁO CHO KINH TẾ (PUSH REPORTS) ---")
-    # Lấy tên thư mục tự động theo timestamp
-    timestamp = datetime.now().strftime('%Y-%m-%d_%H%M%S')
-    source = OUTPUTS_DIR / "final_reports"
-    target = drive_root / "03_Shared_Handoffs" / "From_CS_To_Econ" / "01_Clean_Predictions" / f"Run_{timestamp}"
-    
-    if not source.exists() or not any(source.iterdir()):
-        print(f"Không có báo cáo nào trong {source} để đẩy lên.")
-        return []
-        
-    return copy_tree_sync(source, target, apply=apply, description="push_reports")
+def pull_econ(drive_root: Path, apply: bool) -> list[dict[str, str]]:
+    actions: list[dict[str, str]] = []
+    pairs = [
+        (
+            drive_root / ECON_TO_CS / "01_Cost_Assumptions",
+            DATA_DIR / "external" / "cost_assumptions",
+            "pull_cost_assumptions",
+        ),
+        (
+            drive_root / ECON_TO_CS / "02_Traffic_Scenarios",
+            DATA_DIR / "external" / "traffic_scenarios",
+            "pull_traffic_scenarios",
+        ),
+    ]
+    for source, target, description in pairs:
+        actions.extend(copy_tree_sync(source, target, apply=apply, description=description))
+    return actions
 
-def push_models(drive_root: Path, apply: bool) -> list[dict]:
-    print("\n--- BACKUP MODEL TRỌNG SỐ (PUSH MODELS) ---")
-    source = MODELS_DIR
-    target = drive_root / "02_CS_Workspace" / "03_Models_Checkpoint"
-    return copy_tree_sync(source, target, apply=apply, description="push_models")
 
-def main():
-    parser = argparse.ArgumentParser(description="Công cụ đồng bộ dữ liệu với Google Drive cho Team Kỹ thuật (CS).")
-    parser.add_argument("--pull-data", action="store_true", help="Kéo dữ liệu training cuối cùng từ team Kinh tế về máy.")
-    parser.add_argument("--push-reports", action="store_true", help="Đẩy các file báo cáo dự đoán CSV đẹp lên Bàn Ăn cho team Kinh tế.")
-    parser.add_argument("--push-models", action="store_true", help="Backup file model (.pt, .h5) lên 02_CS_Workspace.")
-    parser.add_argument("--all", action="store_true", help="Chạy tất cả các luồng Push và Pull.")
-    parser.add_argument("--apply", action="store_true", help="Bắt buộc phải thêm cờ này thì file mới thực sự được Copy. Nếu không, chỉ chạy nháp (Dry-run).")
-    parser.add_argument("--status", action="store_true", help="Kiểm tra xem script có tìm thấy Google Drive không.")
-    
-    args = parser.parse_args()
-    
+def push_results(drive_root: Path, apply: bool) -> list[dict[str, str]]:
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    source = OUTPUTS_DIR / "simulation_results"
+    target = drive_root / CS_TO_ECON / "01_Simulation_Results" / f"Run_{timestamp}"
+    return copy_tree_sync(source, target, apply=apply, description="push_simulation_results")
+
+
+def push_finance_reports(drive_root: Path, apply: bool) -> list[dict[str, str]]:
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    source = OUTPUTS_DIR / "public_finance_reports"
+    target = drive_root / CS_TO_ECON / "02_Public_Finance_Summary" / f"Run_{timestamp}"
+    return copy_tree_sync(source, target, apply=apply, description="push_public_finance_reports")
+
+
+def push_models(drive_root: Path, apply: bool) -> list[dict[str, str]]:
+    target = drive_root / "02_CS_Workspace" / "02_Training_Results"
+    return copy_tree_sync(MODELS_DIR, target, apply=apply, description="push_rl_models")
+
+
+def selected_actions(args: argparse.Namespace) -> Iterable[str]:
+    if args.all:
+        return ("pull_econ", "push_results", "push_finance_reports", "push_models")
+
+    actions: list[str] = []
+    if args.pull_econ:
+        actions.append("pull_econ")
+    if args.push_results:
+        actions.append("push_results")
+    if args.push_finance_reports:
+        actions.append("push_finance_reports")
+    if args.push_models:
+        actions.append("push_models")
+    return actions
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Sync SUMO-RL traffic/public-finance handoffs with Google Drive Desktop."
+    )
+    parser.add_argument("--drive-root", default=None, help="Explicit local Drive workspace path.")
+    parser.add_argument("--status", action="store_true", help="Check Drive workspace discovery.")
+    parser.add_argument("--pull-econ", action="store_true", help="Pull Economics inputs for CS.")
+    parser.add_argument("--push-results", action="store_true", help="Push simulation outputs.")
+    parser.add_argument("--push-finance-reports", action="store_true", help="Push finance reports.")
+    parser.add_argument("--push-models", action="store_true", help="Backup RL model artifacts.")
+    parser.add_argument("--all", action="store_true", help="Run all sync flows.")
+    parser.add_argument(
+        "--apply", action="store_true", help="Actually copy files; otherwise dry-run."
+    )
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+
     try:
-        drive_root = resolve_drive_root(None)
-    except FileNotFoundError as e:
-        print(f"ERROR: {e}")
-        sys.exit(1)
-        
-    if args.status:
-        print(f"[OK] Đã kết nối thành công tới thư mục làm việc chung tại:\n{drive_root}")
-        return
+        drive_root = resolve_drive_root(args.drive_root)
+    except FileNotFoundError as exc:
+        print(f"ERROR: {exc}")
+        return 1
 
-    actions = []
-    
-    if args.all or args.pull_data:
-        actions.extend(pull_data(drive_root, args.apply))
-        
-    if args.all or args.push_reports:
-        actions.extend(push_reports(drive_root, args.apply))
-        
-    if args.all or args.push_models:
-        actions.extend(push_models(drive_root, args.apply))
-        
-    if not args.apply and any(args.__dict__.values()):
-        print("\n[LƯU Ý] Đây mới chỉ là CHẠY NHÁP (Dry-run). Hãy thêm cờ --apply vào cuối lệnh để thực sự copy file.")
+    if args.status:
+        print(f"[OK] Drive workspace found: {drive_root}")
+        return 0
+
+    actions = list(selected_actions(args))
+    if not actions:
+        parser.print_help()
+        return 0
+
+    ran: list[dict[str, str]] = []
+    for action in actions:
+        if action == "pull_econ":
+            ran.extend(pull_econ(drive_root, args.apply))
+        elif action == "push_results":
+            ran.extend(push_results(drive_root, args.apply))
+        elif action == "push_finance_reports":
+            ran.extend(push_finance_reports(drive_root, args.apply))
+        elif action == "push_models":
+            ran.extend(push_models(drive_root, args.apply))
+
+    if not args.apply and ran:
+        print("\n[DRY-RUN] Add --apply to copy files.")
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

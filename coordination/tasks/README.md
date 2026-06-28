@@ -8,6 +8,9 @@ id, set `base_commit`, narrow `allowed_paths`, and list acceptance commands befo
 Validate a task with:
 
 ```powershell
-uv run python scripts/validate_agent_tasks.py --task coordination/tasks/<task>.toml
+uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/<task>.toml
 ```
 
+Current active project direction is recorded in
+`006_reset_to_sumo_rl_traffic_finance.toml`. Earlier task manifests are historical setup records and
+must not be used to infer the current product direction.

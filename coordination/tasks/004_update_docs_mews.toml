@@ -4,7 +4,7 @@ branch = "main"
 base_commit = "8f6eb417f26d6f9f4b7772b86b21ee2901507838"
 allowed_paths = [
   "coordination/tasks/004_update_docs_mews.toml",
-  "docs/01_VISION_AND_STRATEGY/VN_MEWS_CORE_IDEA.md",
+  "docs/01_VISION_AND_STRATEGY/PRE_RESET_CORE_IDEA.md",
   "docs/02_WEEKLY_PLANS/WEEK1_PLAN.md",
   "docs/WEEK1_PLAN.md",
   "README.md"
@@ -16,7 +16,7 @@ acceptance_commands = [
 status = "done"
 
 [handoff]
-summary = "Cập nhật docs cho hệ thống Cảnh báo sớm VN-MEWS."
+summary = "Historical pre-reset documentation task; superseded by 006_reset_to_sumo_rl_traffic_finance."
 validation = "Các file docs mới đã được tạo và phân cấp thư mục. README được cập nhật."
 risks = "Không"
 follow_up = ""

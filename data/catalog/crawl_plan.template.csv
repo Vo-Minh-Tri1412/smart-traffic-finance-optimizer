@@ -1,0 +1,1 @@
+collection_id,source_id,variable_id,target_table,collection_method,url_or_endpoint,manual_entry_allowed,authentication_needed,schedule,expected_format,parser_notes,validation_checks,output_path,owner,reviewer,status,blocker,notes

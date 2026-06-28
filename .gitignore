@@ -11,5 +11,21 @@ __pycache__/
 
 artifacts/
 outputs/
-data/
+reports/
+models/
+sumo_runs/
 
+# Keep real/local datasets out of Git, but allow neutral templates.
+data/**
+!data/
+!data/README.md
+!data/raw/
+!data/raw/.gitkeep
+!data/interim/
+!data/interim/.gitkeep
+!data/processed/
+!data/processed/.gitkeep
+!data/external/
+!data/external/.gitkeep
+!data/catalog/
+!data/catalog/*.template.csv

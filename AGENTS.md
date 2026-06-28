@@ -1,8 +1,13 @@
 # AI Quantum HVTC Agent Governance
 
-This repository is a technical scaffold only. Product direction is pending, so do not add
-domain-specific data, models, dashboards, feature folders, or named product assumptions until the
-integrator records an approved direction.
+This repository now targets **Smart Traffic Public Finance Optimization**:
+
+- SUMO-RL is the official simulation/RL environment.
+- The project belongs to AI for Public Policy and Public Finance.
+- The demo must connect traffic signal optimization to public-finance decisions.
+
+Do not reintroduce the previous macro-warning stack or a custom traffic simulator as the main
+environment unless the integrator records a new approved direction.
 
 ## Non-negotiable write rules
 
@@ -20,8 +25,9 @@ integrator records an approved direction.
 ## Roles
 
 - `integrator`: owns shared config, lockfiles, contracts, CI, governance, and merges.
-- `evidence-researcher`: read-only source collection, evidence tables, citations, and caveats.
-- `system-architect`: read-only design, interfaces, risks, and contracts.
+- `evidence-researcher`: read-only source collection, competition facts, public-finance evidence,
+  citations, and caveats.
+- `system-architect`: read-only SUMO-RL architecture, interfaces, risks, and contracts.
 - `implementation-worker`: writes only inside assigned paths from a task manifest.
 - `verification-auditor`: read-only tests, reproducibility checks, review, and acceptance evidence.
 
@@ -35,11 +41,19 @@ integrator records an approved direction.
 6. Run `uv run python scripts/admin/validate_agent_tasks.py --task <manifest>`.
 7. Fill `handoff` with summary, validation, risks, and follow-up before requesting integration.
 
+## Project guardrails
+
+- Use SUMO-RL as the main environment.
+- Keep computer vision as future work unless explicitly approved.
+- Compare RL with fixed-time and rule-based controllers.
+- Public-finance assumptions must be sourced, estimated, or clearly marked as placeholders.
+- Large simulation outputs, model checkpoints, and local SUMO artifacts stay out of Git.
+- Google Drive is the handoff surface for non-code teammates.
+
 ## Git safety
 
 - Do not run `git reset --hard`, `git clean`, or force-push.
-- Ask the user before pushing or creating a PR, except for this initial bootstrap push that the user
-  explicitly approved.
+- Ask the user before pushing or creating a PR.
 - Preserve unrelated changes. If the worktree is mixed, stage only files in the active task.
 
 ## Baseline validation
@@ -54,4 +68,3 @@ uv run ruff check .
 uv run mypy ai_quantum_hvtc scripts
 uv run pytest
 ```
-

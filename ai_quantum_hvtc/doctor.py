@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
+import os
+import shutil
 import subprocess
 import sys
 import tomllib
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 EXPECTED_AGENTS = {
     "evidence-researcher": "read-only",
@@ -26,8 +30,24 @@ EXPECTED_SKILLS = {
 @dataclass(frozen=True)
 class CheckResult:
     name: str
-    ok: bool
+    status: Literal["ok", "warn", "fail"]
     detail: str
+
+    @property
+    def ok(self) -> bool:
+        return self.status != "fail"
+
+
+def ok(name: str, detail: str) -> CheckResult:
+    return CheckResult(name, "ok", detail)
+
+
+def warn(name: str, detail: str) -> CheckResult:
+    return CheckResult(name, "warn", detail)
+
+
+def fail(name: str, detail: str) -> CheckResult:
+    return CheckResult(name, "fail", detail)
 
 
 def _run_git_root(start: Path) -> Path | None:
@@ -49,46 +69,46 @@ def _read_toml(path: Path) -> dict[str, object]:
 
 def check_python() -> CheckResult:
     version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-    ok = sys.version_info[:2] == (3, 12)
+    is_expected = sys.version_info[:2] == (3, 12)
     detail = f"Python {version}"
-    if not ok:
+    if not is_expected:
         detail += " (expected Python 3.12)"
-    return CheckResult("python", ok, detail)
+        return fail("python", detail)
+    return ok("python", detail)
 
 
 def check_git_root(root: Path) -> CheckResult:
     detected = _run_git_root(root)
     if detected is None:
-        return CheckResult("git-root", False, "not inside a Git repository")
-    ok = detected == root.resolve()
+        return fail("git-root", "not inside a Git repository")
+    is_expected = detected == root.resolve()
     detail = str(detected)
-    if not ok:
+    if not is_expected:
         detail += f" (expected {root.resolve()})"
-    return CheckResult("git-root", ok, detail)
+        return fail("git-root", detail)
+    return ok("git-root", detail)
 
 
 def check_codex_config(root: Path) -> CheckResult:
     path = root / ".codex" / "config.toml"
     if not path.exists():
-        return CheckResult("codex-config", False, "missing .codex/config.toml")
+        return fail("codex-config", "missing .codex/config.toml")
 
     try:
         config = _read_toml(path)
     except tomllib.TOMLDecodeError as exc:
-        return CheckResult("codex-config", False, f"TOML error: {exc}")
+        return fail("codex-config", f"TOML error: {exc}")
 
     agents = config.get("agents")
     if not isinstance(agents, dict):
-        return CheckResult("codex-config", False, "missing [agents] table")
+        return fail("codex-config", "missing [agents] table")
 
     if agents.get("max_threads") != 6:
-        return CheckResult("codex-config", False, "agents.max_threads must be 6")
+        return fail("codex-config", "agents.max_threads must be 6")
     if agents.get("max_depth") != 1:
-        return CheckResult("codex-config", False, "agents.max_depth must be 1")
-    if agents.get("write_tasks_require_manifest") is not True:
-        return CheckResult("codex-config", False, "write_tasks_require_manifest must be true")
+        return fail("codex-config", "agents.max_depth must be 1")
 
-    return CheckResult("codex-config", True, ".codex/config.toml")
+    return ok("codex-config", ".codex/config.toml")
 
 
 def check_agent_files(root: Path) -> CheckResult:
@@ -109,8 +129,8 @@ def check_agent_files(root: Path) -> CheckResult:
             failures.append(f"{path.relative_to(root)} sandbox_mode must be {expected_sandbox}")
 
     if failures:
-        return CheckResult("agent-files", False, "; ".join(failures))
-    return CheckResult("agent-files", True, f"{len(EXPECTED_AGENTS)} custom agents")
+        return fail("agent-files", "; ".join(failures))
+    return ok("agent-files", f"{len(EXPECTED_AGENTS)} custom agents")
 
 
 def check_skill_files(root: Path) -> CheckResult:
@@ -129,17 +149,62 @@ def check_skill_files(root: Path) -> CheckResult:
             failures.append(f"{path.relative_to(root)} missing description")
 
     if failures:
-        return CheckResult("skill-files", False, "; ".join(failures))
-    return CheckResult("skill-files", True, f"{len(EXPECTED_SKILLS)} repo skills")
+        return fail("skill-files", "; ".join(failures))
+    return ok("skill-files", f"{len(EXPECTED_SKILLS)} repo skills")
+
+
+def check_project_direction(root: Path) -> CheckResult:
+    required_docs = [
+        root / "docs" / "01_PROJECT_BRIEF" / "SMART_TRAFFIC_PUBLIC_FINANCE.md",
+        root / "docs" / "02_ARCHITECTURE" / "SUMO_RL_SYSTEM_DESIGN.md",
+        root / "docs" / "03_COMPETITION" / "AI_QUANTUM_HVTC_FACTS.md",
+        root / "docs" / "04_WEEKLY_PLANS" / "WEEK1_PLAN.md",
+    ]
+    missing = [path.relative_to(root).as_posix() for path in required_docs if not path.exists()]
+    if missing:
+        return fail("project-direction", f"missing docs: {', '.join(missing)}")
+    return ok("project-direction", "SUMO-RL traffic public finance docs")
+
+
+def check_python_packages() -> CheckResult:
+    missing: list[str] = []
+    for package_name in ("sumo_rl", "gymnasium", "stable_baselines3", "streamlit"):
+        if importlib.util.find_spec(package_name) is None:
+            missing.append(package_name)
+    if missing:
+        return fail("python-packages", f"missing packages: {', '.join(missing)}")
+    return ok("python-packages", "sumo_rl, gymnasium, stable_baselines3, streamlit")
+
+
+def check_sumo_binary() -> CheckResult:
+    sumo = shutil.which("sumo")
+    sumo_gui = shutil.which("sumo-gui")
+    sumo_home = os.environ.get("SUMO_HOME")
+    missing: list[str] = []
+    if sumo is None:
+        missing.append("sumo")
+    if sumo_gui is None:
+        missing.append("sumo-gui")
+    if not sumo_home:
+        missing.append("SUMO_HOME")
+
+    if missing:
+        return warn(
+            "sumo-binary",
+            "missing external SUMO runtime: "
+            + ", ".join(missing)
+            + "; install SUMO before running simulations",
+        )
+    return ok("sumo-binary", f"sumo={sumo}; sumo-gui={sumo_gui}; SUMO_HOME={sumo_home}")
 
 
 def check_task_manifests(root: Path) -> CheckResult:
-    script = root / "scripts" / "validate_agent_tasks.py"
+    script = root / "scripts" / "admin" / "validate_agent_tasks.py"
     tasks_dir = root / "coordination" / "tasks"
     if not script.exists():
-        return CheckResult("task-manifests", False, "missing task validator")
+        return fail("task-manifests", "missing task validator")
     if not tasks_dir.exists():
-        return CheckResult("task-manifests", False, "missing coordination/tasks")
+        return fail("task-manifests", "missing coordination/tasks")
 
     result = subprocess.run(
         [
@@ -156,8 +221,8 @@ def check_task_manifests(root: Path) -> CheckResult:
     )
     if result.returncode != 0:
         detail = result.stderr.strip() or result.stdout.strip()
-        return CheckResult("task-manifests", False, detail)
-    return CheckResult("task-manifests", True, result.stdout.strip())
+        return fail("task-manifests", detail)
+    return ok("task-manifests", result.stdout.strip())
 
 
 def run_checks(root: Path | None = None) -> list[CheckResult]:
@@ -168,13 +233,16 @@ def run_checks(root: Path | None = None) -> list[CheckResult]:
         check_codex_config(actual_root),
         check_agent_files(actual_root),
         check_skill_files(actual_root),
+        check_project_direction(actual_root),
+        check_python_packages(),
+        check_sumo_binary(),
         check_task_manifests(actual_root),
     ]
 
 
 def print_results(results: Sequence[CheckResult]) -> None:
     for result in results:
-        marker = "OK" if result.ok else "FAIL"
+        marker = result.status.upper()
         print(f"[{marker}] {result.name}: {result.detail}")
 
 

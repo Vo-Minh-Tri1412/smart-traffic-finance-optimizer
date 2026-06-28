@@ -5,7 +5,7 @@ from textwrap import dedent
 
 import pytest
 
-from scripts.validate_agent_tasks import ValidationError, validate_manifest_path
+from scripts.admin.validate_agent_tasks import ValidationError, validate_manifest_path
 
 
 def write_manifest(
