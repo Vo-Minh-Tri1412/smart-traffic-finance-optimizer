@@ -1,0 +1,39 @@
+id = "008_sumo_rl_smoke_test"
+owner = "integrator"
+branch = "main"
+base_commit = "cf3e198b0fcab9f5f6547e2ccc966935c7e4ee25"
+allowed_paths = [
+  "coordination/tasks/008_sumo_rl_smoke_test.toml",
+  "scripts/smoke/**",
+  "tests/test_sumo_rl_smoke.py"
+]
+dependencies = ["007_cleanup_coordination_history"]
+acceptance_commands = [
+  "uv run python scripts/smoke/sumo_rl_smoke.py --steps 6",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/008_sumo_rl_smoke_test.toml"
+]
+status = "handoff"
+
+[handoff]
+summary = "Add a minimal SUMO-RL smoke test that verifies SUMO, TraCI, packaged SUMO-RL sample nets, env reset, env step, and metrics extraction."
+validation = [
+  "uv run python scripts/smoke/sumo_rl_smoke.py --steps 6 -> passed with SUMO 1.27.1, 6 steps, final simulation step 30.0",
+  "uv run python -m ai_quantum_hvtc doctor -> passed; SUMO binaries and SUMO_HOME detected",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest -> 7 passed",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/008_sumo_rl_smoke_test.toml --changed-file ... -> passed for 3 changed files",
+]
+risks = [
+  "The smoke test uses a packaged SUMO-RL sample network and a deterministic placeholder policy; it is not a trained model or project-specific scenario yet.",
+  "SUMO was installed through MSI at C:\\Program Files (x86)\\Eclipse\\Sumo and persisted to the user SUMO_HOME/PATH environment variables.",
+]
+next_steps = [
+  "Create task 009 for a real baseline-vs-RL metrics contract using fixed-time and a short PPO/DQN training run.",
+  "Ask Economics to fill public-finance assumptions and traffic policy scenarios before project-specific simulations.",
+]
