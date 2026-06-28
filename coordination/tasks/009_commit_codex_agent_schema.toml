@@ -1,0 +1,28 @@
+id = "009_commit_codex_agent_schema"
+owner = "integrator"
+branch = "main"
+base_commit = "46faacd805e50fdcce90618898d42960d4d1184a"
+allowed_paths = [
+  ".codex/**",
+  "coordination/tasks/009_commit_codex_agent_schema.toml"
+]
+dependencies = ["008_sumo_rl_smoke_test"]
+acceptance_commands = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/009_commit_codex_agent_schema.toml"
+]
+status = "handoff"
+
+[handoff]
+summary = "Commit the current Codex agent/config schema so the repo has no lingering dirty .codex role-definition changes."
+validation = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/009_commit_codex_agent_schema.toml",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/009_commit_codex_agent_schema.toml --changed-file ... -> passed for 6 changed files",
+]
+risks = [
+  ".codex/config.toml now keeps only the currently recognized agent concurrency settings; detailed governance remains in AGENTS.md and the task validator.",
+]
+next_steps = [
+  "Push this commit only after user confirmation.",
+]
