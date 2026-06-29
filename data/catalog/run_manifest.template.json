@@ -1,0 +1,15 @@
+{
+  "run_id": "",
+  "stream": "",
+  "code_commit": "",
+  "dataset_id": "",
+  "config_path": "",
+  "environment": "local|colab|kaggle",
+  "started_at": "",
+  "finished_at": "",
+  "status": "not_started",
+  "metrics_path": "",
+  "model_path": "",
+  "report_path": "",
+  "notes": ""
+}

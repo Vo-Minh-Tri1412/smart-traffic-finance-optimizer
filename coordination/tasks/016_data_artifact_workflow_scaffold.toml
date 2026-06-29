@@ -1,0 +1,60 @@
+id = "016_data_artifact_workflow_scaffold"
+owner = "integrator"
+branch = "codex/data-artifact-workflow"
+base_commit = "0be9d3b7795e844f3676e6f31b81f98c1e64b939"
+allowed_paths = [
+  "coordination/tasks/016_data_artifact_workflow_scaffold.toml",
+  ".gitignore",
+  "README.md",
+  "configs/**",
+  "data/catalog/**",
+  "docs/02_ARCHITECTURE/DATA_ARTIFACT_WORKFLOW.md",
+  "docs/05_TEAM_GUIDES/CS_DATA_ARTIFACT_WORKFLOW.md",
+  "notebooks/**",
+  "requirements-colab.txt",
+  "scripts/README.md",
+  "scripts/artifacts/**",
+  "scripts/cloud/**",
+  "scripts/data/**",
+]
+dependencies = ["015_architecture_refactor_sumo_frontend_scaffold"]
+acceptance_commands = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run python scripts/artifacts/prepare_run_dir.py --help",
+  "uv run python scripts/cloud/drive_desktop_sync.py --help",
+  "uv run python scripts/data/prepare_yolo_dataset.py --help",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/016_data_artifact_workflow_scaffold.toml",
+]
+status = "handoff"
+
+[handoff]
+summary = "Added a Drive-backed data/model/output workflow for the three project streams: YOLO/CV, SUMO-RL, and public-finance optimization. Created the CS Drive Data Hub folder structure, registry sheet, and README doc. Replaced the outdated Drive sync script with organized scripts for data preparation, run artifact folders, and Drive Desktop dry-run/copy workflows. Added Colab/Kaggle notebook skeletons, cloud requirements, config examples, catalog templates, and rewrote the root README into a paper-style project overview that explains the real-world problem, three-layer architecture, CV-as-sensor role, workflow, tech stack, commands, and scope guardrails."
+validation = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run python scripts/artifacts/prepare_run_dir.py --help",
+  "uv run python scripts/cloud/drive_desktop_sync.py --help",
+  "uv run python scripts/data/prepare_yolo_dataset.py --help",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest -> 25 passed",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/016_data_artifact_workflow_scaffold.toml",
+  "Drive readback verified Data Hub folders, registry tabs, README tab, Dataset Registry rows, and README Google Doc.",
+  "Root README updated and checks re-run after README architecture clarification.",
+]
+risks = [
+  "No real YOLO/RL/finance run has been executed yet; registry rows are initial placeholders and examples.",
+  "Colab/Kaggle paths must be adjusted once the user's actual Drive mount path or Kaggle dataset mount is known.",
+  "YOLO dependencies are in requirements-colab.txt only; they are intentionally not part of default local uv sync yet.",
+  "Drive Desktop sync copies files only and defaults to dry-run; it does not update the Google Sheet registry automatically.",
+]
+next_steps = [
+  "Run a tiny YOLO dataset smoke test once a public/sample dataset is selected.",
+  "Create the first real run folder and push it to Drive through drive_desktop_sync.py with --apply.",
+  "Optionally add registry auto-update through Google Sheets API after manual registry workflow is accepted.",
+  "Add real SUMO-RL training notebook after SUMO adapter and scenario outputs are stable enough for cloud runtime.",
+]

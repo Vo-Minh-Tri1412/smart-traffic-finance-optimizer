@@ -1,0 +1,12 @@
+run_id: RUN-FINANCE-V0-001
+stream: public_finance
+dataset_id: FINANCE-ASSUMPTIONS-V0
+input_metrics: /content/drive/MyDrive/AI Quantum HVTC/00_Data_Management/03_Training_Runs/rl/RUN-RL-V0-001/metrics
+input_assumptions: /content/drive/MyDrive/AI Quantum HVTC/00_Data_Management/02_Processed_Data/finance_tables/FINANCE-ASSUMPTIONS-V0
+budget_vnd: 0
+optimizer:
+  exact_subset: true
+  greedy_ratio: true
+  qubo_export: true
+output_dir: /content/drive/MyDrive/AI Quantum HVTC/00_Data_Management/03_Training_Runs/finance_optimizer/RUN-FINANCE-V0-001
+notes: "Placeholder until Economics approves assumptions."

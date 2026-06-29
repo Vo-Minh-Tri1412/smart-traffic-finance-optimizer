@@ -1,0 +1,30 @@
+{
+  "drive_data_hub_url": "https://drive.google.com/drive/folders/1IZlYOqy7w71knMuTsH0CuOpbDZugRjBF",
+  "registry_sheet_url": "https://docs.google.com/spreadsheets/d/1srINZhdV7w1f6AHJ49F6IS81CvzdVtV8LQQ-Fhnw80M/edit",
+  "local_drive_desktop_data_hub": "<Google Drive Desktop>/My Drive/AI Quantum HVTC — Team Workspace/02_CS_Workspace/00_Data_Management",
+  "raw_data_dir": "01_Raw_Data",
+  "processed_data_dir": "02_Processed_Data",
+  "training_runs_dir": "03_Training_Runs",
+  "model_artifacts_dir": "04_Model_Artifacts",
+  "reports_dir": "05_Reports_For_Team",
+  "streams": {
+    "cv_yolo": {
+      "raw": "01_Raw_Data/cv_yolo",
+      "processed": "02_Processed_Data/cv_yolo",
+      "runs": "03_Training_Runs/yolo",
+      "models": "04_Model_Artifacts/yolo"
+    },
+    "rl_sumo": {
+      "raw": "01_Raw_Data/rl_sumo",
+      "processed": "02_Processed_Data/rl_training",
+      "runs": "03_Training_Runs/rl",
+      "models": "04_Model_Artifacts/rl_policy"
+    },
+    "public_finance": {
+      "raw": "01_Raw_Data/public_finance",
+      "processed": "02_Processed_Data/finance_tables",
+      "runs": "03_Training_Runs/finance_optimizer",
+      "models": "04_Model_Artifacts/investment_optimizer"
+    }
+  }
+}
