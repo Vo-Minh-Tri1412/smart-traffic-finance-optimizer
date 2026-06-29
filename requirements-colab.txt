@@ -1,0 +1,14 @@
+# Colab/Kaggle convenience requirements.
+# The source of truth for local development remains pyproject.toml + uv.lock.
+numpy<2.5
+pandas>=3.0.3
+openpyxl>=3.1.5
+plotly>=6.8.0
+requests>=2.34.2
+streamlit>=1.58.0
+stable-baselines3>=2.7.0
+sumo-rl>=1.4.5
+
+# YOLO/CV stack. Keep this out of the default local uv sync until CV work is active.
+ultralytics>=8.3.0
+opencv-python-headless>=4.10.0

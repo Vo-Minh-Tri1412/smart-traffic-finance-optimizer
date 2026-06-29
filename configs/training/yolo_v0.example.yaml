@@ -1,0 +1,12 @@
+run_id: RUN-YOLO-V0-001
+stream: cv_yolo
+dataset_id: CV-YOLO-RAW-V0
+framework: ultralytics
+task: detect
+model: yolo11n.pt
+data_yaml: /content/drive/MyDrive/AI Quantum HVTC/00_Data_Management/02_Processed_Data/cv_yolo/CV-YOLO-RAW-V0/data.yaml
+epochs: 10
+image_size: 640
+batch_size: 16
+output_dir: /content/drive/MyDrive/AI Quantum HVTC/00_Data_Management/03_Training_Runs/yolo/RUN-YOLO-V0-001
+notes: "Example only. Replace paths after Drive is mounted."
