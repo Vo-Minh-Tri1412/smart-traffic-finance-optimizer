@@ -27,6 +27,11 @@ STREAM_TO_MODEL_SUBDIR = {
     "rl_policy": Path("04_Model_Artifacts") / "rl_policy",
     "investment_optimizer": Path("04_Model_Artifacts") / "investment_optimizer",
 }
+STREAM_TO_DATASET_SUBDIR = {
+    "cv_yolo": Path("02_Processed_Data") / "cv_yolo",
+    "rl_sumo": Path("02_Processed_Data") / "rl_training",
+    "public_finance": Path("02_Processed_Data") / "finance_tables",
+}
 
 
 def sha256_file(path: Path) -> str:
@@ -164,6 +169,11 @@ def build_parser() -> argparse.ArgumentParser:
     push_model.add_argument("--model-id", required=True)
     push_model.add_argument("--source", required=True)
 
+    push_dataset = subparsers.add_parser("push-dataset", help="Push a processed dataset folder.")
+    push_dataset.add_argument("--stream", required=True, choices=tuple(STREAM_TO_DATASET_SUBDIR))
+    push_dataset.add_argument("--dataset-id", required=True)
+    push_dataset.add_argument("--source", required=True)
+
     push_report = subparsers.add_parser("push-report", help="Push a report folder or file.")
     push_report.add_argument("--name", required=True)
     push_report.add_argument("--source", required=True)
@@ -192,6 +202,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "push-model":
         target = root / STREAM_TO_MODEL_SUBDIR[args.stream] / args.model_id
+        copy_to_drive(Path(args.source), target, apply=args.apply)
+        return 0
+
+    if args.command == "push-dataset":
+        target = root / STREAM_TO_DATASET_SUBDIR[args.stream] / args.dataset_id
         copy_to_drive(Path(args.source), target, apply=args.apply)
         return 0
 

@@ -1,0 +1,51 @@
+id = "019_synthetic_cv_dataset_contract"
+owner = "integrator"
+branch = "main"
+base_commit = "c50f666e539da68fe537762dd55b17fbda6d9455"
+allowed_paths = [
+  "coordination/tasks/019_synthetic_cv_dataset_contract.toml",
+  "ai_quantum_hvtc/sensors/**",
+  "scripts/data/**",
+  "scripts/cloud/**",
+  "docs/02_ARCHITECTURE/SYNTHETIC_VISUAL_SENSOR_DATASET.md",
+  "tests/unit/sensors/**",
+  "tests/integration/cli/**",
+]
+dependencies = ["018_godot_synthetic_sensor_plan_docs"]
+acceptance_commands = [
+  "uv run python scripts/data/prepare_synthetic_cv_dataset.py --help",
+  "uv run python scripts/data/prepare_synthetic_cv_dataset.py --dataset-id SYNTH-CV-SMOKE --output-root data/processed/cv_yolo --init-template --force",
+  "uv run python scripts/data/prepare_synthetic_cv_dataset.py --dataset-root data/processed/cv_yolo/SYNTH-CV-SMOKE --validate",
+  "uv run python scripts/cloud/drive_desktop_sync.py --help",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/019_synthetic_cv_dataset_contract.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added a synthetic CV/YOLO dataset contract for Godot-rendered visual sensors, including dataset init/validation utilities, Drive Desktop dataset sync support, architecture documentation, and tests."
+validation = [
+  "uv run python scripts/data/prepare_synthetic_cv_dataset.py --help",
+  "uv run python scripts/data/prepare_synthetic_cv_dataset.py --dataset-id SYNTH-CV-SMOKE --output-root data/processed/cv_yolo --init-template --force",
+  "uv run python scripts/data/prepare_synthetic_cv_dataset.py --dataset-root data/processed/cv_yolo/SYNTH-CV-SMOKE --validate",
+  "uv run python scripts/cloud/drive_desktop_sync.py --help",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/019_synthetic_cv_dataset_contract.toml",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/019_synthetic_cv_dataset_contract.toml --changed-file <9 changed files>",
+]
+risks = [
+  "The dataset is still template-only; real frames and labels require a Godot render exporter task.",
+  "Synthetic camera data must be labeled clearly in reports and must not be presented as real traffic-camera footage.",
+  "Drive Desktop sync copies local folders only; it does not verify Google Drive cloud upload completion.",
+]
+next_steps = [
+  "Implement Godot frame/label exporter that writes into this dataset contract.",
+  "Add a Colab/Kaggle training entrypoint after a smoke dataset with real rendered frames exists.",
+  "Add trace-to-camera mapping from SUMO/SUMO-RL runs into render_manifest.json.",
+]
