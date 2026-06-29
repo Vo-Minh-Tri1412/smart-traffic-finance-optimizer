@@ -25,7 +25,8 @@ non-upgraded intersections remain under fixed-time or rule-based control. The re
 metrics are converted into a public-value score and passed to a budget optimizer that chooses the
 investment subset with the best expected social value.
 
-The proposed architecture has three coordinated model layers:
+The proposed architecture has three coordinated model layers, plus an optional visual-rendering layer
+for sensor realism:
 
 1. **Sensor / observation layer**: ground-truth simulation sensors for training, with optional
    YOLO/CV camera-like sensing as a deployment or robustness extension.
@@ -33,6 +34,8 @@ The proposed architecture has three coordinated model layers:
    controllers.
 3. **Public-finance optimizer layer**: budget-constrained selection of intersections using exact,
    greedy, robust, and future QUBO/quantum-compatible formulations.
+4. **Synthetic visual sensor layer**: a future Godot 3D renderer that turns SUMO/SUMO-RL vehicle
+   trajectories into camera-like frames, YOLO labels, weather/noise variants, and demo video.
 
 The current repository is a technical scaffold. It contains the simulation architecture, SUMO
 adapter scaffold, frontend contracts, Drive-backed data/artifact workflow, and notebook entrypoints.
@@ -114,6 +117,28 @@ of claiming that one trained policy is universally optimal.
                  +-------------------------+
 ```
 
+Future visual-sensor path:
+
+```text
+SUMO/SUMO-RL world
+        |
+        v
+vehicle trajectory + signal trace
+        |
+        v
+Godot 3D synthetic camera renderer
+        |
+        +--> camera frames/video
+        +--> YOLO labels
+        +--> render manifest
+        |
+        v
+YOLO sensor model
+        |
+        v
+vehicle counts/type estimates + sensor-error report
+```
+
 ### Why CV is not the core data source in simulation
 
 Inside a simulation, the system already knows each vehicle's ID, type, position, lane, route, and
@@ -130,6 +155,49 @@ So CV is treated as a **sensor layer**, not as the main source of truth:
 This keeps the architecture honest: CV is useful when the system does not have direct access to
 perfect simulator state, not when it merely re-detects UI icons that the simulator generated.
 
+### Godot 3D synthetic visual sensor layer
+
+The preferred project-specific CV path is not to train YOLO on an unrelated public traffic-camera
+dataset and then ask it to understand a synthetic mini-city. That creates a domain mismatch:
+
+```text
+real street-camera images != rendered simulation district images
+```
+
+Instead, the project can add **Godot 3D as a renderer**, not as the main simulator. SUMO/SUMO-RL
+remains responsible for traffic dynamics, vehicle trajectories, signal phases, RL training, metrics,
+and public-finance evaluation. Godot receives exported simulation state and renders camera-like
+frames from the same district:
+
+```text
+district_spec.json
+  -> SUMO/SUMO-RL simulation
+  -> vehicle trajectories + signal states
+  -> Godot 3D camera renderer
+  -> synthetic frames/video + YOLO labels
+  -> YOLO sensor model
+  -> sensor estimates compared with SUMO ground truth
+```
+
+This makes the camera layer both visually stronger and scientifically cleaner: YOLO sees only images,
+while SUMO provides ground truth for measuring sensor error. The RL controller does not need to train
+from pixels in v1; it can train from SUMO-RL state observations while the Godot/YOLO layer supports
+deployment-style sensing, robustness checks, and a more convincing demo.
+
+Godot 3D should initially be scoped as a lightweight synthetic renderer:
+
+- low-poly public-service district, not photorealistic open-world simulation;
+- fixed traffic cameras near hospitals, schools, industrial gates, bottlenecks, and arterial roads;
+- vehicle assets for motorbike, car, bus, truck, ambulance, and worker shuttle;
+- day/night/rain/noise variants for domain randomization;
+- automatic YOLO label export from known object positions;
+- generated frames, videos, labels, and model artifacts stored in Google Drive, not Git.
+
+Godot must not silently replace SUMO-RL. It is a visual/sensor layer that consumes simulation traces.
+If the project later uses Godot AI MCP tooling, that tooling is an implementation accelerator only;
+the repository should remain understandable and runnable without requiring an agent-specific MCP
+session.
+
 ## The three model layers
 
 ### 1. Sensor / CV model
@@ -142,8 +210,9 @@ Purpose:
 
 Possible inputs:
 
-- public traffic images/videos;
+- Godot-rendered synthetic traffic-camera frames generated from SUMO/SUMO-RL trajectories;
 - camera-like frames rendered from simulation for pipeline testing;
+- optional public traffic images/videos for future external validation;
 - future real-world camera clips if permissions are clear.
 
 Possible outputs:
@@ -159,6 +228,7 @@ Current status:
 - `requirements-colab.txt` includes `ultralytics` and OpenCV for cloud training.
 - Local default `uv sync` does not install YOLO yet.
 - No real CV dataset or trained YOLO model is claimed.
+- Godot 3D synthetic camera rendering is an approved architecture direction, but not implemented yet.
 
 ### 2. SUMO-RL traffic-control model
 
@@ -415,6 +485,7 @@ The current scaffold does not claim:
 
 - a final trained RL policy;
 - a final trained YOLO detector;
+- an implemented Godot 3D renderer or generated synthetic camera dataset;
 - real-world causal traffic savings;
 - real-world budget savings;
 - validated finance assumptions;
@@ -425,7 +496,8 @@ It does claim:
 - a disciplined architecture for connecting traffic AI to public-finance decisions;
 - a reproducible repository structure;
 - a Drive-backed data/model/output workflow;
-- an honest separation between simulation ground truth and camera-like CV sensing;
+- an honest separation between simulation ground truth, Godot-rendered camera views, and YOLO
+  sensing;
 - a clear path toward classical and quantum-compatible investment optimization.
 
 ## Scope guardrails
@@ -434,7 +506,10 @@ It does claim:
 - Do not replace SUMO-RL with a custom simulator as the main environment without a recorded
   integrator decision.
 - Computer vision / YOLO is a sensor-layer extension, not the core data source inside simulation.
-- Do not use UI assets as proof of a real CV model.
+- Do not use unrelated public camera datasets as proof that YOLO understands the synthetic district.
+- Do not use flat UI icons as proof of a real CV model; prefer a controlled Godot 3D synthetic
+  camera layer if CV becomes part of the demo.
+- Do not let Godot replace SUMO-RL as the traffic/RL environment without a new integrator decision.
 - Do not claim real-world causal savings from simulation alone.
 - Compare RL against fixed-time and rule-based baselines.
 - Public-finance assumptions must be sourced, estimated, or clearly marked as placeholders.

@@ -1,0 +1,35 @@
+id = "018_godot_synthetic_sensor_plan_docs"
+owner = "integrator"
+branch = "main"
+base_commit = "e2a9023a7266f2a3add94fd17610cf97e5d62b16"
+allowed_paths = [
+  "coordination/tasks/018_godot_synthetic_sensor_plan_docs.toml",
+  "README.md",
+  "GODOT_SYNTHETIC_SENSOR_PLAN.local.md",
+  "render/**",
+]
+dependencies = ["016_data_artifact_workflow_scaffold", "017_fix_cross_platform_sumo_smoke_test"]
+acceptance_commands = [
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/018_godot_synthetic_sensor_plan_docs.toml",
+]
+status = "handoff"
+
+[handoff]
+summary = "Captured the Godot 3D synthetic visual sensor architecture in README.md, created a detailed root local-only context file named GODOT_SYNTHETIC_SENSOR_PLAN.local.md, and added the render/ Godot project with the Godot AI MCP plugin installed. The local context file is intentionally ignored through .git/info/exclude and is not staged or intended for Git."
+validation = [
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/018_godot_synthetic_sensor_plan_docs.toml",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/018_godot_synthetic_sensor_plan_docs.toml --changed-file README.md --changed-file coordination/tasks/018_godot_synthetic_sensor_plan_docs.toml",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/018_godot_synthetic_sensor_plan_docs.toml --changed-file README.md --changed-file coordination/tasks/018_godot_synthetic_sensor_plan_docs.toml --changed-file render/project.godot --changed-file render/addons/godot_ai/plugin.cfg",
+  "Godot 4.6.2 headless editor opened render/ successfully after plugin install",
+  "Codex Godot AI MCP namespace became available and client status reports Codex configured",
+  "git status --short --branch --ignored=matching verified GODOT_SYNTHETIC_SENSOR_PLAN.local.md is ignored locally",
+]
+risks = [
+  "README.md now records an approved architecture direction, but the actual Godot 3D renderer scene is not built yet.",
+  "Godot AI plugin is vendored under render/addons/godot_ai and should be updated deliberately, not casually overwritten.",
+  "The detailed root plan is local-only; another machine will not see it unless it is copied or later promoted to tracked docs.",
+]
+next_steps = [
+  "Create the first Main.tscn scene and renderer architecture via Godot AI MCP.",
+  "Create a separate implementation task for training scripts and/or Godot synthetic sensor contracts.",
+]
