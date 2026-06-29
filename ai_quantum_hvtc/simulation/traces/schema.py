@@ -9,11 +9,12 @@ from ai_quantum_hvtc.simulation.metrics import SimulationResult
 def trace_frames_from_result(result: SimulationResult, spec: DistrictSpec) -> list[dict[str, Any]]:
     """Create a compact replay trace for the future React UI.
 
-    The reference engine currently returns aggregate metrics rather than vehicle trajectories.
-    The trace is therefore an honest aggregate replay: one frame per coarse timestep with
-    traffic-light states, queue levels, and semantic map metadata. SUMO can later emit richer
-    per-vehicle frames without changing the top-level contract.
+    SUMO results may carry real FCD vehicle frames. Lightweight validation backends return
+    aggregate metrics, so they use an honest aggregate replay instead.
     """
+
+    if result.vehicle_trace_frames:
+        return result.vehicle_trace_frames
 
     step_seconds = spec.metadata.time_step_seconds
     frame_count = max(1, min(20, spec.metadata.horizon_seconds // step_seconds))

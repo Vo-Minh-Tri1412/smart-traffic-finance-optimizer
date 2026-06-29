@@ -25,8 +25,11 @@ def test_sumo_exporter_writes_xml_artifacts(tmp_path: Path) -> None:
 
     assert paths.nodes.is_file()
     assert paths.edges.is_file()
+    assert paths.additional.is_file()
     assert paths.routes.is_file()
     assert paths.config.is_file()
+    assert paths.edge_data.name == "edge_data.xml"
+    assert paths.fcd.name == "fcd.xml"
 
 
 @pytest.mark.skipif(not has_sumo_runtime(), reason="SUMO/netconvert runtime is not available")
@@ -42,3 +45,7 @@ def test_sumo_adapter_runs_when_runtime_is_available(tmp_path: Path) -> None:
 
     assert result.engine_id == "sumo"
     assert result.total_vehicles >= 0
+    assert result.max_queue_vehicles > 0
+    assert any(metric.delay_seconds > 0 for metric in result.intersections.values())
+    assert result.vehicle_trace_frames
+    assert "vehicles" in result.vehicle_trace_frames[0]

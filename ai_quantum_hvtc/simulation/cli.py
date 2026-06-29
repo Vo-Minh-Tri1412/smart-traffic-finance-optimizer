@@ -16,15 +16,22 @@ from ai_quantum_hvtc.reports import (
     write_markdown_report,
 )
 from ai_quantum_hvtc.simulation.engines import ReferenceGraphEngine, SimulationEngine, SumoAdapter
+from ai_quantum_hvtc.simulation.engines.sumo import SumoRuntimeError
 from ai_quantum_hvtc.simulation.specs import load_district_spec
 
 
-def _engine(engine_id: str) -> SimulationEngine:
+def _engine(engine_id: str, *, sumo_work_dir: Path | None = None) -> SimulationEngine:
     if engine_id == "reference":
         return ReferenceGraphEngine()
     if engine_id == "sumo":
-        return SumoAdapter()
+        return SumoAdapter(work_dir=sumo_work_dir)
     raise ValueError(f"unknown engine: {engine_id}")
+
+
+def _sumo_work_dir(base_dir: str | None, *, scenario_id: str, controller_id: str) -> Path | None:
+    if not base_dir:
+        return None
+    return Path(base_dir) / scenario_id / controller_id
 
 
 def _parse_controllers(value: str) -> list[str]:
@@ -65,12 +72,23 @@ def _cmd_validate(args: argparse.Namespace) -> int:
 
 def _cmd_run(args: argparse.Namespace) -> int:
     spec = load_district_spec(args.spec)
-    result = _engine(args.engine).run(
-        spec=spec,
-        scenario_id=args.scenario,
-        controller_id=args.controller,
-        seed=args.seed,
-    )
+    try:
+        result = _engine(
+            args.engine,
+            sumo_work_dir=_sumo_work_dir(
+                args.sumo_work_dir,
+                scenario_id=args.scenario,
+                controller_id=args.controller,
+            ),
+        ).run(
+            spec=spec,
+            scenario_id=args.scenario,
+            controller_id=args.controller,
+            seed=args.seed,
+        )
+    except SumoRuntimeError as exc:
+        print(f"[FAIL] {exc}")
+        return 1
     result_to_json(result, Path(args.out))
     if args.trace_out:
         result_to_trace_jsonl(result, spec, Path(args.trace_out))
@@ -83,27 +101,48 @@ def _cmd_compare(args: argparse.Namespace) -> int:
     controllers = _parse_controllers(args.controllers)
     if "fixed_time" not in controllers:
         controllers = ["fixed_time", *controllers]
-    engine = _engine(args.engine)
 
-    baseline = engine.run(
-        spec=spec,
-        scenario_id=args.scenario,
-        controller_id="fixed_time",
-        seed=args.seed,
-    )
+    try:
+        baseline = _engine(
+            args.engine,
+            sumo_work_dir=_sumo_work_dir(
+                args.sumo_work_dir,
+                scenario_id=args.scenario,
+                controller_id="fixed_time",
+            ),
+        ).run(
+            spec=spec,
+            scenario_id=args.scenario,
+            controller_id="fixed_time",
+            seed=args.seed,
+        )
+    except SumoRuntimeError as exc:
+        print(f"[FAIL] {exc}")
+        return 1
     all_scores = []
     latest_result = baseline
     for controller_id in controllers:
-        result = (
-            baseline
-            if controller_id == "fixed_time"
-            else engine.run(
-                spec=spec,
-                scenario_id=args.scenario,
-                controller_id=controller_id,
-                seed=args.seed,
+        try:
+            result = (
+                baseline
+                if controller_id == "fixed_time"
+                else _engine(
+                    args.engine,
+                    sumo_work_dir=_sumo_work_dir(
+                        args.sumo_work_dir,
+                        scenario_id=args.scenario,
+                        controller_id=controller_id,
+                    ),
+                ).run(
+                    spec=spec,
+                    scenario_id=args.scenario,
+                    controller_id=controller_id,
+                    seed=args.seed,
+                )
             )
-        )
+        except SumoRuntimeError as exc:
+            print(f"[FAIL] {exc}")
+            return 1
         latest_result = result
         all_scores.extend(score_candidates(spec, baseline, result))
 
@@ -154,6 +193,11 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--seed", type=int, default=42)
     run_parser.add_argument("--out", required=True)
     run_parser.add_argument("--trace-out", default=None)
+    run_parser.add_argument(
+        "--sumo-work-dir",
+        default=None,
+        help="Keep SUMO artifacts under this directory when --engine sumo is used.",
+    )
     run_parser.set_defaults(func=_cmd_run)
 
     compare_parser = subparsers.add_parser(
@@ -166,6 +210,11 @@ def build_parser() -> argparse.ArgumentParser:
     compare_parser.add_argument("--seed", type=int, default=42)
     compare_parser.add_argument("--out", required=True)
     compare_parser.add_argument("--report", default=None)
+    compare_parser.add_argument(
+        "--sumo-work-dir",
+        default=None,
+        help="Keep SUMO artifacts under this directory when --engine sumo is used.",
+    )
     compare_parser.set_defaults(func=_cmd_compare)
 
     optimize_parser = subparsers.add_parser(

@@ -58,6 +58,12 @@ class VehicleType:
     value_class: str
     priority_level: int = 0
     forbidden_road_tags: tuple[str, ...] = ()
+    length_m: float = 4.5
+    width_m: float = 1.8
+    max_speed_kph: float = 50.0
+    accel_mps2: float = 2.6
+    decel_mps2: float = 4.5
+    min_gap_m: float = 2.5
 
 
 @dataclass(frozen=True)

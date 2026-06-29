@@ -34,8 +34,10 @@ class SimulationResult:
     reroute_count: int
     failed_route_count: int
     intersections: dict[str, IntersectionMetric] = field(default_factory=dict)
+    vehicle_trace_frames: list[dict[str, Any]] = field(default_factory=list, repr=False)
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
+        data.pop("vehicle_trace_frames", None)
         data["intersections"] = {key: asdict(value) for key, value in self.intersections.items()}
         return data

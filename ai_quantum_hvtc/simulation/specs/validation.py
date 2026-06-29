@@ -101,3 +101,16 @@ def validate_spec(spec: DistrictSpec) -> None:
                 raise SpecValidationError(f"{candidate.candidate_id}: unknown affected flow")
         if candidate.capex_vnd < 0 or candidate.annual_maintenance_vnd < 0:
             raise SpecValidationError(f"{candidate.candidate_id}: costs must be non-negative")
+
+    for vehicle_type in spec.vehicle_types.values():
+        if (
+            vehicle_type.length_m <= 0
+            or vehicle_type.width_m <= 0
+            or vehicle_type.max_speed_kph <= 0
+            or vehicle_type.accel_mps2 <= 0
+            or vehicle_type.decel_mps2 <= 0
+            or vehicle_type.min_gap_m < 0
+        ):
+            raise SpecValidationError(
+                f"{vehicle_type.vehicle_type_id}: SUMO vehicle dimensions/dynamics invalid"
+            )

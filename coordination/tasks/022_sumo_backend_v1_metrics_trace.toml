@@ -1,0 +1,50 @@
+id = "022_sumo_backend_v1_metrics_trace"
+owner = "integrator"
+branch = "main"
+base_commit = "c5c0858f0fb3cb3548f139a832cf9e54a7e99ab9"
+allowed_paths = [
+  "coordination/tasks/022_sumo_backend_v1_metrics_trace.toml",
+  "ai_quantum_hvtc/simulation/domain/**",
+  "ai_quantum_hvtc/simulation/specs/**",
+  "ai_quantum_hvtc/simulation/engines/base.py",
+  "ai_quantum_hvtc/simulation/engines/sumo/**",
+  "ai_quantum_hvtc/simulation/metrics/**",
+  "ai_quantum_hvtc/simulation/traces/**",
+  "ai_quantum_hvtc/simulation/cli.py",
+  "tests/integration/sumo/**",
+  "tests/integration/cli/**",
+  "tests/unit/simulation/**",
+]
+dependencies = ["021_project_docs_cleanup"]
+acceptance_commands = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run python -m ai_quantum_hvtc simulate validate --spec tests/fixtures/specs/minh_khai_district_v1.json",
+  "uv run python -m ai_quantum_hvtc simulate run --engine sumo --spec tests/fixtures/specs/minh_khai_district_v1.json --scenario normal_weekday --controller fixed_time --out <tmp> --trace-out <tmp>",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/022_sumo_backend_v1_metrics_trace.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Upgraded the SUMO backend to export additional edge metrics and FCD traces, parse per-intersection delay/queue metrics, carry SUMO vehicle trace frames through the trace writer, support optional SUMO work-dir artifacts, and add vehicle dimension/dynamics defaults."
+validation = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run python -m ai_quantum_hvtc simulate validate --spec tests/fixtures/specs/minh_khai_district_v1.json",
+  "uv run python -m ai_quantum_hvtc simulate run --engine sumo --spec tests/fixtures/specs/minh_khai_district_v1.json --scenario normal_weekday --controller fixed_time --out <tmp> --trace-out <tmp>",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/022_sumo_backend_v1_metrics_trace.toml --changed-file <11 changed files>",
+]
+risks = [
+  "Per-intersection delay is distributed from trip waiting time across planned route edges; it is suitable for v1 scoring but not a calibrated traffic engineering claim.",
+  "FCD traces are kept in memory on SimulationResult for the current small district; large future runs may need streaming trace export.",
+]
+next_steps = [
+  "Implement the SUMO rule-based baseline with TraCI.",
+  "Downgrade reference wording/defaults after SUMO baseline coverage is stable.",
+]

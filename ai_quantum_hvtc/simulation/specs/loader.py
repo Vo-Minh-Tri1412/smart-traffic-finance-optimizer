@@ -97,6 +97,7 @@ def _roads(items: list[dict[str, Any]]) -> dict[str, Road]:
 def _vehicle_types(items: list[dict[str, Any]]) -> dict[str, VehicleType]:
     vehicle_types: dict[str, VehicleType] = {}
     for item in items:
+        defaults = _vehicle_type_defaults(str(item["id"]))
         vehicle_type = VehicleType(
             vehicle_type_id=str(item["id"]),
             passenger_count=float(item["passenger_count"]),
@@ -104,9 +105,75 @@ def _vehicle_types(items: list[dict[str, Any]]) -> dict[str, VehicleType]:
             value_class=str(item["value_class"]),
             priority_level=int(item.get("priority_level", 0)),
             forbidden_road_tags=_tuple_of_strings(item.get("forbidden_road_tags", [])),
+            length_m=float(item.get("length_m", defaults["length_m"])),
+            width_m=float(item.get("width_m", defaults["width_m"])),
+            max_speed_kph=float(item.get("max_speed_kph", defaults["max_speed_kph"])),
+            accel_mps2=float(item.get("accel_mps2", defaults["accel_mps2"])),
+            decel_mps2=float(item.get("decel_mps2", defaults["decel_mps2"])),
+            min_gap_m=float(item.get("min_gap_m", defaults["min_gap_m"])),
         )
         vehicle_types[vehicle_type.vehicle_type_id] = vehicle_type
     return vehicle_types
+
+
+def _vehicle_type_defaults(vehicle_type_id: str) -> dict[str, float]:
+    defaults = {
+        "length_m": 4.5,
+        "width_m": 1.8,
+        "max_speed_kph": 50.0,
+        "accel_mps2": 2.6,
+        "decel_mps2": 4.5,
+        "min_gap_m": 2.5,
+    }
+    overrides: dict[str, dict[str, float]] = {
+        "MOTORBIKE": {
+            "length_m": 2.0,
+            "width_m": 0.7,
+            "max_speed_kph": 45.0,
+            "accel_mps2": 3.0,
+            "decel_mps2": 5.0,
+            "min_gap_m": 1.0,
+        },
+        "DELIVERY_BIKE": {
+            "length_m": 2.0,
+            "width_m": 0.7,
+            "max_speed_kph": 40.0,
+            "accel_mps2": 2.8,
+            "decel_mps2": 5.0,
+            "min_gap_m": 1.0,
+        },
+        "BUS": {"length_m": 12.0, "width_m": 2.5, "max_speed_kph": 45.0, "min_gap_m": 3.0},
+        "SCHOOL_BUS": {
+            "length_m": 10.0,
+            "width_m": 2.4,
+            "max_speed_kph": 40.0,
+            "min_gap_m": 3.0,
+        },
+        "WORKER_SHUTTLE": {
+            "length_m": 9.0,
+            "width_m": 2.3,
+            "max_speed_kph": 45.0,
+            "min_gap_m": 3.0,
+        },
+        "AMBULANCE": {
+            "length_m": 5.5,
+            "width_m": 2.0,
+            "max_speed_kph": 70.0,
+            "accel_mps2": 3.5,
+            "decel_mps2": 5.5,
+            "min_gap_m": 2.0,
+        },
+        "LIGHT_TRUCK": {"length_m": 6.5, "width_m": 2.2, "max_speed_kph": 50.0},
+        "HEAVY_TRUCK": {
+            "length_m": 12.0,
+            "width_m": 2.5,
+            "max_speed_kph": 40.0,
+            "accel_mps2": 1.2,
+            "decel_mps2": 3.5,
+            "min_gap_m": 3.5,
+        },
+    }
+    return {**defaults, **overrides.get(vehicle_type_id, {})}
 
 
 def _flows(items: list[dict[str, Any]]) -> dict[str, Flow]:

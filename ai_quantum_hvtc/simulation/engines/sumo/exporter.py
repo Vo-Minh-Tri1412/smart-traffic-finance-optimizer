@@ -14,11 +14,14 @@ class SumoExportPaths:
     work_dir: Path
     nodes: Path
     edges: Path
+    additional: Path
     routes: Path
     net: Path
     config: Path
     tripinfo: Path
     summary: Path
+    edge_data: Path
+    fcd: Path
 
 
 def export_sumo_project(
@@ -39,15 +42,19 @@ def export_sumo_project(
         work_dir=work_dir,
         nodes=work_dir / "district.nod.xml",
         edges=work_dir / "district.edg.xml",
+        additional=work_dir / "additional.xml",
         routes=work_dir / "district.rou.xml",
         net=work_dir / "district.net.xml",
         config=work_dir / "district.sumocfg",
         tripinfo=work_dir / "tripinfo.xml",
         summary=work_dir / "summary.xml",
+        edge_data=work_dir / "edge_data.xml",
+        fcd=work_dir / "fcd.xml",
     )
     _write_nodes(spec, paths.nodes)
     _write_edges(spec, paths.edges)
     _write_routes(spec, scenario_id, paths.routes)
+    _write_additional(spec, paths)
     _write_config(spec, seed, paths)
     return paths
 
@@ -100,6 +107,12 @@ def _write_routes(spec: DistrictSpec, scenario_id: str, path: Path) -> None:
                 "vClass": _sumo_vehicle_class(vehicle_type.vehicle_type_id),
                 "personCapacity": str(max(1, int(round(vehicle_type.passenger_count)))),
                 "color": _vehicle_color(vehicle_type.vehicle_type_id),
+                "length": f"{vehicle_type.length_m:.3f}",
+                "width": f"{vehicle_type.width_m:.3f}",
+                "maxSpeed": f"{vehicle_type.max_speed_kph / 3.6:.3f}",
+                "accel": f"{vehicle_type.accel_mps2:.3f}",
+                "decel": f"{vehicle_type.decel_mps2:.3f}",
+                "minGap": f"{vehicle_type.min_gap_m:.3f}",
             },
         )
 
@@ -147,15 +160,33 @@ def _write_routes(spec: DistrictSpec, scenario_id: str, path: Path) -> None:
     _write_xml(root, path)
 
 
+def _write_additional(spec: DistrictSpec, paths: SumoExportPaths) -> None:
+    root = ET.Element("additional")
+    ET.SubElement(
+        root,
+        "edgeData",
+        {
+            "id": "edge_metrics",
+            "file": paths.edge_data.name,
+            "period": str(spec.metadata.time_step_seconds),
+            "excludeEmpty": "true",
+        },
+    )
+    _write_xml(root, paths.additional)
+
+
 def _write_config(spec: DistrictSpec, seed: int, paths: SumoExportPaths) -> None:
     root = ET.Element("configuration")
     input_node = ET.SubElement(root, "input")
     ET.SubElement(input_node, "net-file", {"value": paths.net.name})
     ET.SubElement(input_node, "route-files", {"value": paths.routes.name})
+    ET.SubElement(input_node, "additional-files", {"value": paths.additional.name})
 
     output_node = ET.SubElement(root, "output")
     ET.SubElement(output_node, "tripinfo-output", {"value": paths.tripinfo.name})
+    ET.SubElement(output_node, "tripinfo-output.write-unfinished", {"value": "true"})
     ET.SubElement(output_node, "summary-output", {"value": paths.summary.name})
+    ET.SubElement(output_node, "fcd-output", {"value": paths.fcd.name})
 
     time_node = ET.SubElement(root, "time")
     ET.SubElement(time_node, "begin", {"value": "0"})
