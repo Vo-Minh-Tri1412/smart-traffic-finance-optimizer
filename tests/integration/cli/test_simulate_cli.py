@@ -10,7 +10,9 @@ from ai_quantum_hvtc.simulation.engines.sumo.runner import has_sumo_runtime
 SPEC_PATH = Path("tests/fixtures/specs/minh_khai_district_v1.json")
 
 
-def test_simulate_run_writes_result_and_frontend_trace(tmp_path: Path) -> None:
+def test_simulate_reference_validation_backend_still_writes_aggregate_trace(
+    tmp_path: Path,
+) -> None:
     out = tmp_path / "result.json"
     trace = tmp_path / "trace.jsonl"
 
@@ -47,8 +49,6 @@ def test_simulate_run_sumo_writes_real_vehicle_trace_and_keeps_artifacts(tmp_pat
     exit_code = main(
         [
             "run",
-            "--engine",
-            "sumo",
             "--spec",
             str(SPEC_PATH),
             "--scenario",

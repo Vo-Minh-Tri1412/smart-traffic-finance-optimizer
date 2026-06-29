@@ -17,5 +17,7 @@ Example:
 
 ```powershell
 uv run python -m ai_quantum_hvtc simulate validate --spec simulation_projects/minh_khai_district_v1/specs/district_spec.json
-uv run python -m ai_quantum_hvtc simulate run --spec simulation_projects/minh_khai_district_v1/specs/district_spec.json --scenario industrial_shift_in --controller rule_based --engine reference --out simulation_projects/minh_khai_district_v1/outputs/run_industrial_rule_based.json --trace-out simulation_projects/minh_khai_district_v1/outputs/run_industrial_rule_based.trace.jsonl
+uv run python -m ai_quantum_hvtc simulate run --spec simulation_projects/minh_khai_district_v1/specs/district_spec.json --scenario industrial_shift_in --controller fixed_time --out simulation_projects/minh_khai_district_v1/outputs/run_industrial_fixed_time.json --trace-out simulation_projects/minh_khai_district_v1/outputs/run_industrial_fixed_time.trace.jsonl --sumo-work-dir simulation_projects/minh_khai_district_v1/sumo_generated
 ```
+
+Use `--engine reference` only for fast validation/debug runs when SUMO is unavailable.

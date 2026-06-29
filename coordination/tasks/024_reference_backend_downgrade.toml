@@ -1,0 +1,46 @@
+id = "024_reference_backend_downgrade"
+owner = "integrator"
+branch = "main"
+base_commit = "bc7b0d220ab42cbdc11abf7b3a8883c54788209a"
+allowed_paths = [
+  "coordination/tasks/024_reference_backend_downgrade.toml",
+  "README.md",
+  "docs/**",
+  "simulation_projects/minh_khai_district_v1/README.md",
+  "ai_quantum_hvtc/simulation/cli.py",
+  "ai_quantum_hvtc/simulation/controllers/__init__.py",
+  "tests/integration/cli/**",
+  "tests/unit/public_finance/**",
+  "tests/unit/simulation/**",
+]
+dependencies = ["023_sumo_baseline_controllers"]
+acceptance_commands = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run python -m ai_quantum_hvtc simulate run --spec tests/fixtures/specs/minh_khai_district_v1.json --scenario normal_weekday --controller fixed_time --out <tmp> --trace-out <tmp>",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/024_reference_backend_downgrade.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Downgraded the reference engine to a validation-only backend by making SUMO the default CLI engine, updating README examples to use SUMO, preserving explicit reference regression tests, and removing public-finance test dependence on ReferenceGraphEngine."
+validation = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run python -m ai_quantum_hvtc simulate run --spec tests/fixtures/specs/minh_khai_district_v1.json --scenario normal_weekday --controller fixed_time --out <tmp> --trace-out <tmp>",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/024_reference_backend_downgrade.toml --changed-file <7 changed files>",
+]
+risks = [
+  "CLI default now requires SUMO for ordinary run/compare commands; users without SUMO must pass --engine reference explicitly for validation-only runs.",
+  "ReferenceGraphEngine still exists in code and minimal tests; full archive should wait until SUMO fixtures cover all needed CI paths.",
+]
+next_steps = [
+  "If desired later, move ReferenceGraphEngine out of simulation/engines into a testing or validation namespace.",
+  "Use SUMO outputs as the source for future baseline reports, Godot trace replay, and public-finance scoring demos.",
+]

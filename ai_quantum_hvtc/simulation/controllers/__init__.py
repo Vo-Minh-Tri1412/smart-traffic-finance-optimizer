@@ -1,4 +1,4 @@
-"""Controller profiles for the reference engine."""
+"""Lightweight controller profiles for validation backends."""
 
 from __future__ import annotations
 

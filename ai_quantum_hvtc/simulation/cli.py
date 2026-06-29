@@ -189,7 +189,12 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--spec", required=True)
     run_parser.add_argument("--scenario", required=True)
     run_parser.add_argument("--controller", required=True)
-    run_parser.add_argument("--engine", default="reference", choices=["reference", "sumo"])
+    run_parser.add_argument(
+        "--engine",
+        default="sumo",
+        choices=["sumo", "reference"],
+        help="Simulation backend. Use sumo for project runs; reference is validation-only.",
+    )
     run_parser.add_argument("--seed", type=int, default=42)
     run_parser.add_argument("--out", required=True)
     run_parser.add_argument("--trace-out", default=None)
@@ -206,7 +211,12 @@ def build_parser() -> argparse.ArgumentParser:
     compare_parser.add_argument("--spec", required=True)
     compare_parser.add_argument("--scenario", required=True)
     compare_parser.add_argument("--controllers", required=True)
-    compare_parser.add_argument("--engine", default="reference", choices=["reference", "sumo"])
+    compare_parser.add_argument(
+        "--engine",
+        default="sumo",
+        choices=["sumo", "reference"],
+        help="Simulation backend. Use sumo for project runs; reference is validation-only.",
+    )
     compare_parser.add_argument("--seed", type=int, default=42)
     compare_parser.add_argument("--out", required=True)
     compare_parser.add_argument("--report", default=None)

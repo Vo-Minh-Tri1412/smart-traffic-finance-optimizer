@@ -433,16 +433,20 @@ uv run python -m ai_quantum_hvtc doctor
 uv run python -m ai_quantum_hvtc simulate validate --spec simulation_projects/minh_khai_district_v1/specs/district_spec.json
 ```
 
-Run the current reference simulation backend:
+Run the current SUMO backend:
 
 ```powershell
 uv run python -m ai_quantum_hvtc simulate run `
-  --engine reference `
   --spec simulation_projects/minh_khai_district_v1/specs/district_spec.json `
   --scenario normal_weekday `
   --controller fixed_time `
-  --out simulation_projects/minh_khai_district_v1/outputs/run_normal_fixed_time.json
+  --out simulation_projects/minh_khai_district_v1/outputs/run_normal_fixed_time.json `
+  --trace-out simulation_projects/minh_khai_district_v1/outputs/run_normal_fixed_time.trace.jsonl `
+  --sumo-work-dir simulation_projects/minh_khai_district_v1/sumo_generated
 ```
+
+The `reference` engine is still available only as a lightweight validation backend for fast schema
+and finance-pipeline checks. Do not use it for final simulation claims or the main demo.
 
 Prepare a local training-run artifact folder:
 
