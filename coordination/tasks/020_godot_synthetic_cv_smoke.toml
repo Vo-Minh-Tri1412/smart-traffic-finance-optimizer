@@ -1,0 +1,47 @@
+id = "020_godot_synthetic_cv_smoke"
+owner = "integrator"
+branch = "main"
+base_commit = "bcda294832127b5584902a62434932bd959a9ca3"
+allowed_paths = [
+  "coordination/tasks/020_godot_synthetic_cv_smoke.toml",
+  "render/scripts/**",
+  "scripts/render/**",
+  "scripts/data/README.md",
+  "docs/02_ARCHITECTURE/GODOT_SYNTHETIC_CV_SMOKE.md",
+  "tests/integration/cli/test_godot_synthetic_cv_smoke_cli.py",
+]
+dependencies = ["019_synthetic_cv_dataset_contract"]
+acceptance_commands = [
+  "uv run python scripts/render/godot_synthetic_cv_smoke.py --help",
+  "uv run python scripts/render/godot_synthetic_cv_smoke.py --dataset-id SYNTH-CV-GODOT-SMOKE --output-root data/processed/cv_yolo --force",
+  "uv run python scripts/data/prepare_synthetic_cv_dataset.py --dataset-root data/processed/cv_yolo/SYNTH-CV-GODOT-SMOKE --validate",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/020_godot_synthetic_cv_smoke.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added a Godot headless smoke exporter that writes two synthetic PNG frames and YOLO labels into the synthetic CV dataset contract, plus a Python wrapper, documentation, and an integration test."
+validation = [
+  "uv run python scripts/render/godot_synthetic_cv_smoke.py --help",
+  "uv run python scripts/render/godot_synthetic_cv_smoke.py --dataset-id SYNTH-CV-GODOT-SMOKE --output-root data/processed/cv_yolo --force",
+  "uv run python scripts/data/prepare_synthetic_cv_dataset.py --dataset-root data/processed/cv_yolo/SYNTH-CV-GODOT-SMOKE --validate",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/020_godot_synthetic_cv_smoke.toml --changed-file <7 changed files>",
+]
+risks = [
+  "The smoke exporter uses simple Godot-generated 2D imagery, not the final 3D district renderer.",
+  "The generated smoke dataset is local and ignored by Git; sync to Drive must be run separately when needed.",
+  "The integration test skips on machines without Godot, so CI without Godot still validates only the wrapper import path.",
+]
+next_steps = [
+  "Build the trace-to-Godot exporter that replays SUMO/SUMO-RL vehicle trajectories.",
+  "Replace static rectangles with reusable Godot vehicle/city assets and camera viewpoints.",
+  "After a small real rendered dataset exists, add YOLO training scripts for Colab/Kaggle/cloud GPU.",
+]

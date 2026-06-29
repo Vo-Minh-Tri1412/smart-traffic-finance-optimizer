@@ -34,3 +34,18 @@ uv run python scripts/cloud/drive_desktop_sync.py `
 ```
 
 Add `--apply` only after the dry-run copy plan is correct.
+
+## Godot synthetic CV smoke
+
+After the template contract exists, run one tiny Godot export to prove the pipeline can create real
+PNG frames and YOLO labels:
+
+```powershell
+uv run python scripts/render/godot_synthetic_cv_smoke.py `
+  --dataset-id SYNTH-CV-GODOT-SMOKE `
+  --output-root data/processed/cv_yolo `
+  --force
+```
+
+This is a smoke dataset, not a training dataset. It exists to verify the data shape before we build
+the full SUMO trace → Godot 3D render → YOLO dataset exporter.
