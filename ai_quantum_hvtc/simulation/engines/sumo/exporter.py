@@ -22,6 +22,7 @@ class SumoExportPaths:
     summary: Path
     edge_data: Path
     fcd: Path
+    controller_log: Path
 
 
 def export_sumo_project(
@@ -50,12 +51,13 @@ def export_sumo_project(
         summary=work_dir / "summary.xml",
         edge_data=work_dir / "edge_data.xml",
         fcd=work_dir / "fcd.xml",
+        controller_log=work_dir / "controller_interventions.jsonl",
     )
     _write_nodes(spec, paths.nodes)
     _write_edges(spec, paths.edges)
     _write_routes(spec, scenario_id, paths.routes)
     _write_additional(spec, paths)
-    _write_config(spec, seed, paths)
+    _write_config(spec, controller_id, seed, paths)
     return paths
 
 
@@ -113,10 +115,11 @@ def _write_routes(spec: DistrictSpec, scenario_id: str, path: Path) -> None:
                 "accel": f"{vehicle_type.accel_mps2:.3f}",
                 "decel": f"{vehicle_type.decel_mps2:.3f}",
                 "minGap": f"{vehicle_type.min_gap_m:.3f}",
+                "tau": "5.0",
             },
         )
 
-    for flow in spec.flows.values():
+    for flow in sorted(spec.flows.values(), key=lambda item: (item.departure_start, item.flow_id)):
         route_by_type: dict[str, tuple[str, ...]] = {}
         for vehicle_type_id in flow.vehicle_mix:
             vehicle_type = spec.vehicle_types[vehicle_type_id]
@@ -175,7 +178,12 @@ def _write_additional(spec: DistrictSpec, paths: SumoExportPaths) -> None:
     _write_xml(root, paths.additional)
 
 
-def _write_config(spec: DistrictSpec, seed: int, paths: SumoExportPaths) -> None:
+def _write_config(
+    spec: DistrictSpec,
+    controller_id: str,
+    seed: int,
+    paths: SumoExportPaths,
+) -> None:
     root = ET.Element("configuration")
     input_node = ET.SubElement(root, "input")
     ET.SubElement(input_node, "net-file", {"value": paths.net.name})
@@ -187,15 +195,18 @@ def _write_config(spec: DistrictSpec, seed: int, paths: SumoExportPaths) -> None
     ET.SubElement(output_node, "tripinfo-output.write-unfinished", {"value": "true"})
     ET.SubElement(output_node, "summary-output", {"value": paths.summary.name})
     ET.SubElement(output_node, "fcd-output", {"value": paths.fcd.name})
+    ET.SubElement(output_node, "fcd-output.skip-empty", {"value": "true"})
 
     time_node = ET.SubElement(root, "time")
     ET.SubElement(time_node, "begin", {"value": "0"})
     ET.SubElement(time_node, "end", {"value": str(spec.metadata.horizon_seconds)})
-    ET.SubElement(time_node, "step-length", {"value": str(spec.metadata.time_step_seconds)})
+    ET.SubElement(
+        time_node, "step-length", {"value": "5" if controller_id == "rule_based" else "1"}
+    )
 
     processing_node = ET.SubElement(root, "processing")
     ET.SubElement(processing_node, "ignore-route-errors", {"value": "true"})
-    ET.SubElement(processing_node, "time-to-teleport", {"value": "-1"})
+    ET.SubElement(processing_node, "time-to-teleport", {"value": "300"})
 
     random_node = ET.SubElement(root, "random_number")
     ET.SubElement(random_node, "seed", {"value": str(seed)})

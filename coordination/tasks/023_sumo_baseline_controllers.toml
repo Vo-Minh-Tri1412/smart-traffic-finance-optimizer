@@ -1,0 +1,40 @@
+id = "023_sumo_baseline_controllers"
+owner = "integrator"
+branch = "main"
+base_commit = "9217c8b0e89541cd1473692f4efbbad3c703e38f"
+allowed_paths = [
+  "coordination/tasks/023_sumo_baseline_controllers.toml",
+  "ai_quantum_hvtc/simulation/engines/sumo/**",
+  "tests/integration/sumo/**",
+  "tests/integration/cli/**",
+]
+dependencies = ["022_sumo_backend_v1_metrics_trace"]
+acceptance_commands = [
+  "uv run python -m ai_quantum_hvtc simulate run --engine sumo --spec tests/fixtures/specs/minh_khai_district_v1.json --scenario hospital_emergency --controller rule_based --out <tmp> --trace-out <tmp>",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/023_sumo_baseline_controllers.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added SUMO fixed-time vs conservative rule-based baseline support, including a TraCI-controlled rule-based runner, controller intervention logs, a clear rl_policy placeholder error, and stable SUMO timing settings for controller runs."
+validation = [
+  "uv run python -m ai_quantum_hvtc simulate run --engine sumo --spec tests/fixtures/specs/minh_khai_district_v1.json --scenario hospital_emergency --controller rule_based --out <tmp> --trace-out <tmp>",
+  "uv run python -m ai_quantum_hvtc simulate run --engine sumo --spec tests/fixtures/specs/minh_khai_district_v1.json --scenario normal_weekday --controller rl_policy --out <tmp> returned exit code 1 with a clear placeholder message",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/023_sumo_baseline_controllers.toml --changed-file <5 changed files>",
+]
+risks = [
+  "The rule-based controller is a conservative baseline, not a guarantee of improvement over fixed-time on every scenario.",
+  "TraCI-based control is slower than pure SUMO binary runs; large future maps may need libsumo or scenario subsets for CI.",
+]
+next_steps = [
+  "Downgrade reference backend defaults/docs/tests now that SUMO run and rule-based paths are available.",
+  "Later calibrate rule-based heuristics after the district map and reward/public-value assumptions are finalized.",
+]

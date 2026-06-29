@@ -6,6 +6,7 @@ from pathlib import Path
 from ai_quantum_hvtc.simulation.domain import DistrictSpec
 from ai_quantum_hvtc.simulation.engines.base import SimulationEngine
 from ai_quantum_hvtc.simulation.engines.sumo.config import SumoRuntimeConfig
+from ai_quantum_hvtc.simulation.engines.sumo.errors import SumoRuntimeError
 from ai_quantum_hvtc.simulation.engines.sumo.exporter import export_sumo_project
 from ai_quantum_hvtc.simulation.engines.sumo.parser import parse_sumo_result
 from ai_quantum_hvtc.simulation.engines.sumo.runner import run_sumo_pipeline
@@ -32,6 +33,10 @@ class SumoAdapter(SimulationEngine):
         controller_id: str,
         seed: int,
     ) -> SimulationResult:
+        if controller_id == "rl_policy":
+            raise SumoRuntimeError(
+                "SUMO RL training/evaluation is not implemented yet; use fixed_time or rule_based."
+            )
         if self._work_dir is not None:
             return self._run_in_work_dir(
                 spec=spec,
@@ -66,7 +71,7 @@ class SumoAdapter(SimulationEngine):
             seed=seed,
             work_dir=work_dir,
         )
-        run_sumo_pipeline(paths, self._runtime_config)
+        run_sumo_pipeline(paths, self._runtime_config, controller_id=controller_id)
         return parse_sumo_result(
             paths=paths,
             spec=spec,

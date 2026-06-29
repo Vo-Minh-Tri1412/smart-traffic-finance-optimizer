@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from ai_quantum_hvtc.simulation.engines.sumo import SumoAdapter
+from ai_quantum_hvtc.simulation.engines.sumo.errors import SumoRuntimeError
 from ai_quantum_hvtc.simulation.engines.sumo.exporter import export_sumo_project
 from ai_quantum_hvtc.simulation.engines.sumo.runner import has_sumo_runtime
 from ai_quantum_hvtc.simulation.specs import load_district_spec
@@ -30,6 +31,7 @@ def test_sumo_exporter_writes_xml_artifacts(tmp_path: Path) -> None:
     assert paths.config.is_file()
     assert paths.edge_data.name == "edge_data.xml"
     assert paths.fcd.name == "fcd.xml"
+    assert paths.controller_log.name == "controller_interventions.jsonl"
 
 
 @pytest.mark.skipif(not has_sumo_runtime(), reason="SUMO/netconvert runtime is not available")
@@ -49,3 +51,32 @@ def test_sumo_adapter_runs_when_runtime_is_available(tmp_path: Path) -> None:
     assert any(metric.delay_seconds > 0 for metric in result.intersections.values())
     assert result.vehicle_trace_frames
     assert "vehicles" in result.vehicle_trace_frames[0]
+
+
+@pytest.mark.skipif(not has_sumo_runtime(), reason="SUMO/netconvert runtime is not available")
+def test_sumo_rule_based_controller_runs_and_logs_interventions(tmp_path: Path) -> None:
+    spec = load_district_spec(SPEC_PATH)
+
+    result = SumoAdapter(work_dir=tmp_path).run(
+        spec=spec,
+        scenario_id="hospital_emergency",
+        controller_id="rule_based",
+        seed=42,
+    )
+
+    assert result.engine_id == "sumo"
+    assert result.controller_id == "rule_based"
+    assert result.total_vehicles > 0
+    assert (tmp_path / "controller_interventions.jsonl").is_file()
+
+
+def test_sumo_rl_policy_placeholder_fails_clearly(tmp_path: Path) -> None:
+    spec = load_district_spec(SPEC_PATH)
+
+    with pytest.raises(SumoRuntimeError, match="RL training/evaluation is not implemented yet"):
+        SumoAdapter(work_dir=tmp_path).run(
+            spec=spec,
+            scenario_id="normal_weekday",
+            controller_id="rl_policy",
+            seed=42,
+        )
