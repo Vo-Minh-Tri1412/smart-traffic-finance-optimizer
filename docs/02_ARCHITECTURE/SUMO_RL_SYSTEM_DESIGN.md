@@ -36,15 +36,14 @@ main environment unless the integrator explicitly changes this project decision.
 SUMO-RL provides a Gymnasium/PettingZoo-compatible interface for traffic signal control. SUMO itself
 must be installed as an external binary runtime.
 
-## State, action, reward, and public-value objective
+## Observation, action, reward, and public-value objective
 
-Initial state candidates:
+The canonical RL observation contract is [Observation Space v1](OBSERVATION_SPACE_V1.md). Do not
+define separate observation lists in other architecture documents.
 
-- queue length by incoming lane
-- waiting time by lane or approach
-- current traffic phase
-- elapsed time in current phase
-- emergency or event-demand flag, if scenario needs it
+In short, each controlled traffic light observes local queue/waiting pressure, downstream congestion
+risk, current signal phase, phase timing, emergency vehicles, bus/truck pressure, and coarse time
+context.
 
 Initial action space:
 
@@ -80,15 +79,33 @@ This avoids the weak pattern of building a smart-city demo and only adding econo
 The economics assumptions directly shape the scoring, scenario sensitivity, and investment
 recommendation.
 
-## Mini-city scope
+## Environment scope ladder
 
-The smoke test starts with a single intersection only to verify the runtime. The demo target should
-be a 2x2 or 3x3 mini-city network:
+The smoke test starts with a single intersection only to verify the runtime. The project-grade
+environment should grow through a scope ladder:
 
-- 2x2 = four signalized intersections connected as a small grid
-- each signal can be a separate SUMO-RL/PettingZoo agent
-- each intersection can receive a public-value score and budget priority
-- city-scale OpenStreetMap import remains future work after the mini-city pipeline is stable
+- **Smoke test:** one signalized intersection, used only to verify local SUMO/SUMO-RL installation.
+- **Debug prototype:** a 2x2 or 3x3 network if needed to isolate controller and metric bugs.
+- **Demo target:** a synthetic or hybrid public-service district with roughly 12-25 intersections,
+  multiple functional zones, road capacity differences, at least one bottleneck, hospital/emergency
+  priority routes, and candidate intersections for public investment.
+- **Stretch target:** an OpenStreetMap-inspired or OpenStreetMap-imported district after the synthetic
+  or hybrid pipeline is stable.
+
+The smoke test and any small grid are not the project. They only prove that the simulator stack works.
+The main demo should make the public-finance decision visible inside the simulation: not every
+intersection receives intelligent control, and the system must justify which intersections deserve
+investment first.
+
+See [Environment Design Research Plan](ENVIRONMENT_DESIGN_RESEARCH_PLAN.md) for the paper-design
+workflow and [Public-Service District Environment Spec](PUBLIC_SERVICE_DISTRICT_ENVIRONMENT_SPEC.md)
+for the concrete v1 district architecture.
+
+The district architecture is engine-independent by design. SUMO/SUMO-RL remains the default
+implementation target, but the team should not weaken the city, vehicle, demand, or public-finance
+model simply to fit a convenient tutorial map. If a required behavior cannot be expressed cleanly in
+SUMO, add an adapter/domain layer or record a new approved implementation decision before replacing
+the engine.
 
 ## Baselines
 

@@ -1,0 +1,40 @@
+id = "011_environment_design_research_plan"
+owner = "integrator"
+branch = "main"
+base_commit = "6023f9da015e9320c3b24f1655a5cd625bcc461b"
+allowed_paths = [
+  "coordination/tasks/011_environment_design_research_plan.toml",
+  "docs/02_ARCHITECTURE/ENVIRONMENT_DESIGN_RESEARCH_PLAN.md",
+  "docs/02_ARCHITECTURE/SUMO_RL_SYSTEM_DESIGN.md",
+]
+dependencies = ["010_clarify_public_finance_objective"]
+acceptance_commands = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/011_environment_design_research_plan.toml --changed-file coordination/tasks/011_environment_design_research_plan.toml --changed-file docs/02_ARCHITECTURE/ENVIRONMENT_DESIGN_RESEARCH_PLAN.md --changed-file docs/02_ARCHITECTURE/SUMO_RL_SYSTEM_DESIGN.md",
+]
+status = "handoff"
+
+[handoff]
+summary = "Created a paper-design research plan for a realistic SUMO/SUMO-RL public-service district environment and updated the system design scope ladder so 2x2/3x3 maps are treated as debug/fallback prototypes, not the main demo."
+validation = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/011_environment_design_research_plan.toml --changed-file coordination/tasks/011_environment_design_research_plan.toml --changed-file docs/02_ARCHITECTURE/ENVIRONMENT_DESIGN_RESEARCH_PLAN.md --changed-file docs/02_ARCHITECTURE/SUMO_RL_SYSTEM_DESIGN.md",
+]
+risks = [
+  "This task intentionally does not implement SUMO network files, demand files, controllers, RL training, or a final map.",
+  "The design plan uses official SUMO/SUMO-RL capabilities and a SUMO tutorial as planning evidence, but the future environment still needs feasibility review before coding.",
+  "OpenStreetMap import remains a stretch option because import and cleanup risk has not been tested in this task.",
+]
+next_steps = [
+  "Review the research plan with the team and decide whether v1 should be Hybrid/Synthetic Public-Service District as recommended.",
+  "Create a new task for the actual Environment Design Spec after approval; that task should still be paper design only unless explicitly expanded.",
+  "Only after the Environment Design Spec is reviewed, create implementation tasks for SUMO network, demand scenarios, baseline controllers, metrics, and RL control scope.",
+]

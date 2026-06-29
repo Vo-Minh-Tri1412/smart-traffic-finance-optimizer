@@ -6,7 +6,7 @@ from ai_quantum_hvtc.doctor import run_checks
 
 
 def test_doctor_passes_for_repository_scaffold() -> None:
-    root = Path(__file__).resolve().parents[1]
+    root = Path(__file__).resolve().parents[2]
 
     results = run_checks(root)
 
@@ -16,7 +16,7 @@ def test_doctor_passes_for_repository_scaffold() -> None:
 
 
 def test_doctor_reports_sumo_runtime_status() -> None:
-    results = run_checks(Path(__file__).resolve().parents[1])
+    results = run_checks(Path(__file__).resolve().parents[2])
 
     sumo_result = next(result for result in results if result.name == "sumo-binary")
 

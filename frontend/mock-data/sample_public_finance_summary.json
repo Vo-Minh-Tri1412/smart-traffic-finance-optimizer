@@ -1,0 +1,7 @@
+{
+  "budget_vnd": 1000000000,
+  "selected_candidates": ["C_HOSPITAL_ACCESS", "C_INDUSTRIAL_GATE"],
+  "total_cost_vnd": 1650000,
+  "total_net_public_value_vnd": 5400000,
+  "caveats": ["Demo-scale placeholder values; Economics team must review."]
+}

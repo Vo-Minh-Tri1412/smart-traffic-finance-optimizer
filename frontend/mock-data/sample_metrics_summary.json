@@ -1,0 +1,11 @@
+{
+  "scenario_id": "hospital_emergency",
+  "controller_id": "rule_based",
+  "engine_id": "reference",
+  "total_vehicles": 120,
+  "throughput": 118,
+  "average_waiting_time_seconds": 18.2,
+  "max_queue_vehicles": 7.5,
+  "emergency_delay_seconds": 4.1,
+  "truck_delay_seconds": 35.0
+}

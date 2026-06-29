@@ -1,0 +1,52 @@
+id = "015_architecture_refactor_sumo_frontend_scaffold"
+owner = "integrator"
+branch = "main"
+base_commit = "6023f9da015e9320c3b24f1655a5cd625bcc461b"
+allowed_paths = [
+  "coordination/tasks/015_architecture_refactor_sumo_frontend_scaffold.toml",
+  ".gitignore",
+  "ai_quantum_hvtc/**",
+  "simulation_projects/**",
+  "frontend/**",
+  "tests/**",
+]
+dependencies = ["014_simulation_system_mvp"]
+acceptance_commands = [
+  "uv sync --frozen",
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run python -m ai_quantum_hvtc simulate validate --spec simulation_projects/minh_khai_district_v1/specs/district_spec.json",
+  "uv run python -m ai_quantum_hvtc simulate run --engine reference --spec simulation_projects/minh_khai_district_v1/specs/district_spec.json --scenario normal_weekday --controller fixed_time --out simulation_projects/minh_khai_district_v1/outputs/run_normal_fixed_time.json",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/015_architecture_refactor_sumo_frontend_scaffold.toml",
+]
+status = "handoff"
+
+[handoff]
+summary = "Refactored the technical architecture into clearer backend domains, moved tests into unit/integration/smoke/fixtures layout, added a minimal real SUMO adapter package, added React-ready frontend contracts/mock data, added trace export for future UI replay, and added sensor/RL/pipeline scaffolding without adding heavy dependencies."
+validation = [
+  "uv sync --frozen",
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run python -m ai_quantum_hvtc simulate validate --spec simulation_projects/minh_khai_district_v1/specs/district_spec.json",
+  "uv run python -m ai_quantum_hvtc simulate run --engine reference --spec simulation_projects/minh_khai_district_v1/specs/district_spec.json --scenario normal_weekday --controller fixed_time --out simulation_projects/minh_khai_district_v1/outputs/run_normal_fixed_time.json",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest -> 25 passed",
+  "uv run pytest tests/integration/sumo/test_sumo_adapter.py -q -> 2 passed with local SUMO runtime",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/015_architecture_refactor_sumo_frontend_scaffold.toml --changed-file ... -> validated 85 changed files",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/015_architecture_refactor_sumo_frontend_scaffold.toml",
+]
+risks = [
+  "SUMO adapter is intentionally minimal: it exports graph/routes, runs headless SUMO, and parses basic trip metrics; SUMO-RL training is still a later task.",
+  "Reference trace export is aggregate replay data, not per-vehicle trajectory data; richer vehicle positions should come from SUMO outputs later.",
+  "React app dependencies are not installed yet; frontend folder contains contracts/docs/mock data only.",
+  "Pre-existing dirty docs and task manifests from tasks 011-014 were preserved and are outside this task's handoff evidence.",
+]
+next_steps = [
+  "Add SUMO-RL environment wrapper and baseline-vs-RL evaluation using the same spec/metric/trace contracts.",
+  "Generate richer SUMO trace frames with vehicle positions for the future React UI.",
+  "If the team wants the UI next, create a separate frontend task to add Vite/React and consume frontend/mock-data first.",
+]

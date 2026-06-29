@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PublicFinanceSummary",
+  "type": "object",
+  "required": [
+    "budget_vnd",
+    "selected_candidates",
+    "total_cost_vnd",
+    "total_net_public_value_vnd",
+    "caveats"
+  ],
+  "properties": {
+    "budget_vnd": {"type": "number"},
+    "selected_candidates": {"type": "array"},
+    "total_cost_vnd": {"type": "number"},
+    "total_net_public_value_vnd": {"type": "number"},
+    "caveats": {"type": "array"}
+  }
+}

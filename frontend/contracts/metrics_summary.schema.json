@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MetricsSummary",
+  "type": "object",
+  "required": [
+    "scenario_id",
+    "controller_id",
+    "engine_id",
+    "total_vehicles",
+    "throughput",
+    "average_waiting_time_seconds",
+    "max_queue_vehicles",
+    "emergency_delay_seconds",
+    "truck_delay_seconds"
+  ],
+  "properties": {
+    "scenario_id": {"type": "string"},
+    "controller_id": {"type": "string"},
+    "engine_id": {"type": "string"},
+    "total_vehicles": {"type": "integer"},
+    "throughput": {"type": "integer"},
+    "average_waiting_time_seconds": {"type": "number"},
+    "max_queue_vehicles": {"type": "number"},
+    "emergency_delay_seconds": {"type": "number"},
+    "truck_delay_seconds": {"type": "number"}
+  }
+}

@@ -1,0 +1,40 @@
+id = "012_public_service_district_environment_spec"
+owner = "integrator"
+branch = "main"
+base_commit = "6023f9da015e9320c3b24f1655a5cd625bcc461b"
+allowed_paths = [
+  "coordination/tasks/012_public_service_district_environment_spec.toml",
+  "docs/02_ARCHITECTURE/PUBLIC_SERVICE_DISTRICT_ENVIRONMENT_SPEC.md",
+  "docs/02_ARCHITECTURE/SUMO_RL_SYSTEM_DESIGN.md",
+]
+dependencies = ["011_environment_design_research_plan"]
+acceptance_commands = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/012_public_service_district_environment_spec.toml --changed-file coordination/tasks/012_public_service_district_environment_spec.toml --changed-file docs/02_ARCHITECTURE/PUBLIC_SERVICE_DISTRICT_ENVIRONMENT_SPEC.md --changed-file docs/02_ARCHITECTURE/SUMO_RL_SYSTEM_DESIGN.md",
+]
+status = "handoff"
+
+[handoff]
+summary = "Created a concrete Public-Service District Environment Spec v1 with 20 conceptual intersections, expanded zone/road/vehicle tags, OD-based trip purposes, route-choice logic, capacity/friction rules, controller/reward design, scenario library, public-finance interpretation, and recommended non-code exports for the Economics team. Updated the SUMO-RL system design to link the new spec and clarify that the architecture is engine-independent while SUMO/SUMO-RL remains the default implementation target."
+validation = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/012_public_service_district_environment_spec.toml --changed-file coordination/tasks/012_public_service_district_environment_spec.toml --changed-file docs/02_ARCHITECTURE/PUBLIC_SERVICE_DISTRICT_ENVIRONMENT_SPEC.md --changed-file docs/02_ARCHITECTURE/SUMO_RL_SYSTEM_DESIGN.md",
+]
+risks = [
+  "This is still an architecture/specification task only; it does not create SUMO files, code, routes, controllers, or RL training.",
+  "The spec intentionally designs beyond current SUMO convenience; implementation may need adapters, simplification, or a future approved custom component.",
+  "Economic weights, costs, and public-value assumptions are placeholders until reviewed or sourced by the Economics team.",
+]
+next_steps = [
+  "Export the recommended Vietnamese Docs/Sheets for the Economics team: zones, OD flows, vehicle/economic weights, scenarios, investment candidates, metric guide, finance assumptions, and policy Q&A.",
+  "Review the 20-intersection district concept and decide which parts are mandatory for v1 versus stretch.",
+  "Create separate manifests for implementation contracts only after OD flows, vehicle types, and scenario meanings are approved.",
+]

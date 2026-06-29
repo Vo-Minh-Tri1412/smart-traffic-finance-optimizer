@@ -1,0 +1,26 @@
+{
+  "metadata": {
+    "id": "minh_khai_district_v1",
+    "name": "Minh Khai Public-Service Economic District v1",
+    "version": "0.1.0",
+    "horizon_seconds": 7200,
+    "time_step_seconds": 30
+  },
+  "zones": [
+    {"id": "Z_HOSPITAL", "name": "General Hospital", "type": "HOSPITAL"},
+    {"id": "Z_INDUSTRIAL", "name": "Industrial Zone", "type": "INDUSTRIAL_ZONE"}
+  ],
+  "intersections": [
+    {"id": "I06", "name": "General Hospital Main Gate", "x": 1, "y": 1},
+    {"id": "I16", "name": "Factory Cluster", "x": 3, "y": 3}
+  ],
+  "roads": [
+    {"id": "R09", "from": "I06", "to": "I16", "lanes": 1}
+  ],
+  "vehicle_types": [],
+  "flows": [],
+  "scenarios": [],
+  "controllers": [],
+  "investment_candidates": [],
+  "finance_assumptions": {}
+}

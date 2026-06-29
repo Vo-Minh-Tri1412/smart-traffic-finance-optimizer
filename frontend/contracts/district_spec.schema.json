@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DistrictSpec",
+  "type": "object",
+  "required": ["metadata", "zones", "intersections", "roads", "flows", "scenarios"],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "required": ["id", "name", "version", "horizon_seconds", "time_step_seconds"]
+    },
+    "zones": {"type": "array"},
+    "intersections": {"type": "array"},
+    "roads": {"type": "array"},
+    "vehicle_types": {"type": "array"},
+    "flows": {"type": "array"},
+    "scenarios": {"type": "array"},
+    "controllers": {"type": "array"},
+    "investment_candidates": {"type": "array"},
+    "finance_assumptions": {"type": "object"}
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SimulationTraceFrame",
+  "type": "object",
+  "required": [
+    "timestep",
+    "time_seconds",
+    "district_id",
+    "scenario_id",
+    "controller_id",
+    "engine_id",
+    "traffic_lights",
+    "road_occupancy",
+    "intersection_queues",
+    "events",
+    "metrics"
+  ],
+  "properties": {
+    "timestep": {"type": "integer"},
+    "time_seconds": {"type": "number"},
+    "district_id": {"type": "string"},
+    "scenario_id": {"type": "string"},
+    "controller_id": {"type": "string"},
+    "engine_id": {"type": "string"},
+    "traffic_lights": {"type": "object"},
+    "road_occupancy": {"type": "array"},
+    "intersection_queues": {"type": "array"},
+    "events": {"type": "array"},
+    "metrics": {"type": "object"}
+  }
+}

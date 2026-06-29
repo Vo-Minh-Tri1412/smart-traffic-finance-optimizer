@@ -9,11 +9,22 @@ __pycache__/
 .env.*
 !.env.example
 
-artifacts/
-outputs/
-reports/
-models/
-sumo_runs/
+/artifacts/
+/outputs/
+/reports/
+/models/
+/sumo_runs/
+!simulation_projects/
+!simulation_projects/**/
+!simulation_projects/**/outputs/
+!simulation_projects/**/reports/
+!simulation_projects/**/sumo_generated/
+simulation_projects/**/outputs/*
+simulation_projects/**/reports/*
+simulation_projects/**/sumo_generated/*
+!simulation_projects/**/outputs/.gitkeep
+!simulation_projects/**/reports/.gitkeep
+!simulation_projects/**/sumo_generated/.gitkeep
 
 # Keep real/local datasets out of Git, but allow neutral templates.
 data/**
