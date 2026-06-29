@@ -390,7 +390,12 @@ Supporting folders:
 ```text
 configs/                  # local/cloud config examples
 data/catalog/             # dataset/run/model-card templates
-docs/                     # architecture, team guides, competition notes
+docs/README.md            # canonical documentation index and reading order
+docs/01_PROJECT_BRIEF/    # product direction and public-finance problem framing
+docs/02_ARCHITECTURE/     # SUMO-RL, data workflow, sensors, Godot renderer contracts
+docs/03_COMPETITION/      # AI Quantum HVTC competition facts
+docs/04_WEEKLY_PLANS/     # weekly planning snapshots
+docs/05_TEAM_GUIDES/      # CS/economics collaboration guides
 frontend/                 # future React contract and mock-data layer
 notebooks/                # Colab/Kaggle entrypoints
 simulation_projects/      # district specs and generated-output placeholders

@@ -155,6 +155,7 @@ def check_skill_files(root: Path) -> CheckResult:
 
 def check_project_direction(root: Path) -> CheckResult:
     required_docs = [
+        root / "docs" / "README.md",
         root / "docs" / "01_PROJECT_BRIEF" / "SMART_TRAFFIC_PUBLIC_FINANCE.md",
         root / "docs" / "02_ARCHITECTURE" / "SUMO_RL_SYSTEM_DESIGN.md",
         root / "docs" / "03_COMPETITION" / "AI_QUANTUM_HVTC_FACTS.md",

@@ -21,5 +21,5 @@ Reason:
 - Their useful outcomes were folded into the current docs, Drive workspace, data templates, and
   SUMO-RL project governance.
 
-Current agents should read `coordination/tasks/README.md`, `AGENTS.md`, and
+Current agents should read `coordination/tasks/README.md`, `AGENTS.md`, `docs/README.md`, and
 `docs/01_PROJECT_BRIEF/SMART_TRAFFIC_PUBLIC_FINANCE.md` first.

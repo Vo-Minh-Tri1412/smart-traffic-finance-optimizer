@@ -1,0 +1,40 @@
+id = "021_project_docs_cleanup"
+owner = "integrator"
+branch = "main"
+base_commit = "c4116a712c1756abe5ddf1533a871ad880f47ca5"
+allowed_paths = [
+  "coordination/tasks/021_project_docs_cleanup.toml",
+  "README.md",
+  "docs/**",
+  "ai_quantum_hvtc/doctor.py",
+  "coordination/archive/README.md",
+]
+dependencies = ["020_godot_synthetic_cv_smoke"]
+acceptance_commands = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/021_project_docs_cleanup.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Cleaned documentation navigation by adding a canonical docs index, clarifying the README repository layout, updating doctor checks to include docs/README.md, and removing empty duplicate local docs folders."
+validation = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/021_project_docs_cleanup.toml --changed-file <5 changed files>",
+]
+risks = [
+  "Historical task manifests still reference the docs paths that existed when those tasks were created; they were not rewritten to preserve task history.",
+  "This cleanup did not rename tracked docs folders because doing so would create noisy path churn without improving current implementation safety.",
+]
+next_steps = [
+  "Use docs/README.md as the first docs entrypoint for future agents and teammates.",
+  "If a larger docs migration is needed later, do it as a dedicated path-migration task with link updates.",
+]
