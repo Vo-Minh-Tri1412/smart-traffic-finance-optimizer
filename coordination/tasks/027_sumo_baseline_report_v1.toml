@@ -1,0 +1,48 @@
+id = "027_sumo_baseline_report_v1"
+owner = "integrator"
+branch = "main"
+base_commit = "617007d59edfa1c92df9163c538416f28754ac75"
+allowed_paths = [
+  "coordination/tasks/027_sumo_baseline_report_v1.toml",
+  "ai_quantum_hvtc/simulation/metrics/schema.py",
+  "ai_quantum_hvtc/simulation/engines/sumo/exporter.py",
+  "ai_quantum_hvtc/simulation/engines/sumo/runner.py",
+  "ai_quantum_hvtc/simulation/engines/sumo/parser.py",
+  "ai_quantum_hvtc/simulation/cli.py",
+  "ai_quantum_hvtc/reports/**",
+  "tests/unit/reports/**",
+  "tests/integration/cli/**",
+  "tests/integration/sumo/**",
+]
+dependencies = ["023_sumo_baseline_controllers", "024_reference_backend_downgrade"]
+acceptance_commands = [
+  "uv run python -m ai_quantum_hvtc simulate compare-baselines --engine sumo --spec tests/fixtures/specs/minh_khai_district_v1.json --scenario normal_weekday --controllers fixed_time,rule_based --out <tmp> --report <tmp> --sumo-work-dir <tmp>",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/027_sumo_baseline_report_v1.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added a baseline comparison workflow: fixed_time remains the static SUMO baseline, rule_based uses SUMO actuated traffic lights as the first non-RL baseline, and simulate compare-baselines now exports CSV + Markdown reports for technical controller comparison."
+validation = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run python -m ai_quantum_hvtc simulate compare-baselines --engine sumo --spec tests/fixtures/specs/minh_khai_district_v1.json --scenario normal_weekday --controllers fixed_time,rule_based --out <tmp> --report <tmp> --sumo-work-dir <tmp>",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/027_sumo_baseline_report_v1.toml",
+]
+risks = [
+  "rule_based is a standard actuated-light baseline from SUMO, not a learned AI policy and not a final product claim.",
+  "A baseline can lose to fixed_time on some scenarios; the report preserves that result instead of hiding it.",
+  "The current fixture map is still a technical test map, not the final district designed with Economics.",
+]
+next_steps = [
+  "Use compare-baselines on the final district scenarios once Economics locks scenario/reward/public-value assumptions.",
+  "Add RL training/evaluation only after the observation/action/reward contracts are final enough.",
+  "Connect SUMO trace replay to Godot when the visible demo path becomes the priority.",
+]

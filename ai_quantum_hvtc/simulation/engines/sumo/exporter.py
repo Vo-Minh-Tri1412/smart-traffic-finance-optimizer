@@ -200,9 +200,7 @@ def _write_config(
     time_node = ET.SubElement(root, "time")
     ET.SubElement(time_node, "begin", {"value": "0"})
     ET.SubElement(time_node, "end", {"value": str(spec.metadata.horizon_seconds)})
-    ET.SubElement(
-        time_node, "step-length", {"value": "5" if controller_id == "rule_based" else "1"}
-    )
+    ET.SubElement(time_node, "step-length", {"value": "1"})
 
     processing_node = ET.SubElement(root, "processing")
     ET.SubElement(processing_node, "ignore-route-errors", {"value": "true"})

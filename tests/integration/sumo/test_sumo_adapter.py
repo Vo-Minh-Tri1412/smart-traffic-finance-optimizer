@@ -54,7 +54,7 @@ def test_sumo_adapter_runs_when_runtime_is_available(tmp_path: Path) -> None:
 
 
 @pytest.mark.skipif(not has_sumo_runtime(), reason="SUMO/netconvert runtime is not available")
-def test_sumo_rule_based_controller_runs_and_logs_interventions(tmp_path: Path) -> None:
+def test_sumo_rule_based_controller_runs_and_writes_controller_log(tmp_path: Path) -> None:
     spec = load_district_spec(SPEC_PATH)
 
     result = SumoAdapter(work_dir=tmp_path).run(
@@ -67,6 +67,7 @@ def test_sumo_rule_based_controller_runs_and_logs_interventions(tmp_path: Path) 
     assert result.engine_id == "sumo"
     assert result.controller_id == "rule_based"
     assert result.total_vehicles > 0
+    assert result.controller_interventions >= 0
     assert (tmp_path / "controller_interventions.jsonl").is_file()
 
 

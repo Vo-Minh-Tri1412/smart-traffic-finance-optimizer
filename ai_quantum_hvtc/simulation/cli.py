@@ -8,11 +8,14 @@ from pathlib import Path
 from ai_quantum_hvtc.policy import optimize_exact, optimize_greedy, qubo_matrix
 from ai_quantum_hvtc.public_finance import score_candidates
 from ai_quantum_hvtc.reports import (
+    baseline_comparison_rows,
+    baseline_comparison_to_csv,
     candidate_scores_to_csv,
     load_candidate_options_from_csv,
     result_to_json,
     result_to_trace_jsonl,
     selected_options_to_csv,
+    write_baseline_comparison_report,
     write_markdown_report,
 )
 from ai_quantum_hvtc.simulation.engines import ReferenceGraphEngine, SimulationEngine, SumoAdapter
@@ -36,6 +39,14 @@ def _sumo_work_dir(base_dir: str | None, *, scenario_id: str, controller_id: str
 
 def _parse_controllers(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def _dedupe_controllers(controllers: list[str]) -> list[str]:
+    deduped: list[str] = []
+    for controller_id in controllers:
+        if controller_id not in deduped:
+            deduped.append(controller_id)
+    return deduped
 
 
 def _expanded_paths(patterns: list[str]) -> list[Path]:
@@ -98,7 +109,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
 
 def _cmd_compare(args: argparse.Namespace) -> int:
     spec = load_district_spec(args.spec)
-    controllers = _parse_controllers(args.controllers)
+    controllers = _dedupe_controllers(_parse_controllers(args.controllers))
     if "fixed_time" not in controllers:
         controllers = ["fixed_time", *controllers]
 
@@ -150,6 +161,41 @@ def _cmd_compare(args: argparse.Namespace) -> int:
     if args.report:
         write_markdown_report(result=latest_result, scores=all_scores, path=Path(args.report))
     print(f"wrote {len(all_scores)} candidate score rows to {args.out}")
+    return 0
+
+
+def _cmd_compare_baselines(args: argparse.Namespace) -> int:
+    spec = load_district_spec(args.spec)
+    controllers = _dedupe_controllers(_parse_controllers(args.controllers))
+    if "fixed_time" not in controllers:
+        controllers = ["fixed_time", *controllers]
+
+    results = []
+    for controller_id in controllers:
+        try:
+            result = _engine(
+                args.engine,
+                sumo_work_dir=_sumo_work_dir(
+                    args.sumo_work_dir,
+                    scenario_id=args.scenario,
+                    controller_id=controller_id,
+                ),
+            ).run(
+                spec=spec,
+                scenario_id=args.scenario,
+                controller_id=controller_id,
+                seed=args.seed,
+            )
+        except SumoRuntimeError as exc:
+            print(f"[FAIL] {exc}")
+            return 1
+        results.append(result)
+
+    rows = baseline_comparison_rows(results)
+    baseline_comparison_to_csv(rows, Path(args.out))
+    if args.report:
+        write_baseline_comparison_report(rows, Path(args.report))
+    print(f"wrote {len(rows)} baseline comparison row(s) to {args.out}")
     return 0
 
 
@@ -226,6 +272,29 @@ def build_parser() -> argparse.ArgumentParser:
         help="Keep SUMO artifacts under this directory when --engine sumo is used.",
     )
     compare_parser.set_defaults(func=_cmd_compare)
+
+    baseline_parser = subparsers.add_parser(
+        "compare-baselines",
+        help="Compare fixed-time/rule-based technical baseline metrics.",
+    )
+    baseline_parser.add_argument("--spec", required=True)
+    baseline_parser.add_argument("--scenario", required=True)
+    baseline_parser.add_argument("--controllers", default="fixed_time,rule_based")
+    baseline_parser.add_argument(
+        "--engine",
+        default="sumo",
+        choices=["sumo", "reference"],
+        help="Simulation backend. Use sumo for project runs; reference is validation-only.",
+    )
+    baseline_parser.add_argument("--seed", type=int, default=42)
+    baseline_parser.add_argument("--out", required=True)
+    baseline_parser.add_argument("--report", default=None)
+    baseline_parser.add_argument(
+        "--sumo-work-dir",
+        default=None,
+        help="Keep SUMO artifacts under this directory when --engine sumo is used.",
+    )
+    baseline_parser.set_defaults(func=_cmd_compare_baselines)
 
     optimize_parser = subparsers.add_parser(
         "optimize-investment",

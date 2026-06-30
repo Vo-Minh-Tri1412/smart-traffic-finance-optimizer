@@ -33,6 +33,7 @@ class SimulationResult:
     truck_delay_seconds: float
     reroute_count: int
     failed_route_count: int
+    controller_interventions: int = 0
     intersections: dict[str, IntersectionMetric] = field(default_factory=dict)
     vehicle_trace_frames: list[dict[str, Any]] = field(default_factory=list, repr=False)
 

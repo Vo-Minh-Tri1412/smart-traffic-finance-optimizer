@@ -89,6 +89,7 @@ def parse_sumo_result(
         truck_delay_seconds=round(truck_delay, 3),
         reroute_count=0,
         failed_route_count=0,
+        controller_interventions=_controller_intervention_count(paths),
         intersections=intersections,
         vehicle_trace_frames=_fcd_trace_frames(
             paths=paths,
@@ -105,6 +106,13 @@ def _tripinfo_rows(paths: SumoExportPaths) -> list[dict[str, str]]:
         return []
     tree = ET.parse(paths.tripinfo)
     return [dict(element.attrib) for element in tree.getroot().iter("tripinfo")]
+
+
+def _controller_intervention_count(paths: SumoExportPaths) -> int:
+    if not paths.controller_log.is_file():
+        return 0
+    with paths.controller_log.open("r", encoding="utf-8") as handle:
+        return sum(1 for line in handle if line.strip())
 
 
 def _float_attr(row: dict[str, str], key: str, default: float = 0.0) -> float:

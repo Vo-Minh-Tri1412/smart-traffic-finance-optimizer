@@ -40,6 +40,35 @@ def test_simulate_reference_validation_backend_still_writes_aggregate_trace(
     assert trace.read_text(encoding="utf-8").strip()
 
 
+def test_simulate_compare_baselines_writes_csv_and_markdown(tmp_path: Path) -> None:
+    out = tmp_path / "baseline.csv"
+    report = tmp_path / "baseline.md"
+
+    exit_code = main(
+        [
+            "compare-baselines",
+            "--engine",
+            "reference",
+            "--spec",
+            str(SPEC_PATH),
+            "--scenario",
+            "normal_weekday",
+            "--controllers",
+            "fixed_time,rule_based",
+            "--out",
+            str(out),
+            "--report",
+            str(report),
+        ]
+    )
+
+    assert exit_code == 0
+    assert out.is_file()
+    assert report.is_file()
+    assert "waiting_time_saved_vs_fixed_seconds" in out.read_text(encoding="utf-8")
+    assert "Báo cáo baseline: normal_weekday" in report.read_text(encoding="utf-8")
+
+
 @pytest.mark.skipif(not has_sumo_runtime(), reason="SUMO/netconvert runtime is not available")
 def test_simulate_run_sumo_writes_real_vehicle_trace_and_keeps_artifacts(tmp_path: Path) -> None:
     out = tmp_path / "result.json"
