@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/replay/vehicle_base.gd" id="1_vehicle_base"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_vehicle"]
+size = Vector3(1, 1, 1)
+
+[node name="VehicleBase" type="Node3D"]
+script = ExtResource("1_vehicle_base")
+
+[node name="Body" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_vehicle")

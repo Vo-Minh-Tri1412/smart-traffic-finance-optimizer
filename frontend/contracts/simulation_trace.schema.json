@@ -8,12 +8,11 @@
     "district_id",
     "scenario_id",
     "controller_id",
-    "engine_id",
-    "traffic_lights",
-    "road_occupancy",
-    "intersection_queues",
-    "events",
-    "metrics"
+    "engine_id"
+  ],
+  "oneOf": [
+    {"required": ["vehicles"]},
+    {"required": ["traffic_lights", "road_occupancy", "intersection_queues", "events", "metrics"]}
   ],
   "properties": {
     "timestep": {"type": "integer"},
@@ -22,10 +21,31 @@
     "scenario_id": {"type": "string"},
     "controller_id": {"type": "string"},
     "engine_id": {"type": "string"},
+    "seed": {"type": "integer"},
+    "vehicles": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/vehicle"}
+    },
     "traffic_lights": {"type": "object"},
     "road_occupancy": {"type": "array"},
     "intersection_queues": {"type": "array"},
     "events": {"type": "array"},
     "metrics": {"type": "object"}
+  },
+  "$defs": {
+    "vehicle": {
+      "type": "object",
+      "required": ["vehicle_id", "vehicle_type", "x", "y", "speed", "angle"],
+      "properties": {
+        "vehicle_id": {"type": "string"},
+        "vehicle_type": {"type": "string"},
+        "x": {"type": "number"},
+        "y": {"type": "number"},
+        "speed": {"type": "number"},
+        "angle": {"type": "number"},
+        "lane_id": {"type": "string"},
+        "road_id": {"type": "string"}
+      }
+    }
   }
 }

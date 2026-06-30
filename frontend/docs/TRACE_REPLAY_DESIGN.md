@@ -9,20 +9,48 @@ backends, but they are not enough for a convincing Godot replay.
 
 ## Detailed vehicle replay frame
 
-Godot needs at least:
+Godot uses this vehicle-level frame as its primary replay input. It is produced from SUMO FCD-derived
+trace export and contains one frame per timestep:
 
-- `timestep` or `time_seconds`
+- `timestep`
+- `time_seconds`
 - `district_id`
 - `scenario_id`
 - `controller_id`
 - `engine_id`
-- `vehicle_id`
-- `vehicle_type`
-- `x`
-- `y`
-- `speed`
-- `angle`
-- `lane` or `road_id`
+- `vehicles`, where each vehicle has:
+  - `vehicle_id`
+  - `vehicle_type`
+  - `x`
+  - `y`
+  - `speed`
+  - `angle`
+  - `lane_id` or `road_id`
+
+Example:
+
+```json
+{
+  "timestep": 0,
+  "time_seconds": 0.0,
+  "district_id": "minh_khai_district_v1",
+  "scenario_id": "normal_weekday",
+  "controller_id": "fixed_time",
+  "engine_id": "sumo",
+  "vehicles": [
+    {
+      "vehicle_id": "F_MARKET_MORNING_DELIVERY_BIKE.0",
+      "vehicle_type": "DELIVERY_BIKE",
+      "x": 9.79,
+      "y": -4.8,
+      "speed": 10.54,
+      "angle": 90.0,
+      "lane_id": "R01_0",
+      "road_id": "R01"
+    }
+  ]
+}
+```
 
 Recommended extra fields:
 
@@ -49,9 +77,9 @@ React dashboards may also consume aggregate frames:
 
 ## Godot boundary
 
-Godot should not infer traffic physics. It should read trace frames, map SUMO coordinates into Godot
-world coordinates, instance scenes from `render/resources/configs/asset_manifest*.json`, and render
-camera outputs.
+Godot should not infer traffic physics. It should read vehicle-level trace frames, map SUMO
+coordinates into Godot world coordinates, instance scenes from
+`render/resources/configs/asset_manifest*.json`, and render camera outputs.
 
 If a trace only has aggregate metrics, Godot may show dashboard-style overlays, but it should not be
 presented as a full vehicle-level replay.

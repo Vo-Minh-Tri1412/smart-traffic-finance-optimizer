@@ -1,0 +1,47 @@
+id = "028_godot_sumo_trace_replay_v1"
+owner = "integrator"
+branch = "main"
+base_commit = "3aab7defc751b2f4c40db34667013f0330c858e2"
+allowed_paths = [
+  "coordination/tasks/028_godot_sumo_trace_replay_v1.toml",
+  "render/**",
+  "scripts/render/**",
+  "frontend/contracts/simulation_trace.schema.json",
+  "frontend/docs/TRACE_REPLAY_DESIGN.md",
+  "frontend/mock-data/sample_vehicle_simulation_trace.jsonl",
+  "tests/integration/cli/test_godot_sumo_trace_replay_cli.py",
+  "tests/integration/frontend_contracts/test_frontend_contracts.py",
+]
+dependencies = ["025_godot_render_scene_first_structure", "027_sumo_baseline_report_v1"]
+acceptance_commands = [
+  "uv run python -m ai_quantum_hvtc simulate run --engine sumo --spec tests/fixtures/specs/minh_khai_district_v1.json --scenario normal_weekday --controller fixed_time --out <tmp>/result.json --trace-out <tmp>/trace.jsonl",
+  "uv run python scripts/render/godot_sumo_trace_replay_smoke.py --trace <tmp>/trace.jsonl --spec tests/fixtures/specs/minh_khai_district_v1.json --output-root <tmp>/godot_replay --max-frames 60",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/028_godot_sumo_trace_replay_v1.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Implemented Godot SUMO vehicle-level trace replay v1: trace JSONL contract now supports vehicles, Godot has a 3D-lite Main scene with placeholder roads/intersections/vehicles, and a Python wrapper can generate or consume SUMO traces and run headless replay smoke validation."
+validation = [
+  "uv run python -m ai_quantum_hvtc simulate run --engine sumo --spec tests/fixtures/specs/minh_khai_district_v1.json --scenario normal_weekday --controller fixed_time --out <tmp>/result.json --trace-out <tmp>/trace.jsonl",
+  "uv run python scripts/render/godot_sumo_trace_replay_smoke.py --trace <tmp>/trace.jsonl --spec tests/fixtures/specs/minh_khai_district_v1.json --output-root <tmp>/godot_replay --max-frames 60",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/028_godot_sumo_trace_replay_v1.toml",
+]
+risks = [
+  "Replay visuals are intentionally placeholder 3D-lite assets; this is not final demo art.",
+  "Replay is offline from exported trace files, not realtime SUMO-Godot synchronization.",
+  "The current world builder draws straight road placeholders from the district spec and does not yet render lanes, traffic lights, buildings, trees, or camera exports.",
+]
+next_steps = [
+  "Open render/scenes/main/Main.tscn in Godot and visually inspect the replay scene.",
+  "Add real vehicle/road/building assets and traffic-light visuals after the replay bridge is stable.",
+  "Later connect replay frames to synthetic CV dataset export when the camera and asset pipeline are ready.",
+]

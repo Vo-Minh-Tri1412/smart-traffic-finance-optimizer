@@ -13,8 +13,8 @@ renders them as scenes.
 - Godot AI MCP plugin installed under `addons/godot_ai`.
 - Codex is configured through the Godot AI MCP server.
 - Tiny headless smoke exporter exists under `scripts/dataset_export/`.
-- Final district scene, assets, replay controller, and camera export pipeline are not implemented
-  yet.
+- SUMO vehicle-level trace replay v1 exists with placeholder 3D vehicles and roads.
+- Final polished assets and camera export pipeline are not implemented yet.
 
 ## Scene-first architecture
 
@@ -86,6 +86,39 @@ Godot script:
 ```text
 res://scripts/dataset_export/export_synthetic_cv_smoke.gd
 ```
+
+## SUMO trace replay v1
+
+The replay scene is intentionally 3D-lite. It proves the SUMO-to-Godot bridge before the team spends
+time on nice assets.
+
+Main scene:
+
+```text
+res://scenes/main/Main.tscn
+```
+
+Headless smoke wrapper:
+
+```powershell
+uv run python scripts/render/godot_sumo_trace_replay_smoke.py `
+  --trace path/to/trace.jsonl `
+  --spec ../tests/fixtures/specs/minh_khai_district_v1.json `
+  --output-root outputs/godot_replay `
+  --max-frames 60
+```
+
+If `--trace` is omitted, the wrapper generates a fixture SUMO trace first. The output is
+`replay_summary.json`; generated outputs remain ignored by Git.
+
+Implemented v1 pieces:
+
+- `TraceReplayData`: loads vehicle-level JSONL trace frames.
+- `CoordinateMapper`: maps SUMO meter coordinates into Godot `x/z` world coordinates.
+- `TraceReplayController`: spawns, updates, and despawns placeholder vehicles.
+- `DistrictReplayWorld`: builds simple road/intersection placeholders from the district spec.
+
+This is not realtime SUMO ↔ Godot sync. SUMO still runs first; Godot replays exported trace frames.
 
 ## Do not commit generated outputs
 
