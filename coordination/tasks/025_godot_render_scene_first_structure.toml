@@ -1,0 +1,44 @@
+id = "025_godot_render_scene_first_structure"
+owner = "integrator"
+branch = "main"
+base_commit = "c473314df0b071afb6933fbebd6d9cade9ab8ec6"
+allowed_paths = [
+  "coordination/tasks/025_godot_render_scene_first_structure.toml",
+  ".gitignore",
+  "README.md",
+  "docs/02_ARCHITECTURE/GODOT_SYNTHETIC_CV_SMOKE.md",
+  "docs/02_ARCHITECTURE/SYNTHETIC_VISUAL_SENSOR_DATASET.md",
+  "frontend/docs/TRACE_REPLAY_DESIGN.md",
+  "render/**",
+  "scripts/render/godot_synthetic_cv_smoke.py",
+]
+dependencies = ["024_reference_backend_downgrade"]
+acceptance_commands = [
+  "uv run python scripts/render/godot_synthetic_cv_smoke.py --help",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/025_godot_render_scene_first_structure.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Organized render/ as the official Godot scene-first visual replay and synthetic sensor app without renaming the existing Godot project. Added scene/script/resource/imported asset/output folders, example asset/camera/label/render configs, moved the smoke export script under scripts/dataset_export, and updated README/docs to describe SUMO-to-Godot replay boundaries."
+validation = [
+  "uv run python scripts/render/godot_synthetic_cv_smoke.py --help",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/025_godot_render_scene_first_structure.toml",
+]
+risks = [
+  "The folder structure and config examples are architecture scaffolding only; no final Godot district scene or SUMO trace replay controller is implemented yet.",
+  "The current smoke exporter still renders a tiny static synthetic sample, not a full 3D district replay.",
+]
+next_steps = [
+  "Implement TraceReplayController and CoordinateMapper in render/scripts/replay/ once the SUMO trace contract is stable enough for Godot.",
+  "Create placeholder VehicleBase, TrafficLight, DistrictWorld, and DetectionCamera scenes before adding real art assets.",
+  "Connect SUMO FCD trace exports to Godot replay and then to synthetic YOLO dataset export.",
+]

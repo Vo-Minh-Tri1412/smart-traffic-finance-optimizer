@@ -46,3 +46,14 @@ data/**
 !data/catalog/*.template.csv
 !data/catalog/*.template.md
 !data/catalog/*.template.json
+
+# Godot editor cache and generated render outputs stay out of Git.
+render/.godot/
+render/generated/
+render/exports/
+render/screenshots/
+render/datasets/
+render/videos/
+render/captures/
+render/outputs/*
+!render/outputs/.gitkeep

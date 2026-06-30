@@ -34,8 +34,9 @@ for sensor realism:
    controllers.
 3. **Public-finance optimizer layer**: budget-constrained selection of intersections using exact,
    greedy, robust, and future QUBO/quantum-compatible formulations.
-4. **Synthetic visual sensor layer**: a future Godot 3D renderer that turns SUMO/SUMO-RL vehicle
-   trajectories into camera-like frames, YOLO labels, weather/noise variants, and demo video.
+4. **Synthetic visual sensor layer**: a Godot 3D render workspace that will turn SUMO/SUMO-RL
+   vehicle trajectories into camera-like frames, YOLO labels, weather/noise variants, and demo
+   video.
 
 The current repository is a technical scaffold. It contains the simulation architecture, SUMO
 adapter scaffold, frontend contracts, Drive-backed data/artifact workflow, and notebook entrypoints.
@@ -184,9 +185,10 @@ while SUMO provides ground truth for measuring sensor error. The RL controller d
 from pixels in v1; it can train from SUMO-RL state observations while the Godot/YOLO layer supports
 deployment-style sensing, robustness checks, and a more convincing demo.
 
-Godot 3D should initially be scoped as a lightweight synthetic renderer:
+Godot 3D is scoped as a lightweight scene-first synthetic renderer:
 
 - low-poly public-service district, not photorealistic open-world simulation;
+- reusable Godot scenes for world objects, vehicles, cameras, traffic lights, and UI panels;
 - fixed traffic cameras near hospitals, schools, industrial gates, bottlenecks, and arterial roads;
 - vehicle assets for motorbike, car, bus, truck, ambulance, and worker shuttle;
 - day/night/rain/noise variants for domain randomization;
@@ -194,9 +196,10 @@ Godot 3D should initially be scoped as a lightweight synthetic renderer:
 - generated frames, videos, labels, and model artifacts stored in Google Drive, not Git.
 
 Godot must not silently replace SUMO-RL. It is a visual/sensor layer that consumes simulation traces.
-If the project later uses Godot AI MCP tooling, that tooling is an implementation accelerator only;
-the repository should remain understandable and runnable without requiring an agent-specific MCP
-session.
+The `render/` folder is the Godot project. It is organized as a scene-first app with `scenes/`,
+`scripts/`, `resources/`, `imported_assets/`, and ignored local `outputs/`. If the project uses
+Godot AI MCP tooling, that tooling is an implementation accelerator only; the repository should
+remain understandable and runnable without requiring an agent-specific MCP session.
 
 ## The three model layers
 
@@ -228,7 +231,8 @@ Current status:
 - `requirements-colab.txt` includes `ultralytics` and OpenCV for cloud training.
 - Local default `uv sync` does not install YOLO yet.
 - No real CV dataset or trained YOLO model is claimed.
-- Godot 3D synthetic camera rendering is an approved architecture direction, but not implemented yet.
+- Godot 3D render workspace structure exists under `render/`, but the final district replay scene
+  and dataset exporter are not implemented yet.
 
 ### 2. SUMO-RL traffic-control model
 
@@ -398,6 +402,7 @@ docs/04_WEEKLY_PLANS/     # weekly planning snapshots
 docs/05_TEAM_GUIDES/      # CS/economics collaboration guides
 frontend/                 # future React contract and mock-data layer
 notebooks/                # Colab/Kaggle entrypoints
+render/                   # Godot scene-first visual replay and synthetic sensor app
 simulation_projects/      # district specs and generated-output placeholders
 tests/                    # unit, integration, smoke, fixtures
 ```
@@ -495,6 +500,7 @@ The current scaffold does not claim:
 - a final trained RL policy;
 - a final trained YOLO detector;
 - an implemented Godot 3D renderer or generated synthetic camera dataset;
+- a completed Godot district scene or asset library;
 - real-world causal traffic savings;
 - real-world budget savings;
 - validated finance assumptions;

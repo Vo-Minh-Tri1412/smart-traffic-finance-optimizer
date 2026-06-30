@@ -6,7 +6,7 @@ The smoke exporter creates a tiny YOLO dataset by asking Godot to generate two s
 frames and matching labels:
 
 ```text
-Godot smoke scene
+Godot smoke script
   -> PNG frame for train
   -> PNG frame for val
   -> YOLO label files
@@ -53,6 +53,22 @@ uv run python scripts/cloud/drive_desktop_sync.py `
 ```
 
 Add `--apply` only after the dry-run copy plan is correct.
+
+## Godot-side location
+
+The Godot project lives in `render/` and is organized as a scene-first renderer. The current smoke
+export script is located at:
+
+```text
+render/scripts/dataset_export/export_synthetic_cv_smoke.gd
+```
+
+Future replay/dataset code should stay inside the purpose-specific folders:
+
+- `render/scenes/` for reusable Godot scenes;
+- `render/scripts/replay/` for SUMO trace replay;
+- `render/scripts/sensors/` for camera capture and label export;
+- `render/resources/configs/` for asset, camera, label, and render preset contracts.
 
 ## Caveat
 

@@ -1,0 +1,24 @@
+{
+  "version": "0.1",
+  "coordinate_system": "godot_3d_y_up",
+  "cameras": [
+    {
+      "camera_id": "CAM_HOSPITAL_GATE_01",
+      "purpose": "Emergency-route queue and priority-delay observation",
+      "position": {"x": 0.0, "y": 18.0, "z": 0.0},
+      "rotation_degrees": {"x": -60.0, "y": 0.0, "z": 0.0},
+      "resolution": {"width": 1280, "height": 720},
+      "target_intersections": ["I05"],
+      "enabled_for_dataset_export": true
+    },
+    {
+      "camera_id": "CAM_INDUSTRIAL_GATE_01",
+      "purpose": "Truck, worker-shuttle, and logistics congestion observation",
+      "position": {"x": 40.0, "y": 20.0, "z": -15.0},
+      "rotation_degrees": {"x": -55.0, "y": -25.0, "z": 0.0},
+      "resolution": {"width": 1280, "height": 720},
+      "target_intersections": ["I12"],
+      "enabled_for_dataset_export": true
+    }
+  ]
+}

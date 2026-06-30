@@ -23,7 +23,7 @@ shortcut.
 ```text
 SUMO/SUMO-RL run
   -> vehicle trajectories and traffic-light timeline
-  -> Godot 3D renderer
+  -> Godot 3D scene-first renderer
   -> camera frames + generated labels
   -> YOLO-format dataset
   -> train/evaluate vision model on Colab/Kaggle/cloud GPU
@@ -34,6 +34,17 @@ SUMO/SUMO-RL run
 The renderer is allowed to stay synthetic in early versions. Synthetic data is useful because it is
 aligned with the simulated district, can include weather/lighting perturbations, and avoids the
 awkward mismatch where a real-world dataset sees real cars while the demo city uses simple icons.
+
+The Godot project is intentionally organized as a real app under `render/`, not as a loose asset
+folder. Simulation vehicle types should map to Godot scenes through an asset manifest:
+
+```text
+vehicle_type = "ambulance"
+  -> render/resources/configs/asset_manifest*.json
+  -> res://scenes/vehicles/Ambulance.tscn
+  -> DetectionCamera captures rendered pixels
+  -> YOLO label exporter writes class id and bounding box
+```
 
 ## Dataset layout
 
@@ -128,9 +139,9 @@ image/label pairing and YOLO label ranges.
 ## What this does not solve yet
 
 - It does not train YOLO.
-- It does not export Godot frames yet.
+- It does not export final district replay frames yet.
 - It does not replace SUMO/SUMO-RL.
 - It does not claim synthetic data is equivalent to real traffic-camera footage.
 
-The goal of task 1 is simply to make future generated data manageable, testable, and easy to sync
-without polluting Git.
+The current smoke exporter only proves the PNG/label plumbing. The real dataset will come from SUMO
+trace replay inside the Godot district scene.

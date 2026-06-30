@@ -1,0 +1,25 @@
+{
+  "version": "0.1",
+  "purpose": "Map simulation object types to Godot scenes. These paths are contracts, not final art assets.",
+  "vehicle_scenes": {
+    "motorbike": "res://scenes/vehicles/Motorbike.tscn",
+    "car": "res://scenes/vehicles/Car.tscn",
+    "bus": "res://scenes/vehicles/Bus.tscn",
+    "truck": "res://scenes/vehicles/Truck.tscn",
+    "ambulance": "res://scenes/vehicles/Ambulance.tscn",
+    "worker_shuttle": "res://scenes/vehicles/WorkerShuttle.tscn",
+    "taxi_ride_hailing": "res://scenes/vehicles/TaxiRideHailing.tscn",
+    "delivery_bike": "res://scenes/vehicles/DeliveryBike.tscn"
+  },
+  "world_scenes": {
+    "main": "res://scenes/main/Main.tscn",
+    "district_world": "res://scenes/world/DistrictWorld.tscn",
+    "intersection": "res://scenes/world/Intersection.tscn",
+    "road_segment": "res://scenes/world/RoadSegment.tscn",
+    "traffic_light": "res://scenes/world/TrafficLight.tscn"
+  },
+  "fallbacks": {
+    "missing_vehicle_scene": "res://scenes/vehicles/VehicleBase.tscn",
+    "missing_world_scene": "res://scenes/world/PlaceholderWorldObject.tscn"
+  }
+}

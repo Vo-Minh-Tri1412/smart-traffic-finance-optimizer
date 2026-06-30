@@ -22,7 +22,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 DEFAULT_OUTPUT_ROOT = PROJECT_ROOT / "data" / "processed" / "cv_yolo"
 DEFAULT_GODOT_PROJECT = PROJECT_ROOT / "render"
-GODOT_SCRIPT = "res://scripts/export_synthetic_cv_smoke.gd"
+GODOT_SCRIPT = "res://scripts/dataset_export/export_synthetic_cv_smoke.gd"
 
 
 def build_parser() -> argparse.ArgumentParser:

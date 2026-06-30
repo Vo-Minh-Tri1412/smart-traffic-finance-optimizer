@@ -1,0 +1,21 @@
+{
+  "version": "0.1",
+  "presets": [
+    {
+      "preset_id": "day_clear_baseline",
+      "lighting": "day",
+      "weather": "clear",
+      "motion_blur": false,
+      "noise_level": 0.0,
+      "intended_use": "stable demo replay and baseline dataset export"
+    },
+    {
+      "preset_id": "night_rain_robustness",
+      "lighting": "night",
+      "weather": "rain",
+      "motion_blur": true,
+      "noise_level": 0.08,
+      "intended_use": "future sensor robustness testing"
+    }
+  ]
+}
