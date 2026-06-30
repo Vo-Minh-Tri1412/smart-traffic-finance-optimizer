@@ -1,0 +1,26 @@
+id = "031_sumo_geometry_import_for_godot"
+owner = "integrator"
+branch = "main"
+base_commit = "0c04f5e10829a3b6f29cbc73773f110659158c67"
+allowed_paths = [
+  "coordination/tasks/031_sumo_geometry_import_for_godot.toml",
+  "render/scripts/replay/coordinate_mapper.gd",
+  "render/scripts/replay/run_trace_replay_smoke.gd",
+  "render/scripts/replay/trace_replay_controller.gd",
+  "render/scripts/world/district_replay_world.gd",
+  "scripts/render/godot_sumo_trace_replay_smoke.py",
+  "tests/integration/cli/test_godot_sumo_trace_replay_cli.py",
+]
+dependencies = ["030_godot_to_district_spec_export"]
+acceptance_commands = [
+  "uv run python scripts/render/godot_sumo_trace_replay_smoke.py --trace <trace> --net <net> --output-root <tmp>/godot_replay --max-frames 60",
+  "uv run pytest tests/integration/cli/test_godot_sumo_trace_replay_cli.py",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/031_sumo_geometry_import_for_godot.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Updated Godot replay to render lanes/junctions from SUMO district.net.xml and use SUMO geometry bounds for vehicle mapping; replay summary now reports lane/off-lane metrics."
+validation = "SUMO net replay smoke passed with lane_count=157 and off_lane_vehicle_count=0; targeted pytest passed; full pytest: 43 passed."
+risks = "Visuals remain placeholder 3D-lite; this verifies geometry alignment, not final art quality."
+next_steps = "Use SUMO net geometry for replay previews before adding camera/CV export."

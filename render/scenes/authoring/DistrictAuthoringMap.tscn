@@ -1,0 +1,428 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/authoring/components/IntersectionMarker.tscn" id="1_intersection"]
+[ext_resource type="PackedScene" path="res://scenes/authoring/components/RoadSegment.tscn" id="2_road"]
+[ext_resource type="PackedScene" path="res://scenes/authoring/components/ZoneArea.tscn" id="3_zone"]
+[ext_resource type="PackedScene" path="res://scenes/authoring/components/SpawnPoint.tscn" id="4_spawn"]
+[ext_resource type="PackedScene" path="res://scenes/authoring/components/DestinationPoint.tscn" id="5_destination"]
+[ext_resource type="PackedScene" path="res://scenes/authoring/components/TrafficLightMarker.tscn" id="6_tls"]
+[ext_resource type="PackedScene" path="res://scenes/authoring/components/InvestmentCandidateMarker.tscn" id="7_candidate"]
+
+[node name="DistrictAuthoringMap" type="Node3D"]
+
+[node name="Intersections" type="Node3D" parent="."]
+
+[node name="GW_W" parent="Intersections" instance=ExtResource("1_intersection")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -500, 0, 500)
+intersection_id = "GW_W"
+display_name = "Cửa ngõ Tây"
+signalized = false
+tags = ["GATEWAY", "WEST_ENTRY"]
+
+[node name="I01" parent="Intersections" instance=ExtResource("1_intersection")]
+intersection_id = "I01"
+display_name = "Ngã tư dân cư"
+signalized = true
+tags = ["RESIDENTIAL_ACCESS", "CANDIDATE"]
+
+[node name="I02" parent="Intersections" instance=ExtResource("1_intersection")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 500, 0, 0)
+intersection_id = "I02"
+display_name = "Khu giải trí đêm"
+signalized = true
+tags = ["NIGHTLIFE_ACCESS", "CANDIDATE"]
+
+[node name="I03" parent="Intersections" instance=ExtResource("1_intersection")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1000, 0, 0)
+intersection_id = "I03"
+display_name = "Đường trục Đông Bắc"
+signalized = false
+tags = ["DISTRIBUTOR"]
+
+[node name="I04" parent="Intersections" instance=ExtResource("1_intersection")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 500)
+intersection_id = "I04"
+display_name = "Node phân phối dân cư"
+signalized = false
+tags = ["UNSIGNALIZED", "LOCAL_DISTRIBUTOR"]
+
+[node name="I05" parent="Intersections" instance=ExtResource("1_intersection")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 500, 0, 500)
+intersection_id = "I05"
+display_name = "Chợ trung tâm"
+signalized = true
+tags = ["MARKET_ACCESS", "BOTTLENECK", "CANDIDATE"]
+
+[node name="I06" parent="Intersections" instance=ExtResource("1_intersection")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1000, 0, 500)
+intersection_id = "I06"
+display_name = "Node phân phối công nghiệp"
+signalized = false
+tags = ["UNSIGNALIZED", "INDUSTRIAL_DISTRIBUTOR"]
+
+[node name="I07" parent="Intersections" instance=ExtResource("1_intersection")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1000)
+intersection_id = "I07"
+display_name = "Bệnh viện"
+signalized = true
+tags = ["HOSPITAL_ACCESS", "EMERGENCY_PRIORITY", "CANDIDATE"]
+
+[node name="I08" parent="Intersections" instance=ExtResource("1_intersection")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 500, 0, 1000)
+intersection_id = "I08"
+display_name = "Trường học"
+signalized = false
+tags = ["SCHOOL_ACCESS", "UNSIGNALIZED"]
+
+[node name="I09" parent="Intersections" instance=ExtResource("1_intersection")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1000, 0, 1000)
+intersection_id = "I09"
+display_name = "Cụm công nghiệp"
+signalized = true
+tags = ["INDUSTRIAL_ACCESS", "LOGISTICS", "CANDIDATE"]
+
+[node name="GW_E" parent="Intersections" instance=ExtResource("1_intersection")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1500, 0, 500)
+intersection_id = "GW_E"
+display_name = "Cửa ngõ Đông"
+signalized = false
+tags = ["GATEWAY", "EAST_ENTRY", "TRUCK_ROUTE"]
+
+[node name="Roads" type="Node3D" parent="."]
+
+[node name="R01_GW_W_I04" parent="Roads" instance=ExtResource("2_road")]
+road_id = "R01"
+from_intersection = "GW_W"
+to_intersection = "I04"
+bidirectional = true
+lanes = 3
+speed_kph = 50.0
+capacity = 1600.0
+tags = ["ARTERIAL", "GATEWAY"]
+
+[node name="R02_I04_I05" parent="Roads" instance=ExtResource("2_road")]
+road_id = "R02"
+from_intersection = "I04"
+to_intersection = "I05"
+bidirectional = true
+lanes = 2
+speed_kph = 40.0
+capacity = 1000.0
+tags = ["ARTERIAL"]
+
+[node name="R03_I05_I06" parent="Roads" instance=ExtResource("2_road")]
+road_id = "R03"
+from_intersection = "I05"
+to_intersection = "I06"
+bidirectional = true
+lanes = 2
+speed_kph = 35.0
+capacity = 850.0
+tags = ["BOTTLENECK", "MARKET_ACCESS"]
+
+[node name="R04_I06_GW_E" parent="Roads" instance=ExtResource("2_road")]
+road_id = "R04"
+from_intersection = "I06"
+to_intersection = "GW_E"
+bidirectional = true
+lanes = 3
+speed_kph = 55.0
+capacity = 1800.0
+tags = ["ARTERIAL", "TRUCK_ROUTE"]
+
+[node name="R05_I01_I02" parent="Roads" instance=ExtResource("2_road")]
+road_id = "R05"
+from_intersection = "I01"
+to_intersection = "I02"
+bidirectional = true
+lanes = 2
+speed_kph = 40.0
+capacity = 900.0
+tags = ["NIGHTLIFE_ACCESS"]
+
+[node name="R06_I02_I03" parent="Roads" instance=ExtResource("2_road")]
+road_id = "R06"
+from_intersection = "I02"
+to_intersection = "I03"
+bidirectional = true
+lanes = 2
+speed_kph = 45.0
+capacity = 1000.0
+tags = ["ARTERIAL"]
+
+[node name="R07_I07_I08" parent="Roads" instance=ExtResource("2_road")]
+road_id = "R07"
+from_intersection = "I07"
+to_intersection = "I08"
+bidirectional = true
+lanes = 2
+speed_kph = 30.0
+capacity = 750.0
+tags = ["HOSPITAL_ACCESS", "SCHOOL_ACCESS"]
+truck_allowed = false
+
+[node name="R08_I08_I09" parent="Roads" instance=ExtResource("2_road")]
+road_id = "R08"
+from_intersection = "I08"
+to_intersection = "I09"
+bidirectional = true
+lanes = 2
+speed_kph = 35.0
+capacity = 850.0
+tags = ["SCHOOL_ACCESS", "INDUSTRIAL_ACCESS"]
+
+[node name="R09_I01_I04" parent="Roads" instance=ExtResource("2_road")]
+road_id = "R09"
+from_intersection = "I01"
+to_intersection = "I04"
+bidirectional = true
+lanes = 2
+speed_kph = 35.0
+capacity = 800.0
+tags = ["LOCAL_STREET", "RESIDENTIAL_ACCESS"]
+truck_allowed = false
+
+[node name="R10_I04_I07" parent="Roads" instance=ExtResource("2_road")]
+road_id = "R10"
+from_intersection = "I04"
+to_intersection = "I07"
+bidirectional = true
+lanes = 2
+speed_kph = 35.0
+capacity = 900.0
+tags = ["HOSPITAL_ACCESS", "RESIDENTIAL_ACCESS"]
+
+[node name="R11_I02_I05" parent="Roads" instance=ExtResource("2_road")]
+road_id = "R11"
+from_intersection = "I02"
+to_intersection = "I05"
+bidirectional = true
+lanes = 2
+speed_kph = 40.0
+capacity = 950.0
+tags = ["MARKET_ACCESS", "NIGHTLIFE_ACCESS"]
+
+[node name="R12_I05_I08" parent="Roads" instance=ExtResource("2_road")]
+road_id = "R12"
+from_intersection = "I05"
+to_intersection = "I08"
+bidirectional = true
+lanes = 2
+speed_kph = 30.0
+capacity = 750.0
+tags = ["SCHOOL_ACCESS", "MARKET_ACCESS"]
+
+[node name="R13_I03_I06" parent="Roads" instance=ExtResource("2_road")]
+road_id = "R13"
+from_intersection = "I03"
+to_intersection = "I06"
+bidirectional = true
+lanes = 2
+speed_kph = 45.0
+capacity = 1100.0
+tags = ["ARTERIAL"]
+
+[node name="R14_I06_I09" parent="Roads" instance=ExtResource("2_road")]
+road_id = "R14"
+from_intersection = "I06"
+to_intersection = "I09"
+bidirectional = true
+lanes = 3
+speed_kph = 45.0
+capacity = 1500.0
+tags = ["INDUSTRIAL_ACCESS", "TRUCK_ROUTE"]
+
+[node name="Zones" type="Node3D" parent="."]
+
+[node name="Z_RES" parent="Zones" instance=ExtResource("3_zone")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -120, -2, 650)
+zone_id = "Z_RES"
+display_name = "Khu dân cư"
+zone_type = "residential"
+intersection_ids = ["I04", "I07"]
+economic_role = "commuter origin and household welfare"
+peak_windows = ["morning", "evening"]
+
+[node name="Z_HOSPITAL" parent="Zones" instance=ExtResource("3_zone")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -120, -2, 1060)
+zone_id = "Z_HOSPITAL"
+display_name = "Bệnh viện"
+zone_type = "hospital"
+intersection_ids = ["I07"]
+economic_role = "emergency access and public health"
+peak_windows = ["all_day"]
+
+[node name="Z_SCHOOL" parent="Zones" instance=ExtResource("3_zone")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 500, -2, 1120)
+zone_id = "Z_SCHOOL"
+display_name = "Trường học"
+zone_type = "school"
+intersection_ids = ["I08"]
+economic_role = "school commute and child safety"
+peak_windows = ["morning", "afternoon"]
+
+[node name="Z_INDUSTRIAL" parent="Zones" instance=ExtResource("3_zone")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1080, -2, 920)
+zone_id = "Z_INDUSTRIAL"
+display_name = "Cụm công nghiệp"
+zone_type = "industrial"
+intersection_ids = ["I09", "I06"]
+economic_role = "worker commute and industrial productivity"
+peak_windows = ["shift_in", "shift_out"]
+
+[node name="Z_MARKET" parent="Zones" instance=ExtResource("3_zone")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 500, -2, 420)
+zone_id = "Z_MARKET"
+display_name = "Chợ trung tâm"
+zone_type = "market"
+intersection_ids = ["I05"]
+economic_role = "local commerce"
+peak_windows = ["morning"]
+
+[node name="Z_NIGHTLIFE" parent="Zones" instance=ExtResource("3_zone")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 500, -2, -120)
+zone_id = "Z_NIGHTLIFE"
+display_name = "Khu quán nhậu/giải trí"
+zone_type = "nightlife"
+intersection_ids = ["I02"]
+economic_role = "evening entertainment demand and safety risk"
+peak_windows = ["evening", "late_night"]
+
+[node name="Z_GATEWAY_W" parent="Zones" instance=ExtResource("3_zone")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -520, -2, 500)
+zone_id = "Z_GATEWAY_W"
+display_name = "Cửa ngõ Tây"
+zone_type = "gateway"
+intersection_ids = ["GW_W"]
+economic_role = "external traffic entry"
+
+[node name="Z_GATEWAY_E" parent="Zones" instance=ExtResource("3_zone")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1520, -2, 500)
+zone_id = "Z_GATEWAY_E"
+display_name = "Cửa ngõ Đông"
+zone_type = "gateway"
+intersection_ids = ["GW_E"]
+economic_role = "external logistics and commuter entry"
+
+[node name="Spawns" type="Node3D" parent="."]
+
+[node name="SP_RES_SCHOOL" parent="Spawns" instance=ExtResource("4_spawn")]
+flow_id = "F_RES_SCHOOL"
+origin_zone = "Z_RES"
+destination_zone = "Z_SCHOOL"
+trip_purpose = "school commute"
+departure_start = 0
+departure_end = 1200
+base_volume = 90
+route_policy = "CONGESTION_AWARE"
+vehicle_mix = {"CAR": 0.3, "MOTORBIKE": 0.6, "SCHOOL_BUS": 0.1}
+
+[node name="SP_RES_INDUSTRY" parent="Spawns" instance=ExtResource("4_spawn")]
+flow_id = "F_RES_INDUSTRY"
+origin_zone = "Z_RES"
+destination_zone = "Z_INDUSTRIAL"
+trip_purpose = "industrial shift commute"
+departure_start = 0
+departure_end = 1800
+base_volume = 120
+route_policy = "CONGESTION_AWARE"
+vehicle_mix = {"CAR": 0.25, "MOTORBIKE": 0.6, "WORKER_SHUTTLE": 0.15}
+
+[node name="SP_MARKET" parent="Spawns" instance=ExtResource("4_spawn")]
+flow_id = "F_MARKET"
+origin_zone = "Z_GATEWAY_W"
+destination_zone = "Z_MARKET"
+trip_purpose = "market delivery"
+departure_start = 300
+departure_end = 1800
+base_volume = 80
+route_policy = "SHORTEST_TIME"
+vehicle_mix = {"DELIVERY_BIKE": 0.7, "LIGHT_TRUCK": 0.3}
+
+[node name="SP_LOGISTICS" parent="Spawns" instance=ExtResource("4_spawn")]
+flow_id = "F_LOGISTICS"
+origin_zone = "Z_GATEWAY_E"
+destination_zone = "Z_INDUSTRIAL"
+trip_purpose = "industrial logistics"
+departure_start = 900
+departure_end = 2400
+base_volume = 70
+route_policy = "TRUCK_LEGAL_ROUTE"
+vehicle_mix = {"HEAVY_TRUCK": 0.35, "LIGHT_TRUCK": 0.65}
+
+[node name="SP_HOSPITAL" parent="Spawns" instance=ExtResource("4_spawn")]
+flow_id = "F_MEDICAL_EMERGENCY"
+origin_zone = "Z_GATEWAY_W"
+destination_zone = "Z_HOSPITAL"
+trip_purpose = "medical emergency"
+departure_start = 0
+departure_end = 3600
+base_volume = 12
+route_policy = "PRIORITY_FASTEST"
+vehicle_mix = {"AMBULANCE": 1.0}
+
+[node name="SP_NIGHTLIFE" parent="Spawns" instance=ExtResource("4_spawn")]
+flow_id = "F_NIGHTLIFE_OUT"
+origin_zone = "Z_NIGHTLIFE"
+destination_zone = "Z_RES"
+trip_purpose = "late evening entertainment return"
+departure_start = 2400
+departure_end = 3600
+base_volume = 75
+route_policy = "CONGESTION_AWARE"
+vehicle_mix = {"CAR": 0.45, "MOTORBIKE": 0.55}
+
+[node name="Destinations" type="Node3D" parent="."]
+
+[node name="DST_HOSPITAL" parent="Destinations" instance=ExtResource("5_destination")]
+zone_id = "Z_HOSPITAL"
+display_name = "Cổng bệnh viện"
+
+[node name="DST_SCHOOL" parent="Destinations" instance=ExtResource("5_destination")]
+zone_id = "Z_SCHOOL"
+display_name = "Cổng trường"
+
+[node name="TrafficLights" type="Node3D" parent="."]
+
+[node name="TLS_I01" parent="TrafficLights" instance=ExtResource("6_tls")]
+intersection_id = "I01"
+
+[node name="TLS_I02" parent="TrafficLights" instance=ExtResource("6_tls")]
+intersection_id = "I02"
+
+[node name="TLS_I05" parent="TrafficLights" instance=ExtResource("6_tls")]
+intersection_id = "I05"
+
+[node name="TLS_I07" parent="TrafficLights" instance=ExtResource("6_tls")]
+intersection_id = "I07"
+
+[node name="TLS_I09" parent="TrafficLights" instance=ExtResource("6_tls")]
+intersection_id = "I09"
+
+[node name="InvestmentCandidates" type="Node3D" parent="."]
+
+[node name="CAND_I01" parent="InvestmentCandidates" instance=ExtResource("7_candidate")]
+candidate_id = "CAND_I01"
+intersection_id = "I01"
+affected_flow_ids = ["F_RES_SCHOOL", "F_RES_INDUSTRY"]
+
+[node name="CAND_I05" parent="InvestmentCandidates" instance=ExtResource("7_candidate")]
+candidate_id = "CAND_I05"
+intersection_id = "I05"
+capex_vnd = 650000000.0
+annual_maintenance_vnd = 60000000.0
+affected_flow_ids = ["F_MARKET", "F_RES_SCHOOL", "F_NIGHTLIFE_OUT"]
+
+[node name="CAND_I07" parent="InvestmentCandidates" instance=ExtResource("7_candidate")]
+candidate_id = "CAND_I07"
+intersection_id = "I07"
+capex_vnd = 700000000.0
+annual_maintenance_vnd = 70000000.0
+affected_flow_ids = ["F_MEDICAL_EMERGENCY", "F_RES_SCHOOL"]
+
+[node name="CAND_I09" parent="InvestmentCandidates" instance=ExtResource("7_candidate")]
+candidate_id = "CAND_I09"
+intersection_id = "I09"
+capex_vnd = 750000000.0
+annual_maintenance_vnd = 80000000.0
+affected_flow_ids = ["F_RES_INDUSTRY", "F_LOGISTICS"]

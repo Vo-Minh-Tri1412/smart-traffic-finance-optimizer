@@ -1,0 +1,23 @@
+id = "030_godot_to_district_spec_export"
+owner = "integrator"
+branch = "main"
+base_commit = "0c04f5e10829a3b6f29cbc73773f110659158c67"
+allowed_paths = [
+  "coordination/tasks/030_godot_to_district_spec_export.toml",
+  "render/scripts/authoring/export_district_spec.gd",
+  "scripts/render/godot_authoring_export.py",
+  "tests/integration/cli/test_godot_authoring_export_cli.py",
+]
+dependencies = ["029_godot_map_authoring_v1"]
+acceptance_commands = [
+  "uv run python scripts/render/godot_authoring_export.py --scene res://scenes/authoring/DistrictAuthoringMap.tscn --out <tmp>/district_spec.generated.json",
+  "uv run pytest tests/integration/cli/test_godot_authoring_export_cli.py",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/030_godot_to_district_spec_export.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added Godot headless exporter and Python wrapper to convert the authoring scene into a backend-valid district_spec.generated.json."
+validation = "uv run python scripts/render/godot_authoring_export.py --out <tmp>/district_spec.generated.json; targeted pytest passed; full pytest: 43 passed."
+risks = "Generated specs are artifacts and should stay outside Git unless intentionally promoted as fixtures."
+next_steps = "After manual map edits, export to a temp/artifact folder and validate before running SUMO."

@@ -11,6 +11,7 @@ func _run() -> void:
 	var options := _parse_user_args()
 	var trace_path := String(options.get("trace", ""))
 	var spec_path := String(options.get("spec", ""))
+	var net_path := String(options.get("net", ""))
 	var output_root := String(options.get("output_root", ""))
 	var max_frames := int(options.get("max_frames", "60"))
 
@@ -27,7 +28,9 @@ func _run() -> void:
 	root.add_child(main)
 
 	var world = main.get_node_or_null("DistrictReplayWorld")
-	if world != null and not spec_path.is_empty():
+	if world != null and not net_path.is_empty():
+		world.build_from_sumo_net(net_path)
+	elif world != null and not spec_path.is_empty():
 		world.build_from_spec(spec_path)
 
 	var controller = main.get_node_or_null("TraceReplayController")
@@ -50,6 +53,9 @@ func _parse_user_args() -> Dictionary:
 		var arg := String(args[index])
 		if arg == "--trace" and index + 1 < args.size():
 			parsed["trace"] = String(args[index + 1])
+			index += 2
+		elif arg == "--net" and index + 1 < args.size():
+			parsed["net"] = String(args[index + 1])
 			index += 2
 		elif arg == "--spec" and index + 1 < args.size():
 			parsed["spec"] = String(args[index + 1])

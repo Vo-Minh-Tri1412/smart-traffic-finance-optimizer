@@ -1,0 +1,21 @@
+id = "029_godot_map_authoring_v1"
+owner = "integrator"
+branch = "main"
+base_commit = "0c04f5e10829a3b6f29cbc73773f110659158c67"
+allowed_paths = [
+  "coordination/tasks/029_godot_map_authoring_v1.toml",
+  "render/scenes/authoring/**",
+  "render/scripts/authoring/markers/**",
+]
+dependencies = ["028_godot_sumo_trace_replay_v1"]
+acceptance_commands = [
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/029_godot_map_authoring_v1.toml",
+  "uv run pytest tests/integration/cli/test_godot_authoring_export_cli.py",
+]
+status = "done"
+
+[handoff]
+summary = "Added Godot drag-and-drop authoring marker scenes/scripts and a sample DistrictAuthoringMap with signalized/unsignalized nodes, semantic zones, OD flows, traffic lights, and investment candidates."
+validation = "Included in targeted pytest and full pytest run: 43 passed."
+risks = "Godot editor may still create local .gd.uid files; do not stage unrelated generated UID/addon changes."
+next_steps = "Use the authoring export and roundtrip smoke tasks to validate edited maps after manual Godot changes."

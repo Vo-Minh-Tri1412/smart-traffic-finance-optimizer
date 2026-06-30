@@ -49,6 +49,7 @@ data/**
 
 # Godot editor cache and generated render outputs stay out of Git.
 render/.godot/
+render/**/*.gd.uid
 render/generated/
 render/exports/
 render/screenshots/

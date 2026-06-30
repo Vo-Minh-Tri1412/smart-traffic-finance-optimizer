@@ -1,0 +1,29 @@
+id = "032_authoring_roundtrip_smoke"
+owner = "integrator"
+branch = "main"
+base_commit = "0c04f5e10829a3b6f29cbc73773f110659158c67"
+allowed_paths = [
+  "coordination/tasks/032_authoring_roundtrip_smoke.toml",
+  "scripts/render/godot_authoring_roundtrip_smoke.py",
+  "tests/integration/cli/test_godot_authoring_roundtrip_cli.py",
+  ".gitignore",
+  "render/README.md",
+  "frontend/docs/UI_ARCHITECTURE.md",
+]
+dependencies = [
+  "029_godot_map_authoring_v1",
+  "030_godot_to_district_spec_export",
+  "031_sumo_geometry_import_for_godot",
+]
+acceptance_commands = [
+  "uv run python scripts/render/godot_authoring_roundtrip_smoke.py --output-root <tmp>/roundtrip --max-frames 60",
+  "uv run pytest tests/integration/cli/test_godot_authoring_roundtrip_cli.py",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/032_authoring_roundtrip_smoke.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added one-command Godot authoring -> SUMO -> Godot replay roundtrip smoke and updated docs to describe Godot as map authoring plus replay layer; ignored local Godot .gd.uid sidecars."
+validation = "uv run python scripts/render/godot_authoring_roundtrip_smoke.py --output-root <tmp>/roundtrip --max-frames 60 passed; full pytest: 43 passed."
+risks = "Roundtrip writes outputs to the chosen output folder; keep generated artifacts out of Git."
+next_steps = "Next useful work is visual authoring polish: road/building placeholders, editor workflow docs, and optional screenshot preview."

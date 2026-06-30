@@ -29,6 +29,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--trace", default=None, help="Existing vehicle-level trace JSONL.")
     parser.add_argument("--spec", default=str(DEFAULT_SPEC), help="District spec JSON.")
+    parser.add_argument("--net", default=None, help="Optional SUMO district.net.xml for geometry.")
     parser.add_argument("--output-root", required=True, help="Directory for replay_summary.json.")
     parser.add_argument("--godot-project", default=str(DEFAULT_GODOT_PROJECT))
     parser.add_argument("--godot-exe", default=None)
@@ -44,9 +45,10 @@ def generate_fixture_trace(
     scenario: str,
     controller: str,
     work_dir: Path,
-) -> Path:
+) -> tuple[Path, Path | None]:
     result_path = work_dir / "result.json"
     trace_path = work_dir / "trace.jsonl"
+    sumo_work_dir = work_dir / "sumo_work"
     command = [
         sys.executable,
         "-m",
@@ -65,6 +67,8 @@ def generate_fixture_trace(
         str(result_path),
         "--trace-out",
         str(trace_path),
+        "--sumo-work-dir",
+        str(sumo_work_dir),
     ]
     completed = subprocess.run(
         command,
@@ -80,7 +84,8 @@ def generate_fixture_trace(
             f"command: {' '.join(command)}\n"
             f"output:\n{completed.stdout}"
         )
-    return trace_path
+    net_path = sumo_work_dir / scenario / controller / "district.net.xml"
+    return trace_path, net_path if net_path.is_file() else None
 
 
 def run_godot_replay_smoke(
@@ -89,6 +94,7 @@ def run_godot_replay_smoke(
     godot_project: Path,
     trace: Path,
     spec: Path,
+    net: Path | None,
     output_root: Path,
     max_frames: int,
 ) -> subprocess.CompletedProcess[str]:
@@ -109,6 +115,8 @@ def run_godot_replay_smoke(
         "--max-frames",
         str(max_frames),
     ]
+    if net is not None:
+        command.extend(["--net", net.as_posix()])
     return subprocess.run(
         command,
         cwd=PROJECT_ROOT,
@@ -156,24 +164,29 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         with tempfile.TemporaryDirectory(prefix="aiq_godot_replay_") as temp_dir:
-            trace = (
-                Path(args.trace).resolve()
-                if args.trace
-                else generate_fixture_trace(
+            if args.trace:
+                trace = Path(args.trace).resolve()
+                net = Path(args.net).resolve() if args.net else None
+            else:
+                trace, generated_net = generate_fixture_trace(
                     spec=spec,
                     scenario=args.scenario,
                     controller=args.controller,
                     work_dir=Path(temp_dir),
                 )
-            )
+                net = Path(args.net).resolve() if args.net else generated_net
             if not trace.is_file():
                 print(f"[FAIL] Trace file not found: {trace}")
+                return 1
+            if net is not None and not net.is_file():
+                print(f"[FAIL] SUMO net file not found: {net}")
                 return 1
             completed = run_godot_replay_smoke(
                 godot_exe=godot_exe,
                 godot_project=godot_project,
                 trace=trace,
                 spec=spec,
+                net=net,
                 output_root=output_root,
                 max_frames=args.max_frames,
             )
@@ -198,6 +211,12 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     if _summary_int(summary, "parse_error_count") != 0:
         print("[FAIL] replay_summary.json reports trace parse errors")
+        return 1
+    if net is not None and _summary_int(summary, "lane_count") <= 0:
+        print("[FAIL] replay_summary.json reports zero SUMO lanes")
+        return 1
+    if _summary_int(summary, "off_lane_vehicle_count") != 0:
+        print("[FAIL] replay_summary.json reports vehicles outside SUMO lane geometry")
         return 1
 
     print(f"[OK] Godot SUMO trace replay smoke valid: {output_root}")
