@@ -42,20 +42,22 @@ func _run() -> void:
 
 
 func _build_spec(map_root: Node, options: Dictionary) -> Dictionary:
-	var traffic_light_ids := _traffic_light_ids(map_root)
-	var intersections := _collect_intersections(map_root, traffic_light_ids)
-	var roads := _collect_roads(map_root, intersections)
-	var zones := _collect_zones(map_root)
-	var flows := _collect_flows(map_root)
+	var traffic_light_rows := _collect_marker_rows(map_root, "authoring_traffic_light", {})
+	var traffic_light_ids := _id_set_from_rows(traffic_light_rows, "intersection_id")
+	var intersections := _intersection_dict(
+		_collect_marker_rows(map_root, "authoring_intersection", {"traffic_light_ids": traffic_light_ids})
+	)
+	var roads := _collect_marker_rows(map_root, "authoring_road", {"intersections": intersections})
+	var zones := _collect_marker_rows(map_root, "authoring_zone", {})
+	var flows := _collect_marker_rows(map_root, "authoring_spawn", {})
 	var flow_ids := _flow_ids(flows)
+	var candidates := _collect_marker_rows(
+		map_root,
+		"authoring_investment_candidate",
+		{"flow_ids": flow_ids}
+	)
 	return {
-		"metadata": {
-			"id": String(options.get("district_id", "godot_authoring_district_v1")),
-			"name": String(options.get("district_name", "Godot Authored District V1")),
-			"version": String(options.get("version", "0.1.0")),
-			"horizon_seconds": int(options.get("horizon_seconds", "3600")),
-			"time_step_seconds": int(options.get("time_step_seconds", "1")),
-		},
+		"metadata": _metadata(map_root, options),
 		"zones": zones,
 		"intersections": intersections.values(),
 		"roads": roads,
@@ -63,156 +65,60 @@ func _build_spec(map_root: Node, options: Dictionary) -> Dictionary:
 		"flows": flows,
 		"scenarios": _default_scenarios(flow_ids),
 		"controllers": _default_controllers(),
-		"investment_candidates": _collect_investment_candidates(map_root, flow_ids),
+		"investment_candidates": candidates,
 		"finance_assumptions": _default_finance_assumptions(),
 	}
 
 
-func _collect_intersections(map_root: Node, traffic_light_ids: Dictionary) -> Dictionary:
-	var output := {}
-	for node in _nodes_in_group(map_root, "authoring_intersection"):
-		var intersection_id := String(node.get("intersection_id"))
-		if intersection_id.is_empty():
-			push_error("%s: intersection_id is required" % node.get_path())
-			continue
-		var display_name := String(node.get("display_name"))
-		if display_name.is_empty():
-			display_name = intersection_id
-		var global := (node as Node3D).global_position
-		output[intersection_id] = {
-			"id": intersection_id,
-			"name": display_name,
-			"x": _round3(global.x / 1000.0),
-			"y": _round3(global.z / 1000.0),
-			"tags": _string_array(node.get("tags")),
-			"signalized": bool(node.get("signalized")) or traffic_light_ids.has(intersection_id),
-		}
-	return output
-
-
-func _collect_roads(map_root: Node, intersections: Dictionary) -> Array:
-	var output := []
-	for node in _nodes_in_group(map_root, "authoring_road"):
-		var road_id := String(node.get("road_id"))
-		var from_id := String(node.get("from_intersection"))
-		var to_id := String(node.get("to_intersection"))
-		if road_id.is_empty() or from_id.is_empty() or to_id.is_empty():
-			push_error("%s: road_id/from_intersection/to_intersection are required" % node.get_path())
-			continue
-		if not intersections.has(from_id) or not intersections.has(to_id):
-			push_error("%s: road endpoint not found: %s -> %s" % [road_id, from_id, to_id])
-			continue
-		var length_km := _road_length_km(node, intersections[from_id], intersections[to_id])
-		var row := _road_row(node, road_id, from_id, to_id, length_km)
-		output.append(row)
-		if bool(node.get("bidirectional")):
-			output.append(_road_row(node, "%s_REV" % road_id, to_id, from_id, length_km))
-	return output
-
-
-func _road_row(node: Node, road_id: String, from_id: String, to_id: String, length_km: float) -> Dictionary:
+func _metadata(map_root: Node, options: Dictionary) -> Dictionary:
+	if map_root.has_method("authoring_metadata"):
+		return map_root.call("authoring_metadata", options)
 	return {
-		"id": road_id,
-		"from": from_id,
-		"to": to_id,
-		"length_km": length_km,
-		"speed_kph": float(node.get("speed_kph")),
-		"lanes": int(node.get("lanes")),
-		"capacity": float(node.get("capacity")),
-		"tags": _string_array(node.get("tags")),
-		"truck_allowed": bool(node.get("truck_allowed")),
+		"id": String(options.get("district_id", "godot_authoring_district_v1")),
+		"name": String(options.get("district_name", "Godot Authored District V1")),
+		"version": String(options.get("version", "0.1.0")),
+		"horizon_seconds": int(options.get("horizon_seconds", "3600")),
+		"time_step_seconds": int(options.get("time_step_seconds", "1")),
 	}
 
 
-func _road_length_km(node: Node, from_row: Dictionary, to_row: Dictionary) -> float:
-	var override := float(node.get("length_km_override"))
-	if override > 0.0:
-		return _round3(override)
-	var from_point := Vector3(float(from_row["x"]) * 1000.0, 0.0, float(from_row["y"]) * 1000.0)
-	var to_point := Vector3(float(to_row["x"]) * 1000.0, 0.0, float(to_row["y"]) * 1000.0)
-	var points: Array[Vector3] = [from_point]
-	for point in PackedVector3Array(node.get("shape_points")):
-		points.append(point)
-	points.append(to_point)
-	var meters := 0.0
-	for index in range(points.size() - 1):
-		meters += points[index].distance_to(points[index + 1])
-	return max(0.001, _round3(meters / 1000.0))
-
-
-func _collect_zones(map_root: Node) -> Array:
+func _collect_marker_rows(map_root: Node, group_name: String, context: Dictionary) -> Array:
 	var output := []
-	for node in _nodes_in_group(map_root, "authoring_zone"):
-		var zone_id := String(node.get("zone_id"))
-		if zone_id.is_empty():
-			push_error("%s: zone_id is required" % node.get_path())
+	for node in _nodes_in_group(map_root, group_name):
+		if not node.has_method("to_authoring_rows"):
+			push_error("%s belongs to %s but does not implement to_authoring_rows()" % [node.get_path(), group_name])
 			continue
-		var display_name := String(node.get("display_name"))
-		if display_name.is_empty():
-			display_name = zone_id
-		output.append({
-			"id": zone_id,
-			"name": display_name,
-			"type": String(node.get("zone_type")),
-			"intersection_ids": _string_array(node.get("intersection_ids")),
-			"economic_role": String(node.get("economic_role")),
-			"peak_windows": _string_array(node.get("peak_windows")),
-		})
+		var rows: Variant = node.call("to_authoring_rows", context)
+		if not (rows is Array):
+			push_error("%s.to_authoring_rows() must return Array" % node.get_path())
+			continue
+		for row in rows:
+			if row is Dictionary and not (row as Dictionary).is_empty():
+				output.append(row)
 	return output
 
 
-func _collect_flows(map_root: Node) -> Array:
-	var output := []
-	for node in _nodes_in_group(map_root, "authoring_spawn"):
-		var flow_id := String(node.get("flow_id"))
-		if flow_id.is_empty():
-			flow_id = String(node.get("spawn_id"))
-		if flow_id.is_empty():
-			push_error("%s: flow_id or spawn_id is required" % node.get_path())
+func _intersection_dict(rows: Array) -> Dictionary:
+	var output := {}
+	for row in rows:
+		var row_dict := row as Dictionary
+		var intersection_id := String(row_dict.get("id", ""))
+		if intersection_id.is_empty():
+			push_error("Intersection marker returned empty id.")
 			continue
-		output.append({
-			"id": flow_id,
-			"origin_zone": String(node.get("origin_zone")),
-			"destination_zone": String(node.get("destination_zone")),
-			"trip_purpose": String(node.get("trip_purpose")),
-			"departure_start": int(node.get("departure_start")),
-			"departure_end": int(node.get("departure_end")),
-			"base_volume": int(node.get("base_volume")),
-			"vehicle_mix": _normalized_mix(node.get("vehicle_mix")),
-			"route_policy": String(node.get("route_policy")),
-		})
+		output[intersection_id] = row_dict
 	return output
 
 
-func _collect_investment_candidates(map_root: Node, flow_ids: Array[String]) -> Array:
-	var output := []
-	for node in _nodes_in_group(map_root, "authoring_investment_candidate"):
-		var candidate_id := String(node.get("candidate_id"))
-		if candidate_id.is_empty():
+func _id_set_from_rows(rows: Array, id_field: String) -> Dictionary:
+	var output := {}
+	for row in rows:
+		if not (row is Dictionary):
 			continue
-		var affected := []
-		for flow_id in _string_array(node.get("affected_flow_ids")):
-			if flow_ids.has(flow_id):
-				affected.append(flow_id)
-		output.append({
-			"id": candidate_id,
-			"intersection_id": String(node.get("intersection_id")),
-			"upgrade_type": String(node.get("upgrade_type")),
-			"capex_vnd": float(node.get("capex_vnd")),
-			"annual_maintenance_vnd": float(node.get("annual_maintenance_vnd")),
-			"affected_flow_ids": affected,
-			"caveat": String(node.get("caveat")),
-		})
+		var value := String((row as Dictionary).get(id_field, ""))
+		if not value.is_empty():
+			output[value] = true
 	return output
-
-
-func _traffic_light_ids(map_root: Node) -> Dictionary:
-	var ids := {}
-	for node in _nodes_in_group(map_root, "authoring_traffic_light"):
-		var intersection_id := String(node.get("intersection_id"))
-		if not intersection_id.is_empty():
-			ids[intersection_id] = true
-	return ids
 
 
 func _default_vehicle_types() -> Array:
@@ -274,44 +180,7 @@ func _filtered_multipliers(flow_ids: Array[String], candidates: Dictionary) -> D
 func _flow_ids(flows: Array) -> Array[String]:
 	var output: Array[String] = []
 	for flow in flows:
-		output.append(String(flow["id"]))
-	return output
-
-
-func _normalized_mix(raw: Variant) -> Dictionary:
-	var values := {}
-	if raw is Dictionary:
-		for key in (raw as Dictionary).keys():
-			var value := float((raw as Dictionary)[key])
-			if value > 0.0:
-				values[String(key)] = value
-	if values.is_empty():
-		values["MOTORBIKE"] = 0.6
-		values["CAR"] = 0.4
-	var total := 0.0
-	for value in values.values():
-		total += float(value)
-	var output := {}
-	for key in values.keys():
-		output[String(key)] = _round3(float(values[key]) / total)
-	var correction := 1.0 - _sum_values(output)
-	var first_key := String(output.keys()[0])
-	output[first_key] = _round3(float(output[first_key]) + correction)
-	return output
-
-
-func _sum_values(values: Dictionary) -> float:
-	var total := 0.0
-	for value in values.values():
-		total += float(value)
-	return total
-
-
-func _string_array(raw: Variant) -> Array:
-	var output := []
-	if raw is Array:
-		for item in raw:
-			output.append(String(item))
+		output.append(String((flow as Dictionary)["id"]))
 	return output
 
 
@@ -326,10 +195,6 @@ func _collect_nodes(node: Node, group_name: String, output: Array[Node]) -> void
 		output.append(node)
 	for child in node.get_children():
 		_collect_nodes(child, group_name, output)
-
-
-func _round3(value: float) -> float:
-	return snappedf(value, 0.001)
 
 
 func _parse_user_args() -> Dictionary:

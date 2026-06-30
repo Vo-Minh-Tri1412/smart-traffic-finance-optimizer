@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/authoring/components/IntersectionMarker.tscn" id="1_intersection"]
 [ext_resource type="PackedScene" path="res://scenes/authoring/components/RoadSegment.tscn" id="2_road"]
@@ -7,8 +7,10 @@
 [ext_resource type="PackedScene" path="res://scenes/authoring/components/DestinationPoint.tscn" id="5_destination"]
 [ext_resource type="PackedScene" path="res://scenes/authoring/components/TrafficLightMarker.tscn" id="6_tls"]
 [ext_resource type="PackedScene" path="res://scenes/authoring/components/InvestmentCandidateMarker.tscn" id="7_candidate"]
+[ext_resource type="Script" path="res://scripts/authoring/district_authoring_map.gd" id="8_map"]
 
 [node name="DistrictAuthoringMap" type="Node3D"]
+script = ExtResource("8_map")
 
 [node name="Intersections" type="Node3D" parent="."]
 

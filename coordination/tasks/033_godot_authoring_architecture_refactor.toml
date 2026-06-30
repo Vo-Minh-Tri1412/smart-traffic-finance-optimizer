@@ -1,0 +1,26 @@
+id = "033_godot_authoring_architecture_refactor"
+owner = "integrator"
+branch = "main"
+base_commit = "90cf0f43c3d6754cf1e0b9f4efe12f354714ff4e"
+allowed_paths = [
+  "coordination/tasks/033_godot_authoring_architecture_refactor.toml",
+  "render/scripts/authoring/**",
+  "render/scenes/authoring/DistrictAuthoringMap.tscn",
+  "render/README.md",
+  "scripts/render/godot_authoring_export.py",
+  "tests/integration/cli/test_godot_authoring_export_cli.py",
+]
+dependencies = ["029_godot_map_authoring_v1", "030_godot_to_district_spec_export"]
+acceptance_commands = [
+  "uv run python scripts/render/godot_authoring_export.py --out <tmp>/district_spec.generated.json",
+  "uv run python scripts/render/godot_authoring_roundtrip_smoke.py --output-root <tmp>/roundtrip --max-frames 60",
+  "uv run pytest tests/integration/cli/test_godot_authoring_export_cli.py tests/integration/cli/test_godot_authoring_roundtrip_cli.py",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/033_godot_authoring_architecture_refactor.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Refactored Godot authoring markers around AuthoringMarkerBase polymorphic serialization and DistrictAuthoringMap metadata, reducing exporter special cases."
+validation = "Authoring export passed; authoring roundtrip passed with off_lane_vehicle_count=0; ruff format/check passed; mypy passed; full pytest passed with 43 tests."
+risks = "Godot editor/plugin still has unrelated local dirty files; keep staging scoped to this task."
+next_steps = "Future marker types should extend AuthoringMarkerBase and implement to_authoring_dict/to_authoring_rows instead of modifying exporter internals."

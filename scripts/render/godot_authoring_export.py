@@ -93,6 +93,22 @@ def _summary(spec_path: Path) -> dict[str, object]:
     }
 
 
+def _has_minimum_authoring_content(summary: dict[str, object]) -> bool:
+    intersections = summary["intersections"]
+    roads = summary["roads"]
+    zones = summary["zones"]
+    flows = summary["flows"]
+    if not isinstance(intersections, int):
+        return False
+    if not isinstance(roads, int):
+        return False
+    if not isinstance(zones, int):
+        return False
+    if not isinstance(flows, int):
+        return False
+    return intersections > 0 and roads > 0 and zones > 0 and flows > 0
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     godot_project = Path(args.godot_project).resolve()
@@ -131,7 +147,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[FAIL] Exported district spec failed backend validation: {exc}")
         return 1
 
-    print(f"[OK] Godot authoring export valid: {json.dumps(_summary(out), ensure_ascii=False)}")
+    summary = _summary(out)
+    if not _has_minimum_authoring_content(summary):
+        print(f"[FAIL] Exported district spec is structurally empty: {summary}")
+        return 1
+
+    print(f"[OK] Godot authoring export valid: {json.dumps(summary, ensure_ascii=False)}")
     return 0
 
 

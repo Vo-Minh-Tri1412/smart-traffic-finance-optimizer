@@ -27,4 +27,5 @@ def test_godot_authoring_export_writes_valid_district_spec_when_godot_is_availab
     assert len(spec.intersections) >= 10
     assert any(not intersection.signalized for intersection in spec.intersections.values())
     assert len(spec.roads) >= 20
+    assert len(spec.flows) >= 5
     assert len(raw["investment_candidates"]) >= 3

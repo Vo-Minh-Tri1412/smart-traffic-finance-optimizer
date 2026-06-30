@@ -1,6 +1,6 @@
 @tool
 class_name InvestmentCandidateMarker
-extends Node3D
+extends "res://scripts/authoring/markers/authoring_marker_base.gd"
 
 @export var candidate_id := ""
 @export var intersection_id := ""
@@ -12,4 +12,21 @@ extends Node3D
 
 
 func _ready() -> void:
-	add_to_group("authoring_investment_candidate")
+	_register_authoring_marker("authoring_investment_candidate")
+
+
+func to_authoring_dict(context: Dictionary = {}) -> Dictionary:
+	var flow_ids := context.get("flow_ids", []) as Array
+	var affected := []
+	for flow_id in string_array(affected_flow_ids):
+		if flow_ids.has(flow_id):
+			affected.append(flow_id)
+	return {
+		"id": candidate_id,
+		"intersection_id": intersection_id,
+		"upgrade_type": upgrade_type,
+		"capex_vnd": capex_vnd,
+		"annual_maintenance_vnd": annual_maintenance_vnd,
+		"affected_flow_ids": affected,
+		"caveat": caveat,
+	}

@@ -81,6 +81,23 @@ It is a real drag-and-drop Godot scene containing:
 - `SpawnPoint` / `DestinationPoint` for default OD flows.
 - `TrafficLightMarker` and `InvestmentCandidateMarker` for public-finance decisions.
 
+The authoring layer is component-based instead of one giant export script:
+
+```text
+AuthoringMarkerBase
+├── IntersectionMarker
+├── RoadSegment
+├── ZoneArea
+├── SpawnPoint / DestinationPoint
+├── TrafficLightMarker
+└── InvestmentCandidateMarker
+```
+
+Each marker owns its exported properties and implements `to_authoring_rows()` /
+`to_authoring_dict()`. The exporter only asks markers to serialize themselves, so adding a new
+marker type later should not turn `DistrictAuthoringMap.tscn` or the exporter into a pile of
+special cases.
+
 Export it to a backend spec:
 
 ```powershell
