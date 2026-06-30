@@ -1,0 +1,31 @@
+id = "034_vehicle_asset_registry_factory"
+owner = "integrator"
+branch = "main"
+base_commit = "dbf5981b414722946ea26f7988304fe5ae3e8b74"
+allowed_paths = [
+  "coordination/tasks/034_vehicle_asset_registry_factory.toml",
+  "render/scripts/assets/**",
+  "render/scripts/replay/trace_replay_controller.gd",
+  "render/scripts/replay/vehicle_base.gd",
+  "render/scenes/vehicles/**",
+  "render/resources/configs/asset_manifest.example.json",
+  "render/README.md",
+  "tests/integration/cli/test_godot_sumo_trace_replay_cli.py",
+]
+dependencies = ["028_godot_sumo_trace_replay_v1", "033_godot_authoring_architecture_refactor"]
+acceptance_commands = [
+  "uv run python scripts/render/godot_sumo_trace_replay_smoke.py --output-root <tmp>/godot_replay --max-frames 10",
+  "uv run pytest tests/integration/cli/test_godot_sumo_trace_replay_cli.py",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/034_vehicle_asset_registry_factory.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added Godot VehicleAssetRegistry and VehicleFactory, moved vehicle type-to-scene selection out of TraceReplayController, and added editable placeholder vehicle scenes for motorbike, car, taxi, bus, ambulance, light truck, and heavy truck. VehicleBase now uses exported scene visual properties instead of type-matching color/scale in code."
+validation = "Godot replay smoke passed with vehicle_asset_registry_loaded=true, vehicle_scene_count=10, vehicle_fallback_spawn_count=0; targeted replay pytest passed; ruff format/check passed; mypy passed; full pytest passed with 43 tests."
+risks = "Godot headless logs a non-fatal dummy renderer material warning while smoke still exits 0. Existing unrelated dirty files under render/addons/godot_ai/** and render/scenes/main/Main.tscn were preserved and not part of this task."
+next_steps = "Implement typed trace/net geometry data, schema versioning, and TraceInterpolator/VehiclePool in separate manifests before scaling replay or synthetic CV dataset generation."

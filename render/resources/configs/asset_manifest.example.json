@@ -1,15 +1,48 @@
 {
-  "version": "0.1",
-  "purpose": "Map simulation object types to Godot scenes. These paths are contracts, not final art assets.",
+  "schema_version": "vehicle_asset_manifest.v1",
+  "version": "0.2",
+  "purpose": "Map SUMO/district vehicle types to Godot vehicle scenes. These paths are contracts, not final art assets.",
   "vehicle_scenes": {
-    "motorbike": "res://scenes/vehicles/Motorbike.tscn",
-    "car": "res://scenes/vehicles/Car.tscn",
-    "bus": "res://scenes/vehicles/Bus.tscn",
-    "truck": "res://scenes/vehicles/Truck.tscn",
-    "ambulance": "res://scenes/vehicles/Ambulance.tscn",
-    "worker_shuttle": "res://scenes/vehicles/WorkerShuttle.tscn",
-    "taxi_ride_hailing": "res://scenes/vehicles/TaxiRideHailing.tscn",
-    "delivery_bike": "res://scenes/vehicles/DeliveryBike.tscn"
+    "MOTORBIKE": {
+      "scene": "res://scenes/vehicles/MotorbikeVehicle.tscn",
+      "description": "Small commuter two-wheeler placeholder."
+    },
+    "DELIVERY_BIKE": {
+      "scene": "res://scenes/vehicles/MotorbikeVehicle.tscn",
+      "description": "Delivery two-wheeler; shares motorbike art until final assets exist."
+    },
+    "PRIVATE_CAR": {
+      "scene": "res://scenes/vehicles/PrivateCarVehicle.tscn",
+      "description": "Private car placeholder."
+    },
+    "TAXI_RIDE_HAILING": {
+      "scene": "res://scenes/vehicles/TaxiVehicle.tscn",
+      "description": "Taxi or ride-hailing placeholder."
+    },
+    "BUS": {
+      "scene": "res://scenes/vehicles/BusVehicle.tscn",
+      "description": "Public bus placeholder."
+    },
+    "SCHOOL_BUS": {
+      "scene": "res://scenes/vehicles/BusVehicle.tscn",
+      "description": "School bus; shares bus art until final assets exist."
+    },
+    "WORKER_SHUTTLE": {
+      "scene": "res://scenes/vehicles/BusVehicle.tscn",
+      "description": "Worker shuttle; shares bus art until final assets exist."
+    },
+    "AMBULANCE": {
+      "scene": "res://scenes/vehicles/AmbulanceVehicle.tscn",
+      "description": "Emergency vehicle placeholder."
+    },
+    "LIGHT_TRUCK": {
+      "scene": "res://scenes/vehicles/LightTruckVehicle.tscn",
+      "description": "Light logistics truck placeholder."
+    },
+    "HEAVY_TRUCK": {
+      "scene": "res://scenes/vehicles/HeavyTruckVehicle.tscn",
+      "description": "Heavy logistics truck placeholder."
+    }
   },
   "world_scenes": {
     "main": "res://scenes/main/Main.tscn",

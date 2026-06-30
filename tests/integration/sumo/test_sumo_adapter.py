@@ -50,6 +50,7 @@ def test_sumo_adapter_runs_when_runtime_is_available(tmp_path: Path) -> None:
     assert result.max_queue_vehicles > 0
     assert any(metric.delay_seconds > 0 for metric in result.intersections.values())
     assert result.vehicle_trace_frames
+    assert result.vehicle_trace_frames[0]["schema_version"] == "simulation_trace_frame.v1"
     assert "vehicles" in result.vehicle_trace_frames[0]
 
 

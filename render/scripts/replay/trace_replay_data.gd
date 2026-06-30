@@ -1,9 +1,12 @@
 class_name TraceReplayData
 extends RefCounted
 
+const TraceFrameDataScript := preload("res://scripts/replay/trace_frame_data.gd")
+
 var frames: Array = []
 var errors: Array[String] = []
 var unique_vehicle_ids: Dictionary = {}
+var schema_version := ""
 var bounds_min := Vector2.ZERO
 var bounds_max := Vector2.ZERO
 var _has_bounds := false
@@ -13,6 +16,7 @@ func load_jsonl(path: String, max_frames: int = 0) -> bool:
 	frames.clear()
 	errors.clear()
 	unique_vehicle_ids.clear()
+	schema_version = ""
 	_has_bounds = false
 
 	var file := FileAccess.open(path, FileAccess.READ)
@@ -32,11 +36,13 @@ func load_jsonl(path: String, max_frames: int = 0) -> bool:
 			errors.append("Line %d is not a JSON object." % line_number)
 			continue
 
-		var frame := parsed as Dictionary
-		if not _validate_frame(frame, line_number):
+		var frame = TraceFrameDataScript.new()
+		if not frame.populate_from_dictionary(parsed as Dictionary, line_number, errors):
 			continue
 
 		frames.append(frame)
+		if schema_version.is_empty():
+			schema_version = String(frame.schema_version)
 		_update_bounds(frame)
 		if max_frames > 0 and frames.size() >= max_frames:
 			break
@@ -60,33 +66,11 @@ func has_bounds() -> bool:
 	return _has_bounds
 
 
-func _validate_frame(frame: Dictionary, line_number: int) -> bool:
-	var required := ["timestep", "time_seconds", "district_id", "scenario_id", "controller_id", "engine_id", "vehicles"]
-	for key in required:
-		if not frame.has(key):
-			errors.append("Line %d missing required key: %s" % [line_number, key])
-			return false
-	if typeof(frame["vehicles"]) != TYPE_ARRAY:
-		errors.append("Line %d has non-array vehicles field." % line_number)
-		return false
-	for vehicle in frame["vehicles"]:
-		if typeof(vehicle) != TYPE_DICTIONARY:
-			errors.append("Line %d has a non-object vehicle entry." % line_number)
-			return false
-		var vehicle_dict := vehicle as Dictionary
-		for key in ["vehicle_id", "vehicle_type", "x", "y", "speed", "angle"]:
-			if not vehicle_dict.has(key):
-				errors.append("Line %d vehicle missing required key: %s" % [line_number, key])
-				return false
-	return true
-
-
-func _update_bounds(frame: Dictionary) -> void:
-	for vehicle in frame.get("vehicles", []):
-		var vehicle_dict := vehicle as Dictionary
-		var x := float(vehicle_dict.get("x", 0.0))
-		var y := float(vehicle_dict.get("y", 0.0))
-		unique_vehicle_ids[String(vehicle_dict.get("vehicle_id", ""))] = true
+func _update_bounds(frame) -> void:
+	for vehicle in frame.vehicles:
+		var x := float(vehicle.x)
+		var y := float(vehicle.y)
+		unique_vehicle_ids[String(vehicle.vehicle_id)] = true
 		if not _has_bounds:
 			bounds_min = Vector2(x, y)
 			bounds_max = Vector2(x, y)

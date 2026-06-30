@@ -4,6 +4,7 @@ from typing import Any
 
 from ai_quantum_hvtc.simulation.domain import DistrictSpec
 from ai_quantum_hvtc.simulation.metrics import SimulationResult
+from ai_quantum_hvtc.simulation.traces.versions import SIMULATION_TRACE_FRAME_SCHEMA_VERSION
 
 
 def trace_frames_from_result(result: SimulationResult, spec: DistrictSpec) -> list[dict[str, Any]]:
@@ -14,7 +15,7 @@ def trace_frames_from_result(result: SimulationResult, spec: DistrictSpec) -> li
     """
 
     if result.vehicle_trace_frames:
-        return result.vehicle_trace_frames
+        return [_with_trace_schema_version(frame) for frame in result.vehicle_trace_frames]
 
     step_seconds = spec.metadata.time_step_seconds
     frame_count = max(1, min(20, spec.metadata.horizon_seconds // step_seconds))
@@ -26,6 +27,7 @@ def trace_frames_from_result(result: SimulationResult, spec: DistrictSpec) -> li
         progress = (frame_index + 1) / frame_count
         frames.append(
             {
+                "schema_version": SIMULATION_TRACE_FRAME_SCHEMA_VERSION,
                 "timestep": frame_index,
                 "time_seconds": frame_index * step_seconds,
                 "district_id": spec.metadata.district_id,
@@ -61,6 +63,12 @@ def trace_frames_from_result(result: SimulationResult, spec: DistrictSpec) -> li
             }
         )
     return frames
+
+
+def _with_trace_schema_version(frame: dict[str, Any]) -> dict[str, Any]:
+    if frame.get("schema_version") == SIMULATION_TRACE_FRAME_SCHEMA_VERSION:
+        return frame
+    return {"schema_version": SIMULATION_TRACE_FRAME_SCHEMA_VERSION, **frame}
 
 
 def _signal_state(frame_index: int, intersection_id: str) -> str:

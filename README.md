@@ -28,8 +28,8 @@ investment subset with the best expected social value.
 The proposed architecture has three coordinated model layers, plus an optional visual-rendering layer
 for sensor realism:
 
-1. **Sensor / observation layer**: ground-truth simulation sensors for training, with optional
-   YOLO/CV camera-like sensing as a deployment or robustness extension.
+1. **Observation / sensor layer**: SUMO state adapters for RL/debug, with optional YOLO/CV sensing
+   that estimates traffic state from Godot-rendered camera frames.
 2. **Traffic-control layer**: SUMO/SUMO-RL environment with fixed-time, rule-based, and RL
    controllers.
 3. **Public-finance optimizer layer**: budget-constrained selection of intersections using exact,
@@ -41,8 +41,8 @@ for sensor realism:
 The current repository is a technical scaffold with a working SUMO backend path. It contains the
 simulation architecture, SUMO export/run/parse flow, preliminary fixed-time and rule-based
 baselines, frontend/Godot contracts, Drive-backed data/artifact workflow, and notebook entrypoints.
-It does **not** yet contain a final trained RL policy, final YOLO model, finished Godot replay UI, or
-approved real-world finance assumptions.
+It does **not** yet contain a final trained RL policy, final YOLO model, polished Godot demo UI,
+production camera dataset exporter, or approved real-world finance assumptions.
 
 ## Research framing
 
@@ -79,44 +79,34 @@ of claiming that one trained policy is universally optimal.
 ## System architecture
 
 ```text
-                external or simulated observations
-                             |
-                             v
                  +-------------------------+
-                 |  Sensor / observation   |
-                 |  - ground truth sensor  |
-                 |  - optional YOLO sensor |
+                 |  District spec/scenario |
+                 |  map, flows, candidates |
                  +-----------+-------------+
                              |
                              v
                  +-------------------------+
-                 |  SUMO / SUMO-RL world   |
-                 |  district, flows, TLS   |
-                 +-----------+-------------+
-                             |
-                             v
-                 +-------------------------+
-                 |  Traffic controllers    |
-                 |  fixed / rule / RL      |
-                 +-----------+-------------+
-                             |
-                             v
-                 +-------------------------+
-                 |  Metrics and traces     |
-                 |  wait, queue, delay     |
-                 +-----------+-------------+
-                             |
-                             v
-                 +-------------------------+
-                 |  Public-value scoring   |
-                 |  benefit - cost - risk  |
-                 +-----------+-------------+
-                             |
-                             v
-                 +-------------------------+
-                 |  Investment optimizer   |
-                 |  exact / greedy / QUBO  |
-                 +-------------------------+
+        +------> |  SUMO / SUMO-RL world   | ------+
+        |        |  traffic dynamics, TLS  |       |
+        |        +-----------+-------------+       |
+        |                    |                     |
+        |                    v                     v
++-------+---------+  +-------------------------+  +-------------------------+
+| Traffic control |  |  Metrics and traces     |  | Godot render/replay     |
+| fixed/rule/RL   |  |  wait, queue, delay     |  | camera frames/video     |
++-----------------+  +-----------+-------------+  +-----------+-------------+
+                                 |                            |
+                                 v                            v
+                      +-------------------------+  +-------------------------+
+                      |  Public-value scoring   |  | Optional YOLO/CV sensor |
+                      |  benefit - cost - risk  |  | estimated observations  |
+                      +-----------+-------------+  +-------------------------+
+                                  |
+                                  v
+                      +-------------------------+
+                      |  Investment optimizer   |
+                      |  exact / greedy / QUBO  |
+                      +-------------------------+
 ```
 
 Future visual-sensor path:
@@ -149,10 +139,10 @@ mostly redundant if the RL controller can read the simulator state directly.
 
 So CV is treated as a **sensor layer**, not as the main source of truth:
 
-- During simulation training, RL may use ground-truth simulator observations for stability.
+- During simulation training, RL may use SUMO state/oracle observations for stability and debugging.
 - For deployment-style demos, YOLO can estimate vehicle counts/types from camera or video frames.
-- For robustness testing, a synthetic camera view may be compared against ground truth to measure
-  sensor error.
+- For robustness testing, a synthetic camera view may be compared against SUMO ground truth to
+  measure sensor error.
 
 This keeps the architecture honest: CV is useful when the system does not have direct access to
 perfect simulator state, not when it merely re-detects UI icons that the simulator generated.
@@ -215,7 +205,6 @@ Purpose:
 Possible inputs:
 
 - Godot-rendered synthetic traffic-camera frames generated from SUMO/SUMO-RL trajectories;
-- camera-like frames rendered from simulation for pipeline testing;
 - optional public traffic images/videos for future external validation;
 - future real-world camera clips if permissions are clear.
 
@@ -232,8 +221,8 @@ Current status:
 - `requirements-colab.txt` includes `ultralytics` and OpenCV for cloud training.
 - Local default `uv sync` does not install YOLO yet.
 - No real CV dataset or trained YOLO model is claimed.
-- Godot 3D render workspace structure exists under `render/`, but the final district replay scene
-  and dataset exporter are not implemented yet.
+- Godot replay scaffolding exists under `render/`, but polished assets, camera rigs, and the
+  production dataset exporter are not implemented yet.
 
 ### 2. SUMO-RL traffic-control model
 
@@ -264,8 +253,8 @@ Current status:
 - SUMO runtime and SUMO-RL imports are verified locally.
 - SUMO backend exports network/routes/additional outputs, runs fixed-time and preliminary
   rule-based baselines, parses trip/edge/FCD metrics, and can open in SUMO GUI for inspection.
-- The current district is a technical 16-intersection network; it runs, but map realism, road
-  shapes, behavior profiles, and traffic-light phase design still need improvement.
+- `simulation_projects/minh_khai_district_v1` is a synthetic fixture/test network; it runs, but it
+  is not the final district/map choice.
 - Final project-specific SUMO-RL training environment and trained policy are not complete yet.
 
 ### 3. Public-finance investment optimizer
@@ -402,8 +391,6 @@ docs/README.md            # canonical documentation index and reading order
 docs/01_PROJECT_BRIEF/    # product direction and public-finance problem framing
 docs/02_ARCHITECTURE/     # SUMO-RL, data workflow, sensors, Godot renderer contracts
 docs/03_COMPETITION/      # AI Quantum HVTC competition facts
-docs/04_WEEKLY_PLANS/     # weekly planning snapshots
-docs/05_TEAM_GUIDES/      # CS/economics collaboration guides
 frontend/                 # future React contract and mock-data layer
 notebooks/                # Colab/Kaggle entrypoints
 render/                   # Godot scene-first visual replay and synthetic sensor app
@@ -503,7 +490,7 @@ The current scaffold does not claim:
 
 - a final trained RL policy;
 - a final trained YOLO detector;
-- an implemented Godot 3D renderer or generated synthetic camera dataset;
+- a polished Godot 3D demo renderer or generated synthetic camera dataset;
 - a completed Godot district scene or asset library;
 - a polished, realistic SUMO city map;
 - a strong adaptive baseline that reliably beats fixed-time under all scenarios;

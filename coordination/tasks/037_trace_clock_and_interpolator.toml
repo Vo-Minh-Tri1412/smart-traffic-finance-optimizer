@@ -1,0 +1,32 @@
+id = "037_trace_clock_and_interpolator"
+owner = "integrator"
+branch = "main"
+base_commit = "dbf5981b414722946ea26f7988304fe5ae3e8b74"
+allowed_paths = [
+  "coordination/tasks/037_trace_clock_and_interpolator.toml",
+  "render/scripts/replay/**",
+  "render/README.md",
+  "tests/integration/cli/test_godot_sumo_trace_replay_cli.py",
+]
+dependencies = [
+  "028_godot_sumo_trace_replay_v1",
+  "034_vehicle_asset_registry_factory",
+  "035_typed_trace_and_sumo_geometry_data",
+  "036_schema_versioning_and_contract_policy",
+]
+acceptance_commands = [
+  "uv run python scripts/render/godot_sumo_trace_replay_smoke.py --output-root <tmp>/godot_replay --max-frames 10",
+  "uv run pytest tests/integration/cli/test_godot_sumo_trace_replay_cli.py",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/037_trace_clock_and_interpolator.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added TracePlaybackClock and TraceInterpolator so Godot replay time, speed/loop control, and between-frame vehicle positions are separate from TraceReplayController. The controller now samples interpolated frames and reports playback/interpolation metadata in replay_summary.json."
+validation = "Godot replay smoke passed with playback_data_model=TracePlaybackClock/TraceInterpolator and interpolated_frame_count=9; targeted replay pytest passed; ruff format/check passed; mypy passed; full pytest passed with 43 tests."
+risks = "Interpolation currently linearly blends SUMO x/y/speed and shortest-path angle between neighboring trace frames. Lane/road ids snap by alpha threshold rather than path-aware lane matching; this is fine for v1 replay but not yet a traffic-physics claim."
+next_steps = "Implement VehiclePool next so replay/dataset generation can reuse vehicle instances instead of instantiate/queue_free per vehicle lifecycle."

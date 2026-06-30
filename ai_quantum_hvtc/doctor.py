@@ -157,9 +157,10 @@ def check_project_direction(root: Path) -> CheckResult:
     required_docs = [
         root / "docs" / "README.md",
         root / "docs" / "01_PROJECT_BRIEF" / "SMART_TRAFFIC_PUBLIC_FINANCE.md",
+        root / "docs" / "02_ARCHITECTURE" / "SIMULATION_BACKEND_ARCHITECTURE.md",
+        root / "docs" / "02_ARCHITECTURE" / "GODOT_RENDER_ARCHITECTURE.md",
         root / "docs" / "02_ARCHITECTURE" / "SUMO_RL_SYSTEM_DESIGN.md",
         root / "docs" / "03_COMPETITION" / "AI_QUANTUM_HVTC_FACTS.md",
-        root / "docs" / "04_WEEKLY_PLANS" / "WEEK1_PLAN.md",
     ]
     missing = [path.relative_to(root).as_posix() for path in required_docs if not path.exists()]
     if missing:

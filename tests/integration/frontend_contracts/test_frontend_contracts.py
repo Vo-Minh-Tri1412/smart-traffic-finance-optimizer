@@ -5,6 +5,7 @@ from pathlib import Path
 
 CONTRACT_DIR = Path("frontend/contracts")
 MOCK_DIR = Path("frontend/mock-data")
+TRACE_SCHEMA_VERSION = "simulation_trace_frame.v1"
 
 
 def test_frontend_contract_files_are_valid_json() -> None:
@@ -27,6 +28,7 @@ def test_mock_trace_frames_include_required_contract_fields() -> None:
 
     assert rows
     assert required.issubset(rows[0])
+    assert rows[0]["schema_version"] == TRACE_SCHEMA_VERSION
 
 
 def test_vehicle_trace_sample_includes_required_vehicle_fields() -> None:
@@ -44,6 +46,7 @@ def test_vehicle_trace_sample_includes_required_vehicle_fields() -> None:
     assert rows
     assert required.issubset(rows[0])
     assert "vehicles" in rows[0]
+    assert rows[0]["schema_version"] == TRACE_SCHEMA_VERSION
     assert vehicle_required.issubset(rows[0]["vehicles"][0])
 
 

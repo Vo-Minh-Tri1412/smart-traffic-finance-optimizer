@@ -8,6 +8,7 @@ from ai_quantum_hvtc.simulation.domain import DistrictSpec
 from ai_quantum_hvtc.simulation.engines.sumo.exporter import SumoExportPaths
 from ai_quantum_hvtc.simulation.metrics import IntersectionMetric, SimulationResult
 from ai_quantum_hvtc.simulation.routing import RouteNotFoundError, RoutePlanner
+from ai_quantum_hvtc.simulation.traces import SIMULATION_TRACE_FRAME_SCHEMA_VERSION
 
 
 def parse_sumo_result(
@@ -223,6 +224,7 @@ def _fcd_trace_frames(
             )
         frames.append(
             {
+                "schema_version": SIMULATION_TRACE_FRAME_SCHEMA_VERSION,
                 "timestep": frame_index,
                 "time_seconds": time_seconds,
                 "district_id": spec.metadata.district_id,

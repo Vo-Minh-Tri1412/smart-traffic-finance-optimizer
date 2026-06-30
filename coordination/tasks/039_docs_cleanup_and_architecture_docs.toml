@@ -1,0 +1,36 @@
+id = "039_docs_cleanup_and_architecture_docs"
+owner = "integrator"
+branch = "main"
+base_commit = "dbf5981b414722946ea26f7988304fe5ae3e8b74"
+allowed_paths = [
+  "coordination/tasks/039_docs_cleanup_and_architecture_docs.toml",
+  "coordination/tasks/tmp_architecture_issue_inventory_20260701.toml",
+  "README.md",
+  "ai_quantum_hvtc/doctor.py",
+  "docs/**",
+  "ai_quantum_hvtc/simulation/README.md",
+  "render/README.md",
+  "simulation_projects/minh_khai_district_v1/README.md",
+]
+dependencies = [
+  "034_vehicle_asset_registry_factory",
+  "035_typed_trace_and_sumo_geometry_data",
+  "036_schema_versioning_and_contract_policy",
+  "037_trace_clock_and_interpolator",
+  "038_vehicle_pool",
+]
+acceptance_commands = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/039_docs_cleanup_and_architecture_docs.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Cleaned stale weekly/team docs from repo, moved durable simulation/render architecture into canonical docs, shortened render/simulation package README files, and updated doctor to require the new canonical docs instead of the removed weekly plan."
+validation = "uv run python -m ai_quantum_hvtc doctor; uv run ruff format --check .; uv run ruff check .; uv run mypy ai_quantum_hvtc scripts; uv run pytest; uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/039_docs_cleanup_and_architecture_docs.toml; explicit changed-file manifest validation for 13 files."
+risks = "Google Drive remains the source for current owners/deadlines/taskboard. Some older architecture docs still exist for historical design context and may need future consolidation if they become confusing."
+next_steps = "When committing, stage only task 034-039 scoped files plus prior approved changes; do not stage unrelated Godot AI addon/editor dirty files unless explicitly intended."

@@ -1,0 +1,45 @@
+id = "036_schema_versioning_and_contract_policy"
+owner = "integrator"
+branch = "main"
+base_commit = "dbf5981b414722946ea26f7988304fe5ae3e8b74"
+allowed_paths = [
+  "coordination/tasks/036_schema_versioning_and_contract_policy.toml",
+  "ai_quantum_hvtc/simulation/traces/**",
+  "ai_quantum_hvtc/simulation/engines/sumo/**",
+  "frontend/contracts/**",
+  "frontend/docs/TRACE_REPLAY_DESIGN.md",
+  "frontend/mock-data/**",
+  "render/scripts/contracts/**",
+  "render/scripts/assets/**",
+  "render/scripts/replay/**",
+  "render/scripts/world/**",
+  "render/resources/configs/asset_manifest.example.json",
+  "render/README.md",
+  "tests/integration/frontend_contracts/**",
+  "tests/integration/cli/test_godot_sumo_trace_replay_cli.py",
+  "tests/integration/sumo/**",
+  "tests/integration/cli/test_simulate_cli.py",
+  "tests/unit/simulation/**",
+]
+dependencies = [
+  "028_godot_sumo_trace_replay_v1",
+  "031_sumo_geometry_import_for_godot",
+  "034_vehicle_asset_registry_factory",
+  "035_typed_trace_and_sumo_geometry_data",
+]
+acceptance_commands = [
+  "uv run python scripts/render/godot_sumo_trace_replay_smoke.py --output-root <tmp>/godot_replay --max-frames 10",
+  "uv run pytest tests/integration/cli/test_godot_sumo_trace_replay_cli.py",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/036_schema_versioning_and_contract_policy.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added explicit trace schema versioning across Python exporters, frontend contracts/mock traces, and Godot loaders. SUMO/FCD and aggregate trace frames now carry schema_version=simulation_trace_frame.v1. Godot centralizes supported versions in schema_versions.gd and fails clearly for unsupported trace or vehicle asset manifest versions."
+validation = "Godot replay smoke passed; targeted replay/frontend/SUMO tests passed with 13 tests; ruff format/check passed; mypy passed; full pytest passed with 43 tests."
+risks = "Old trace JSONL files without schema_version will now fail in Godot replay instead of being guessed. This is intentional for contract safety, but older local artifacts should be regenerated."
+next_steps = "Proceed with TracePlaybackClock/TraceInterpolator, then VehiclePool. Keep schema version bumps explicit whenever cross-system fields change."

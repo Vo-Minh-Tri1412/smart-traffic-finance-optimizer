@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/vehicles/VehicleBase.tscn" id="1_base"]
+
+[node name="MotorbikeVehicle" instance=ExtResource("1_base")]
+default_vehicle_type = "MOTORBIKE"
+visual_scale = Vector3(0.45, 0.55, 0.75)
+visual_color = Color(0.12, 0.75, 0.22, 1)
+body_height = 0.22

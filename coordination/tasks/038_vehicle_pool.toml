@@ -1,0 +1,32 @@
+id = "038_vehicle_pool"
+owner = "integrator"
+branch = "main"
+base_commit = "dbf5981b414722946ea26f7988304fe5ae3e8b74"
+allowed_paths = [
+  "coordination/tasks/038_vehicle_pool.toml",
+  "render/scripts/assets/**",
+  "render/scripts/replay/trace_replay_controller.gd",
+  "render/README.md",
+  "tests/integration/cli/test_godot_sumo_trace_replay_cli.py",
+]
+dependencies = [
+  "034_vehicle_asset_registry_factory",
+  "035_typed_trace_and_sumo_geometry_data",
+  "037_trace_clock_and_interpolator",
+]
+acceptance_commands = [
+  "uv run python scripts/render/godot_sumo_trace_replay_smoke.py --output-root <tmp>/godot_replay --max-frames 10",
+  "uv run pytest tests/integration/cli/test_godot_sumo_trace_replay_cli.py",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/038_vehicle_pool.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added VehiclePool between TraceReplayController and VehicleFactory. The controller now acquires vehicle nodes from the pool and releases stale nodes back into hidden reusable buckets instead of queue_free. Replay summaries expose pool model and created/reused/released/available counts."
+validation = "Godot replay smoke passed; targeted replay pytest passed with a regression trace proving release/reuse; ruff format/check passed; mypy passed; full pytest passed with 44 tests."
+risks = "The standard SUMO smoke trace does not exercise release/reuse because its short sample keeps active vehicles alive; a dedicated test covers reuse. Pooling is per canonical vehicle type and does not yet enforce max pool sizes."
+next_steps = "Next architecture task should focus on map/SUMO review or district map quality rather than adding more render lifecycle plumbing."
