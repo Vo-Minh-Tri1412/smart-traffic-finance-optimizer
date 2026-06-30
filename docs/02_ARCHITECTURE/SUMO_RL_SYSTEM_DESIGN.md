@@ -36,6 +36,14 @@ main environment unless the integrator explicitly changes this project decision.
 SUMO-RL provides a Gymnasium/PettingZoo-compatible interface for traffic signal control. SUMO itself
 must be installed as an external binary runtime.
 
+Current implementation status:
+
+- SUMO export/run/parse is operational for the district spec.
+- `fixed_time` runs as the current simple baseline.
+- `rule_based` runs through TraCI as a preliminary adaptive baseline.
+- `rl_policy` is still a placeholder; training/evaluation is not implemented yet.
+- SUMO FCD/trace output is the source for future Godot replay.
+
 ## Observation, action, reward, and public-value objective
 
 The canonical RL observation contract is [Observation Space v1](OBSERVATION_SPACE_V1.md). Do not
@@ -81,11 +89,13 @@ recommendation.
 
 ## Environment scope ladder
 
-The smoke test starts with a single intersection only to verify the runtime. The project-grade
-environment should grow through a scope ladder:
+The smoke test started with small runtime checks only to verify the stack. The project-grade
+environment should grow through this scope ladder:
 
 - **Smoke test:** one signalized intersection, used only to verify local SUMO/SUMO-RL installation.
 - **Debug prototype:** a 2x2 or 3x3 network if needed to isolate controller and metric bugs.
+- **Current technical district:** a 16-intersection / 48-edge synthetic public-service district that
+  runs in SUMO and exposes metrics/traces, but still looks like a technical grid.
 - **Demo target:** a synthetic or hybrid public-service district with roughly 12-25 intersections,
   multiple functional zones, road capacity differences, at least one bottleneck, hospital/emergency
   priority routes, and candidate intersections for public investment.
@@ -114,8 +124,16 @@ Every RL result must be compared against:
 - fixed-time controller
 - simple rule-based adaptive controller
 
-If the RL agent is unstable, the project can still demo the baselines and the public-finance layer,
-but the final target remains SUMO-RL.
+The rule-based baseline is intentionally a transparent heuristic: read queue/lane pressure and give
+simple priority to emergency/public-service vehicles. It is not expected to be optimal yet and may
+lose to fixed-time on some scenarios. That is acceptable as long as the report states it plainly.
+
+Baseline work can continue before Economics finishes reward/public-value, because baselines use
+traffic metrics that already exist. RL training should wait until reward and scenario definitions are
+aligned.
+
+If the RL agent is unstable or not ready, the project can still demo fixed-time vs rule-based plus
+the public-finance layer, but the final target remains SUMO-RL.
 
 ## Outputs
 

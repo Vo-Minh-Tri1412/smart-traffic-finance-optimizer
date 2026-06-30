@@ -38,10 +38,11 @@ for sensor realism:
    vehicle trajectories into camera-like frames, YOLO labels, weather/noise variants, and demo
    video.
 
-The current repository is a technical scaffold. It contains the simulation architecture, SUMO
-adapter scaffold, frontend contracts, Drive-backed data/artifact workflow, and notebook entrypoints.
-It does **not** yet contain a final trained RL policy, final YOLO model, or approved real-world
-finance assumptions.
+The current repository is a technical scaffold with a working SUMO backend path. It contains the
+simulation architecture, SUMO export/run/parse flow, preliminary fixed-time and rule-based
+baselines, frontend/Godot contracts, Drive-backed data/artifact workflow, and notebook entrypoints.
+It does **not** yet contain a final trained RL policy, final YOLO model, finished Godot replay UI, or
+approved real-world finance assumptions.
 
 ## Research framing
 
@@ -261,7 +262,10 @@ Important implementation requirements:
 Current status:
 
 - SUMO runtime and SUMO-RL imports are verified locally.
-- SUMO adapter scaffold exists.
+- SUMO backend exports network/routes/additional outputs, runs fixed-time and preliminary
+  rule-based baselines, parses trip/edge/FCD metrics, and can open in SUMO GUI for inspection.
+- The current district is a technical 16-intersection network; it runs, but map realism, road
+  shapes, behavior profiles, and traffic-light phase design still need improvement.
 - Final project-specific SUMO-RL training environment and trained policy are not complete yet.
 
 ### 3. Public-finance investment optimizer
@@ -501,6 +505,8 @@ The current scaffold does not claim:
 - a final trained YOLO detector;
 - an implemented Godot 3D renderer or generated synthetic camera dataset;
 - a completed Godot district scene or asset library;
+- a polished, realistic SUMO city map;
+- a strong adaptive baseline that reliably beats fixed-time under all scenarios;
 - real-world causal traffic savings;
 - real-world budget savings;
 - validated finance assumptions;

@@ -53,10 +53,12 @@ while ensuring the economic logic is part of the system, not decorative narratio
 
 ## Team split
 
-CS owns:
+Lead/CS owns:
 
 - SUMO/SUMO-RL environment setup
-- baseline controllers
+- fixed-time and rule-based baseline controllers
+- SUMO metric, trace, and report export
+- Godot/render technical pipeline
 - RL training/evaluation scripts
 - reproducible metrics and reports
 - public-value scoring implementation
@@ -73,19 +75,22 @@ Economics/Public Finance owns:
 - budget-priority narrative
 - judge-facing story and Q&A
 
+Reward and public-value are shared. Economics defines the policy meaning and assumptions; CS turns
+those definitions into executable config, formulas, tests, and reports.
+
 ## Non-goals for now
 
-- No computer vision vehicle counting in MVP.
+- No heavy YOLO training before the Godot trace replay and synthetic dataset contract are ready.
 - No custom simulator as the main environment.
-- No city-scale network until a 2x2/3x3 mini-city is reproducible and metrics are stable.
+- No claim that the current 16-intersection technical grid is a realistic final city map.
 - No claim that simulation results are real-world causal proof.
 
 ## Success criteria
 
-Week-1 success means:
+Near-term success means:
 
-- SUMO dependency status is explicit.
-- A SUMO-RL sample or minimal environment path is defined.
-- Fixed-time and rule-based baselines are specified.
+- SUMO backend can run fixed-time and rule-based baselines on the district spec.
+- Baseline reports are readable by Economics without opening code.
+- Godot can replay a SUMO trace with placeholder scenes.
 - Economics can fill cost/scenario templates without coding.
-- All active docs point to the traffic/public-finance direction.
+- CS and Economics agree on reward/public-value v0 before RL claims.

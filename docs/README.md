@@ -19,6 +19,8 @@ should not be recreated.
 
 ## Recommended reading order
 
+0. Google Drive: `00_Master_Project_Brief_Smart_Traffic_Public_Finance` for the full team-facing
+   summary.
 1. [Smart Traffic Public Finance brief](01_PROJECT_BRIEF/SMART_TRAFFIC_PUBLIC_FINANCE.md)
 2. [SUMO-RL system design](02_ARCHITECTURE/SUMO_RL_SYSTEM_DESIGN.md)
 3. [Public-service district environment spec](02_ARCHITECTURE/PUBLIC_SERVICE_DISTRICT_ENVIRONMENT_SPEC.md)
@@ -27,14 +29,19 @@ should not be recreated.
 6. [Synthetic visual sensor dataset contract](02_ARCHITECTURE/SYNTHETIC_VISUAL_SENSOR_DATASET.md)
 7. [Godot synthetic CV smoke export](02_ARCHITECTURE/GODOT_SYNTHETIC_CV_SMOKE.md)
 8. [Economics plain-language guide](05_TEAM_GUIDES/ECONOMICS_PLAIN_LANGUAGE_GUIDE.md)
-9. [Week 1 plan](04_WEEKLY_PLANS/WEEK1_PLAN.md)
+9. [Week 1 plan](04_WEEKLY_PLANS/WEEK1_PLAN.md) as a historical snapshot, not the current
+   taskboard.
 
 ## Current architecture stance
 
 - SUMO/SUMO-RL remains the official traffic simulation and RL environment.
+- SUMO backend runs today, but map realism, traffic-light programs, and baseline strength are still
+  active work.
 - Godot is a renderer/sensor-data generator, not the main traffic simulator.
 - YOLO/CV is a sensor layer, not the source of simulator ground truth.
 - Public-finance optimization chooses which intersections to invest in under a budget.
+- Baseline/report work can proceed before reward is finalized; reward/public-value definitions need
+  CS and Economics alignment before RL claims.
 - Generated datasets, training runs, checkpoints, videos, and local simulator outputs stay out of Git.
 
 ## Cleanup rule
