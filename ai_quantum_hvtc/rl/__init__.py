@@ -1,7 +1,30 @@
-"""RL contracts for future SUMO-RL training and evaluation."""
+"""RL contracts and reward-profile scaffolding for SUMO-RL training."""
 
 from __future__ import annotations
 
 from .contracts import ActionSpaceContract, ObservationSpaceContract
+from .reward_profiles import (
+    HardConstraint,
+    RewardProfile,
+    RewardProfileError,
+    RoutePriorityWeight,
+    TimeWindowWeight,
+    build_sumo_rl_reward,
+    load_reward_profile,
+    training_blockers,
+    validate_reward_profile_against_spec,
+)
 
-__all__ = ["ActionSpaceContract", "ObservationSpaceContract"]
+__all__ = [
+    "ActionSpaceContract",
+    "HardConstraint",
+    "ObservationSpaceContract",
+    "RewardProfile",
+    "RewardProfileError",
+    "RoutePriorityWeight",
+    "TimeWindowWeight",
+    "build_sumo_rl_reward",
+    "load_reward_profile",
+    "training_blockers",
+    "validate_reward_profile_against_spec",
+]

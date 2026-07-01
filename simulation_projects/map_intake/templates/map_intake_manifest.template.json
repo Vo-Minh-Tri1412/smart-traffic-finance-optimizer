@@ -1,0 +1,32 @@
+{
+  "schema": "map_intake_manifest.v1",
+  "map_id": "MAP-YYYYMMDD-001",
+  "display_name": "Tên map/khu vực",
+  "source_type": "osm|sumo|geojson|synthetic|manual|other",
+  "source_location": "Drive link, local path, or source URL",
+  "license_or_permission": "unknown|public|team-created|permission-recorded",
+  "created_by": "[Điền]",
+  "created_date": "YYYY-MM-DD",
+  "intended_use": "Godot authoring seed before SUMO simulation",
+  "geographic_basis": "real district|synthetic district|hybrid",
+  "coordinate_system": "unknown|WGS84|SUMO meters|Godot meters|other",
+  "expected_scale": {
+    "intersection_count": null,
+    "road_count": null,
+    "zone_count": null
+  },
+  "semantic_layers_needed": [
+    "zones",
+    "traffic_lights",
+    "investment_candidates",
+    "demand_flows"
+  ],
+  "quality_checks": {
+    "connected_graph": "not_checked",
+    "lane_counts_reviewed": "not_checked",
+    "traffic_lights_reviewed": "not_checked",
+    "zone_economic_logic_reviewed": "not_checked",
+    "license_reviewed": "not_checked"
+  },
+  "notes": ""
+}

@@ -24,6 +24,37 @@ Godot authored map scene
 Godot should prefer SUMO `district.net.xml` for road/lane geometry during replay so vehicles and
 roads share the same coordinate source.
 
+## Map source intake
+
+The team does not have to hand-author an entire city inside Godot from zero. A larger map may first
+arrive from OSM, SUMO, GeoJSON, a synthetic generator, or manual planning notes.
+
+Pre-Godot map sources belong in:
+
+```text
+simulation_projects/map_intake/
+```
+
+That folder is the staging area for:
+
+- raw map sources;
+- cleaned/prepared map sources;
+- seed specs before Godot editing;
+- review notes about connectivity, zones, traffic lights, and economic logic.
+
+After a map source is selected or generated, Godot is used to refine the semantic/visual layer:
+
+```text
+map_intake source
+  -> Godot authoring scene
+  -> district_spec.generated.json
+  -> SUMO run
+  -> Godot replay/render
+```
+
+Large or license-sensitive map files stay out of Git and should be recorded through a map intake
+manifest and Google Drive link.
+
 ## Project map
 
 ```text
@@ -45,9 +76,34 @@ render/
 │   └── dataset_export/
 ├── resources/
 │   └── configs/     # manifest examples and future render/camera presets
-├── imported_assets/ # local imported art assets
+├── imported_assets/ # Godot-ready art assets
 └── outputs/         # ignored local render outputs
 ```
+
+## Visual asset library
+
+Godot scenes can directly instance assets from:
+
+```text
+render/imported_assets/
+```
+
+The current asset scaffold separates:
+
+- vehicles;
+- buildings by semantic zone type;
+- roads and road materials;
+- intersections;
+- traffic lights;
+- street furniture;
+- cameras;
+- weather/render visuals;
+- materials/textures;
+- UI assets.
+
+This is intentionally a folder scaffold, not a registry. A `.tres` asset registry should be added
+only when multiple systems need to choose assets by semantic type. Until then, Godot scenes and
+presets can reference assets directly.
 
 ## Authoring layer
 

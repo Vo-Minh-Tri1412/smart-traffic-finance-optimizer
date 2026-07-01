@@ -1,0 +1,9 @@
+*
+!.gitignore
+!README.md
+!**/
+!**/.gitkeep
+!templates/**
+!04_review_notes/**
+*.tmp
+*.bak

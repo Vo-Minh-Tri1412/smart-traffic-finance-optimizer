@@ -1,0 +1,103 @@
+# Draft reward profile for the cloud SUMO-RL scaffold.
+# Economics/CS should edit weights here first, then mark status = "approved"
+# only after the assumptions are reviewed and sourced or explicitly accepted
+# as placeholders.
+
+[metadata]
+profile_id = "reward_profile_v0_draft"
+status = "draft"
+owner = "economics_and_cs"
+description = "Draft profile for route/time-aware traffic signal reward. Not approved for policy claims."
+
+[training_gate]
+require_approved_for_training = true
+hard_constraints_block_training = true
+waiting_time_scale_seconds = 100.0
+
+[base_weights]
+waiting_time = 1.0
+queue_length = 0.25
+pressure_abs = 0.05
+average_speed_bonus = 0.10
+
+[vehicle_type_weights]
+MOTORBIKE = 1.0
+PRIVATE_CAR = 1.0
+TAXI_RIDE_HAILING = 1.1
+DELIVERY_BIKE = 1.2
+BUS = 3.0
+SCHOOL_BUS = 4.0
+WORKER_SHUTTLE = 2.5
+LIGHT_TRUCK = 3.5
+HEAVY_TRUCK = 5.0
+AMBULANCE = 20.0
+
+[trip_purpose_weights]
+COMMUTE_WORK = 1.0
+COMMUTE_SCHOOL = 3.5
+INDUSTRIAL_SHIFT_IN = 2.0
+LOGISTICS_DELIVERY = 4.0
+MEDICAL_EMERGENCY = 25.0
+HOSPITAL_VISIT = 4.0
+SHOPPING_MARKET = 1.2
+ENTERTAINMENT = 1.0
+EVENT_ATTENDANCE = 1.5
+
+[scenario_weights]
+normal_weekday = 1.0
+morning_school_work = 2.0
+industrial_shift_in = 1.7
+industrial_logistics_peak = 2.2
+hospital_emergency = 4.0
+nightlife_spike = 1.4
+incident_bottleneck = 2.0
+limited_budget_rollout = 2.0
+
+[[route_priority_weights]]
+flow_id = "F_MEDICAL_EMERGENCY"
+weight = 20.0
+description = "Ambulance access to hospital corridor."
+
+[[route_priority_weights]]
+flow_id = "F_LOGISTICS_DELIVERY"
+weight = 4.0
+description = "Truck route to industrial/logistics corridor."
+
+[[route_priority_weights]]
+flow_id = "F_SCHOOL_RUSH"
+weight = 3.5
+description = "School-zone morning access."
+
+[[time_window_weights]]
+label = "school_morning"
+start = 1800
+end = 3600
+weight = 3.0
+flow_ids = ["F_SCHOOL_RUSH"]
+trip_purposes = ["COMMUTE_SCHOOL"]
+
+[[time_window_weights]]
+label = "hospital_active_window"
+start = 0
+end = 7200
+weight = 5.0
+flow_ids = ["F_MEDICAL_EMERGENCY", "F_HOSPITAL_VISIT"]
+trip_purposes = ["MEDICAL_EMERGENCY", "HOSPITAL_VISIT"]
+
+[[time_window_weights]]
+label = "logistics_day_peak"
+start = 3600
+end = 7200
+weight = 2.5
+flow_ids = ["F_LOGISTICS_DELIVERY"]
+trip_purposes = ["LOGISTICS_DELIVERY"]
+
+[[hard_constraints]]
+id = "emergency_vehicle_preemption"
+type = "emergency_vehicle_preemption"
+vehicle_types = ["AMBULANCE"]
+priority_level_min = 10
+max_wait_seconds = 0
+enforcement = "action_filter_required"
+status = "pending_implementation"
+notes = "An ambulance with active emergency priority should force or filter compatible green phases with yellow/all-red safety clearance. This is a hard constraint, not just a reward weight."

@@ -23,6 +23,21 @@ res://scenes/authoring/DistrictAuthoringMap.tscn
 res://scenes/authoring/presets/*.tscn
 ```
 
+Visual assets live under:
+
+```text
+res://imported_assets/
+```
+
+Use that folder for Godot-ready vehicles, buildings, road/intersection visuals, street furniture,
+camera rigs, materials, textures, weather visuals, and UI assets.
+
+Pre-Godot map sources do **not** belong in `render/`. Put OSM/SUMO/GeoJSON/synthetic seed maps in:
+
+```text
+../simulation_projects/map_intake/
+```
+
 No-code map authoring rule of thumb:
 
 - Drag or duplicate `IntersectionMarker`, `RoadSegment`, `ZoneArea`, `DemandFlow`,

@@ -1,0 +1,29 @@
+id = "042_render_asset_and_map_intake_scaffold"
+owner = "integrator"
+branch = "main"
+base_commit = "44eaf47fffef6e782ddebe0baa9ee53ce2234308"
+allowed_paths = [
+  "coordination/tasks/042_render_asset_and_map_intake_scaffold.toml",
+  "render/imported_assets/**",
+  "render/README.md",
+  "simulation_projects/map_intake/**",
+  "docs/02_ARCHITECTURE/GODOT_RENDER_ARCHITECTURE.md",
+]
+dependencies = [
+  "040_godot_authoring_ux_v2_core_editor",
+]
+acceptance_commands = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/042_render_asset_and_map_intake_scaffold.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added a Godot visual asset folder scaffold under render/imported_assets and a pre-Godot map intake workspace under simulation_projects/map_intake, with templates for map provenance/review and docs clarifying asset-vs-map ownership."
+validation = "uv run python -m ai_quantum_hvtc doctor; uv run ruff format --check .; uv run ruff check .; uv run mypy ai_quantum_hvtc scripts; uv run pytest; explicit changed-file task validation for 33 task files."
+risks = "This creates organized shelves only; it does not import real art assets or implement OSM/SUMO/GeoJSON conversion into Godot scenes."
+next_steps = "When a concrete source map exists, create a map intake manifest and decide whether conversion starts from OSM, SUMO net XML, GeoJSON, or a synthetic generator."
