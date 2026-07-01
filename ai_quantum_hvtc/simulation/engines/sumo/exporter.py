@@ -80,18 +80,19 @@ def _write_nodes(spec: DistrictSpec, path: Path) -> None:
 def _write_edges(spec: DistrictSpec, path: Path) -> None:
     root = ET.Element("edges")
     for road in spec.roads.values():
-        ET.SubElement(
-            root,
-            "edge",
-            {
-                "id": road.road_id,
-                "from": road.from_intersection,
-                "to": road.to_intersection,
-                "numLanes": str(road.lanes),
-                "speed": f"{road.speed_kph / 3.6:.3f}",
-                "length": f"{road.length_km * 1000.0:.3f}",
-            },
-        )
+        attributes = {
+            "id": road.road_id,
+            "from": road.from_intersection,
+            "to": road.to_intersection,
+            "numLanes": str(road.lanes),
+            "speed": f"{road.speed_kph / 3.6:.3f}",
+            "length": f"{road.length_km * 1000.0:.3f}",
+        }
+        if road.shape_points:
+            attributes["shape"] = " ".join(
+                f"{x * 1000.0:.3f},{y * 1000.0:.3f}" for x, y in road.shape_points
+            )
+        ET.SubElement(root, "edge", attributes)
     _write_xml(root, path)
 
 

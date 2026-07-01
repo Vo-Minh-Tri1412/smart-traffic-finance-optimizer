@@ -29,3 +29,6 @@ def test_godot_authoring_export_writes_valid_district_spec_when_godot_is_availab
     assert len(spec.roads) >= 20
     assert len(spec.flows) >= 5
     assert len(raw["investment_candidates"]) >= 3
+    assert any(road.get("shape_points") for road in raw["roads"])
+    assert all("lane_width_m" in road for road in raw["roads"])
+    assert "F_RES_SCHOOL" in spec.flows

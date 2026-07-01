@@ -20,7 +20,17 @@ Useful scenes:
 ```text
 res://scenes/main/Main.tscn
 res://scenes/authoring/DistrictAuthoringMap.tscn
+res://scenes/authoring/presets/*.tscn
 ```
+
+No-code map authoring rule of thumb:
+
+- Drag or duplicate `IntersectionMarker`, `RoadSegment`, `ZoneArea`, `DemandFlow`,
+  `TrafficLightMarker`, and `InvestmentCandidateMarker` nodes.
+- Prefer NodePath fields such as `from_intersection_path`, `to_intersection_path`,
+  `origin_zone_path`, `destination_zone_path`, and `intersection_path`.
+- Treat text ID fields as fallback/compatibility fields only.
+- VND cost fields live on `InvestmentCandidateMarker`; traffic lights only describe signal control.
 
 Useful smoke commands:
 

@@ -44,6 +44,11 @@ class Road:
     capacity: float
     tags: tuple[str, ...] = ()
     truck_allowed: bool = True
+    lane_width_m: float = 3.2
+    sidewalk_width_m: float = 0.0
+    median_width_m: float = 0.0
+    visual_width_m: float = 0.0
+    shape_points: tuple[tuple[float, float], ...] = ()
 
     @property
     def free_flow_seconds(self) -> float:

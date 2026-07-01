@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/authoring/components/ZoneArea.tscn" id="1_zone"]
+
+[node name="SchoolZone" instance=ExtResource("1_zone")]
+zone_type = "school"
+display_name = "Trường học"
+economic_role = "school commute, child safety, and parent time cost"
+peak_windows = ["morning", "afternoon"]

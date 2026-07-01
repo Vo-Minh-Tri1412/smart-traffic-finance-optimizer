@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/authoring/components/ZoneArea.tscn" id="1_zone"]
+
+[node name="NightlifeZone" instance=ExtResource("1_zone")]
+zone_type = "nightlife"
+display_name = "Khu quán nhậu/giải trí"
+economic_role = "evening demand, road-safety risk, and late-night congestion"
+peak_windows = ["evening", "late_night"]

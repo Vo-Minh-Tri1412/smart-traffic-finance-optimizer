@@ -24,6 +24,12 @@ func _run() -> void:
 	root.add_child(map_root)
 
 	var spec := _build_spec(map_root, options)
+	var validation_errors := _validate_spec(spec)
+	if not validation_errors.is_empty():
+		for validation_error in validation_errors:
+			push_error(validation_error)
+		quit(6)
+		return
 	var error := DirAccess.make_dir_recursive_absolute(out_path.get_base_dir())
 	if error != OK:
 		push_error("Cannot create output directory %s: %s" % [out_path.get_base_dir(), error])
@@ -49,7 +55,7 @@ func _build_spec(map_root: Node, options: Dictionary) -> Dictionary:
 	)
 	var roads := _collect_marker_rows(map_root, "authoring_road", {"intersections": intersections})
 	var zones := _collect_marker_rows(map_root, "authoring_zone", {})
-	var flows := _collect_marker_rows(map_root, "authoring_spawn", {})
+	var flows := _collect_marker_rows(map_root, "authoring_demand_flow", {})
 	var flow_ids := _flow_ids(flows)
 	var candidates := _collect_marker_rows(
 		map_root,
@@ -95,6 +101,92 @@ func _collect_marker_rows(map_root: Node, group_name: String, context: Dictionar
 		for row in rows:
 			if row is Dictionary and not (row as Dictionary).is_empty():
 				output.append(row)
+	return output
+
+
+func _validate_spec(spec: Dictionary) -> Array[String]:
+	var errors: Array[String] = []
+	var intersection_ids := _id_set_from_array(spec.get("intersections", []), "id", "intersection", errors)
+	var zone_ids := _id_set_from_array(spec.get("zones", []), "id", "zone", errors)
+	var road_ids := _id_set_from_array(spec.get("roads", []), "id", "road", errors)
+	var flow_ids := _id_set_from_array(spec.get("flows", []), "id", "demand flow", errors)
+	var candidate_ids := _id_set_from_array(
+		spec.get("investment_candidates", []),
+		"id",
+		"investment candidate",
+		errors,
+	)
+	if intersection_ids.is_empty():
+		errors.append("Authoring map must contain at least one intersection.")
+	if road_ids.is_empty():
+		errors.append("Authoring map must contain at least one road.")
+	if zone_ids.is_empty():
+		errors.append("Authoring map must contain at least one zone.")
+	if flow_ids.is_empty():
+		errors.append("Authoring map must contain at least one demand flow.")
+
+	for road in spec.get("roads", []):
+		if not (road is Dictionary):
+			continue
+		var from_id := String((road as Dictionary).get("from", ""))
+		var to_id := String((road as Dictionary).get("to", ""))
+		if not intersection_ids.has(from_id):
+			errors.append("Road %s references missing from intersection %s." % [(road as Dictionary).get("id", ""), from_id])
+		if not intersection_ids.has(to_id):
+			errors.append("Road %s references missing to intersection %s." % [(road as Dictionary).get("id", ""), to_id])
+		if float((road as Dictionary).get("length_km", 0.0)) <= 0.0:
+			errors.append("Road %s has non-positive length." % (road as Dictionary).get("id", ""))
+
+	for zone in spec.get("zones", []):
+		if not (zone is Dictionary):
+			continue
+		for intersection_id in (zone as Dictionary).get("intersection_ids", []):
+			if not intersection_ids.has(String(intersection_id)):
+				errors.append("Zone %s references missing intersection %s." % [(zone as Dictionary).get("id", ""), intersection_id])
+
+	for flow in spec.get("flows", []):
+		if not (flow is Dictionary):
+			continue
+		var origin_zone := String((flow as Dictionary).get("origin_zone", ""))
+		var destination_zone := String((flow as Dictionary).get("destination_zone", ""))
+		if not zone_ids.has(origin_zone):
+			errors.append("Demand flow %s references missing origin zone %s." % [(flow as Dictionary).get("id", ""), origin_zone])
+		if not zone_ids.has(destination_zone):
+			errors.append("Demand flow %s references missing destination zone %s." % [(flow as Dictionary).get("id", ""), destination_zone])
+
+	for candidate in spec.get("investment_candidates", []):
+		if not (candidate is Dictionary):
+			continue
+		var candidate_intersection := String((candidate as Dictionary).get("intersection_id", ""))
+		if not intersection_ids.has(candidate_intersection):
+			errors.append("Investment candidate %s references missing intersection %s." % [(candidate as Dictionary).get("id", ""), candidate_intersection])
+		for flow_id in (candidate as Dictionary).get("affected_flow_ids", []):
+			if not flow_ids.has(String(flow_id)):
+				errors.append("Investment candidate %s references missing demand flow %s." % [(candidate as Dictionary).get("id", ""), flow_id])
+
+	# Referencing the variables prevents accidental future removal of duplicate checks.
+	if candidate_ids.size() < 0:
+		errors.append("unreachable")
+	return errors
+
+
+func _id_set_from_array(items: Variant, id_field: String, label: String, errors: Array[String]) -> Dictionary:
+	var output := {}
+	if not (items is Array):
+		errors.append("Expected %s list to be an array." % label)
+		return output
+	for item in items:
+		if not (item is Dictionary):
+			errors.append("Invalid %s row; expected Dictionary." % label)
+			continue
+		var item_id := String((item as Dictionary).get(id_field, ""))
+		if item_id.is_empty():
+			errors.append("A %s row is missing %s." % [label, id_field])
+			continue
+		if output.has(item_id):
+			errors.append("Duplicate %s id: %s." % [label, item_id])
+			continue
+		output[item_id] = true
 	return output
 
 

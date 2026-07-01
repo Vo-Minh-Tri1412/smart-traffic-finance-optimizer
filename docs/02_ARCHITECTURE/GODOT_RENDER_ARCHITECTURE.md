@@ -31,6 +31,7 @@ render/
 ├── scenes/
 │   ├── main/        # app entry scene
 │   ├── authoring/   # drag-and-drop map markers
+│   │   └── presets/ # reusable zone/intersection presets for no-code editing
 │   ├── world/       # replay world and future world objects
 │   ├── vehicles/    # editable vehicle scenes
 │   ├── sensors/     # future camera/sensor scenes
@@ -61,13 +62,39 @@ Authoring markers are component-style scene nodes:
 - `IntersectionMarker`;
 - `RoadSegment`;
 - `ZoneArea`;
-- `SpawnPoint`;
+- `DemandFlow` (`SpawnPoint` remains only as a compatibility alias);
 - `DestinationPoint`;
 - `TrafficLightMarker`;
 - `InvestmentCandidateMarker`.
 
 Each marker owns its exported properties and serializes itself. The exporter should not become a
 large list of marker-specific special cases.
+
+Authoring UX v2 rules:
+
+- Road endpoints should be selected through `from_intersection_path` and `to_intersection_path`
+  NodePath fields, not by manually typing intersection IDs.
+- `RoadSegment` stores actual geometry knobs: `shape_points`, `lanes`, `lane_width_m`,
+  `sidewalk_width_m`, and `median_width_m`. It computes length from the scene geometry and exports
+  optional SUMO edge shape points.
+- Zones can connect to intersections through `intersection_paths`; text IDs are fallback only.
+- Traffic lights and investment candidates can point to an intersection node through
+  `intersection_path`. VND cost fields belong to `InvestmentCandidateMarker`, not to the traffic
+  light itself.
+- Demand is modeled as OD flow (`DemandFlow`) from origin zone to destination zone. It is not a
+  physical game-style spawn point.
+- The exporter validates duplicate IDs and broken references before writing `district_spec`.
+
+Current no-code authoring presets:
+
+- `res://scenes/authoring/presets/ResidentialZone.tscn`
+- `res://scenes/authoring/presets/HospitalZone.tscn`
+- `res://scenes/authoring/presets/SchoolZone.tscn`
+- `res://scenes/authoring/presets/IndustrialZone.tscn`
+- `res://scenes/authoring/presets/NightlifeZone.tscn`
+- `res://scenes/authoring/presets/GatewayZone.tscn`
+- `res://scenes/authoring/presets/SignalizedIntersection.tscn`
+- `res://scenes/authoring/presets/UnsignalizedIntersection.tscn`
 
 ## Replay layer
 

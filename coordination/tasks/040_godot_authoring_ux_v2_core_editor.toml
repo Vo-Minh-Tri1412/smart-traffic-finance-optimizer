@@ -1,0 +1,38 @@
+id = "040_godot_authoring_ux_v2_core_editor"
+owner = "integrator"
+branch = "main"
+base_commit = "e3f697e18b1564e06dc05447c2f8914da7ac9485"
+allowed_paths = [
+  "coordination/tasks/040_godot_authoring_ux_v2_core_editor.toml",
+  "ai_quantum_hvtc/simulation/domain/models.py",
+  "ai_quantum_hvtc/simulation/engines/sumo/exporter.py",
+  "ai_quantum_hvtc/simulation/specs/loader.py",
+  "render/scenes/authoring/**",
+  "render/scripts/authoring/**",
+  "scripts/render/godot_authoring_export.py",
+  "scripts/render/godot_authoring_roundtrip_smoke.py",
+  "tests/integration/cli/test_godot_authoring_export_cli.py",
+  "tests/integration/cli/test_godot_authoring_roundtrip_cli.py",
+  "docs/02_ARCHITECTURE/GODOT_RENDER_ARCHITECTURE.md",
+  "render/README.md",
+]
+dependencies = [
+  "039_docs_cleanup_and_architecture_docs",
+]
+acceptance_commands = [
+  "uv run python scripts/render/godot_authoring_export.py --out artifacts/tmp/authoring_v2/district_spec.generated.json",
+  "uv run python scripts/render/godot_authoring_roundtrip_smoke.py --output-root artifacts/tmp/authoring_v2/roundtrip --max-frames 60",
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/040_godot_authoring_ux_v2_core_editor.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Implemented Godot authoring UX v2 core: road endpoints can be selected via NodePath instead of typed IDs, roads export geometry/width fields and SUMO edge shape points, DemandFlow replaces SpawnPoint semantics while preserving compatibility, zones/lights/candidates can reference scene nodes, exporter validates broken references/duplicate IDs, and authoring presets were added for common district components."
+validation = "uv run python scripts/render/godot_authoring_export.py --out artifacts/tmp/authoring_v2/district_spec.generated.json; uv run python scripts/render/godot_authoring_roundtrip_smoke.py --output-root artifacts/tmp/authoring_v2/roundtrip --max-frames 60; uv run python -m ai_quantum_hvtc doctor; uv run ruff format --check .; uv run ruff check .; uv run mypy ai_quantum_hvtc scripts; uv run pytest; uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/040_godot_authoring_ux_v2_core_editor.toml; explicit changed-file manifest validation for 25 task files."
+risks = "This is still an editor-data workflow, not a custom graphical road-drawing plugin. Designers select NodePath endpoints in Inspector and can edit shape_points, but there is not yet a polished in-editor road handle/toolbar."
+next_steps = "Next UX task should add a dedicated editor plugin/toolbar for add-road-by-click, auto-ID generation, validation panel, and one-click export/roundtrip from inside Godot."

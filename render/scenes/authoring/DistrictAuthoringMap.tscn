@@ -3,7 +3,7 @@
 [ext_resource type="PackedScene" path="res://scenes/authoring/components/IntersectionMarker.tscn" id="1_intersection"]
 [ext_resource type="PackedScene" path="res://scenes/authoring/components/RoadSegment.tscn" id="2_road"]
 [ext_resource type="PackedScene" path="res://scenes/authoring/components/ZoneArea.tscn" id="3_zone"]
-[ext_resource type="PackedScene" path="res://scenes/authoring/components/SpawnPoint.tscn" id="4_spawn"]
+[ext_resource type="PackedScene" path="res://scenes/authoring/components/DemandFlow.tscn" id="4_flow"]
 [ext_resource type="PackedScene" path="res://scenes/authoring/components/DestinationPoint.tscn" id="5_destination"]
 [ext_resource type="PackedScene" path="res://scenes/authoring/components/TrafficLightMarker.tscn" id="6_tls"]
 [ext_resource type="PackedScene" path="res://scenes/authoring/components/InvestmentCandidateMarker.tscn" id="7_candidate"]
@@ -94,7 +94,9 @@ tags = ["GATEWAY", "EAST_ENTRY", "TRUCK_ROUTE"]
 
 [node name="R01_GW_W_I04" parent="Roads" instance=ExtResource("2_road")]
 road_id = "R01"
+from_intersection_path = NodePath("../../Intersections/GW_W")
 from_intersection = "GW_W"
+to_intersection_path = NodePath("../../Intersections/I04")
 to_intersection = "I04"
 bidirectional = true
 lanes = 3
@@ -104,7 +106,9 @@ tags = ["ARTERIAL", "GATEWAY"]
 
 [node name="R02_I04_I05" parent="Roads" instance=ExtResource("2_road")]
 road_id = "R02"
+from_intersection_path = NodePath("../../Intersections/I04")
 from_intersection = "I04"
+to_intersection_path = NodePath("../../Intersections/I05")
 to_intersection = "I05"
 bidirectional = true
 lanes = 2
@@ -114,17 +118,22 @@ tags = ["ARTERIAL"]
 
 [node name="R03_I05_I06" parent="Roads" instance=ExtResource("2_road")]
 road_id = "R03"
+from_intersection_path = NodePath("../../Intersections/I05")
 from_intersection = "I05"
+to_intersection_path = NodePath("../../Intersections/I06")
 to_intersection = "I06"
 bidirectional = true
 lanes = 2
 speed_kph = 35.0
 capacity = 850.0
 tags = ["BOTTLENECK", "MARKET_ACCESS"]
+shape_points = PackedVector3Array(620, 0, 530, 860, 0, 470)
 
 [node name="R04_I06_GW_E" parent="Roads" instance=ExtResource("2_road")]
 road_id = "R04"
+from_intersection_path = NodePath("../../Intersections/I06")
 from_intersection = "I06"
+to_intersection_path = NodePath("../../Intersections/GW_E")
 to_intersection = "GW_E"
 bidirectional = true
 lanes = 3
@@ -134,7 +143,9 @@ tags = ["ARTERIAL", "TRUCK_ROUTE"]
 
 [node name="R05_I01_I02" parent="Roads" instance=ExtResource("2_road")]
 road_id = "R05"
+from_intersection_path = NodePath("../../Intersections/I01")
 from_intersection = "I01"
+to_intersection_path = NodePath("../../Intersections/I02")
 to_intersection = "I02"
 bidirectional = true
 lanes = 2
@@ -144,7 +155,9 @@ tags = ["NIGHTLIFE_ACCESS"]
 
 [node name="R06_I02_I03" parent="Roads" instance=ExtResource("2_road")]
 road_id = "R06"
+from_intersection_path = NodePath("../../Intersections/I02")
 from_intersection = "I02"
+to_intersection_path = NodePath("../../Intersections/I03")
 to_intersection = "I03"
 bidirectional = true
 lanes = 2
@@ -154,7 +167,9 @@ tags = ["ARTERIAL"]
 
 [node name="R07_I07_I08" parent="Roads" instance=ExtResource("2_road")]
 road_id = "R07"
+from_intersection_path = NodePath("../../Intersections/I07")
 from_intersection = "I07"
+to_intersection_path = NodePath("../../Intersections/I08")
 to_intersection = "I08"
 bidirectional = true
 lanes = 2
@@ -165,7 +180,9 @@ truck_allowed = false
 
 [node name="R08_I08_I09" parent="Roads" instance=ExtResource("2_road")]
 road_id = "R08"
+from_intersection_path = NodePath("../../Intersections/I08")
 from_intersection = "I08"
+to_intersection_path = NodePath("../../Intersections/I09")
 to_intersection = "I09"
 bidirectional = true
 lanes = 2
@@ -175,7 +192,9 @@ tags = ["SCHOOL_ACCESS", "INDUSTRIAL_ACCESS"]
 
 [node name="R09_I01_I04" parent="Roads" instance=ExtResource("2_road")]
 road_id = "R09"
+from_intersection_path = NodePath("../../Intersections/I01")
 from_intersection = "I01"
+to_intersection_path = NodePath("../../Intersections/I04")
 to_intersection = "I04"
 bidirectional = true
 lanes = 2
@@ -186,7 +205,9 @@ truck_allowed = false
 
 [node name="R10_I04_I07" parent="Roads" instance=ExtResource("2_road")]
 road_id = "R10"
+from_intersection_path = NodePath("../../Intersections/I04")
 from_intersection = "I04"
+to_intersection_path = NodePath("../../Intersections/I07")
 to_intersection = "I07"
 bidirectional = true
 lanes = 2
@@ -196,7 +217,9 @@ tags = ["HOSPITAL_ACCESS", "RESIDENTIAL_ACCESS"]
 
 [node name="R11_I02_I05" parent="Roads" instance=ExtResource("2_road")]
 road_id = "R11"
+from_intersection_path = NodePath("../../Intersections/I02")
 from_intersection = "I02"
+to_intersection_path = NodePath("../../Intersections/I05")
 to_intersection = "I05"
 bidirectional = true
 lanes = 2
@@ -206,7 +229,9 @@ tags = ["MARKET_ACCESS", "NIGHTLIFE_ACCESS"]
 
 [node name="R12_I05_I08" parent="Roads" instance=ExtResource("2_road")]
 road_id = "R12"
+from_intersection_path = NodePath("../../Intersections/I05")
 from_intersection = "I05"
+to_intersection_path = NodePath("../../Intersections/I08")
 to_intersection = "I08"
 bidirectional = true
 lanes = 2
@@ -216,7 +241,9 @@ tags = ["SCHOOL_ACCESS", "MARKET_ACCESS"]
 
 [node name="R13_I03_I06" parent="Roads" instance=ExtResource("2_road")]
 road_id = "R13"
+from_intersection_path = NodePath("../../Intersections/I03")
 from_intersection = "I03"
+to_intersection_path = NodePath("../../Intersections/I06")
 to_intersection = "I06"
 bidirectional = true
 lanes = 2
@@ -226,7 +253,9 @@ tags = ["ARTERIAL"]
 
 [node name="R14_I06_I09" parent="Roads" instance=ExtResource("2_road")]
 road_id = "R14"
+from_intersection_path = NodePath("../../Intersections/I06")
 from_intersection = "I06"
+to_intersection_path = NodePath("../../Intersections/I09")
 to_intersection = "I09"
 bidirectional = true
 lanes = 3
@@ -241,6 +270,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -120, -2, 650)
 zone_id = "Z_RES"
 display_name = "Khu dân cư"
 zone_type = "residential"
+intersection_paths = [NodePath("../../Intersections/I04"), NodePath("../../Intersections/I07")]
 intersection_ids = ["I04", "I07"]
 economic_role = "commuter origin and household welfare"
 peak_windows = ["morning", "evening"]
@@ -250,6 +280,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -120, -2, 1060)
 zone_id = "Z_HOSPITAL"
 display_name = "Bệnh viện"
 zone_type = "hospital"
+intersection_paths = [NodePath("../../Intersections/I07")]
 intersection_ids = ["I07"]
 economic_role = "emergency access and public health"
 peak_windows = ["all_day"]
@@ -259,6 +290,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 500, -2, 1120)
 zone_id = "Z_SCHOOL"
 display_name = "Trường học"
 zone_type = "school"
+intersection_paths = [NodePath("../../Intersections/I08")]
 intersection_ids = ["I08"]
 economic_role = "school commute and child safety"
 peak_windows = ["morning", "afternoon"]
@@ -268,6 +300,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1080, -2, 920)
 zone_id = "Z_INDUSTRIAL"
 display_name = "Cụm công nghiệp"
 zone_type = "industrial"
+intersection_paths = [NodePath("../../Intersections/I09"), NodePath("../../Intersections/I06")]
 intersection_ids = ["I09", "I06"]
 economic_role = "worker commute and industrial productivity"
 peak_windows = ["shift_in", "shift_out"]
@@ -277,6 +310,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 500, -2, 420)
 zone_id = "Z_MARKET"
 display_name = "Chợ trung tâm"
 zone_type = "market"
+intersection_paths = [NodePath("../../Intersections/I05")]
 intersection_ids = ["I05"]
 economic_role = "local commerce"
 peak_windows = ["morning"]
@@ -286,6 +320,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 500, -2, -120)
 zone_id = "Z_NIGHTLIFE"
 display_name = "Khu quán nhậu/giải trí"
 zone_type = "nightlife"
+intersection_paths = [NodePath("../../Intersections/I02")]
 intersection_ids = ["I02"]
 economic_role = "evening entertainment demand and safety risk"
 peak_windows = ["evening", "late_night"]
@@ -295,6 +330,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -520, -2, 500)
 zone_id = "Z_GATEWAY_W"
 display_name = "Cửa ngõ Tây"
 zone_type = "gateway"
+intersection_paths = [NodePath("../../Intersections/GW_W")]
 intersection_ids = ["GW_W"]
 economic_role = "external traffic entry"
 
@@ -303,14 +339,17 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1520, -2, 500)
 zone_id = "Z_GATEWAY_E"
 display_name = "Cửa ngõ Đông"
 zone_type = "gateway"
+intersection_paths = [NodePath("../../Intersections/GW_E")]
 intersection_ids = ["GW_E"]
 economic_role = "external logistics and commuter entry"
 
-[node name="Spawns" type="Node3D" parent="."]
+[node name="DemandFlows" type="Node3D" parent="."]
 
-[node name="SP_RES_SCHOOL" parent="Spawns" instance=ExtResource("4_spawn")]
+[node name="DF_RES_SCHOOL" parent="DemandFlows" instance=ExtResource("4_flow")]
 flow_id = "F_RES_SCHOOL"
+origin_zone_path = NodePath("../../Zones/Z_RES")
 origin_zone = "Z_RES"
+destination_zone_path = NodePath("../../Zones/Z_SCHOOL")
 destination_zone = "Z_SCHOOL"
 trip_purpose = "school commute"
 departure_start = 0
@@ -319,9 +358,11 @@ base_volume = 90
 route_policy = "CONGESTION_AWARE"
 vehicle_mix = {"CAR": 0.3, "MOTORBIKE": 0.6, "SCHOOL_BUS": 0.1}
 
-[node name="SP_RES_INDUSTRY" parent="Spawns" instance=ExtResource("4_spawn")]
+[node name="DF_RES_INDUSTRY" parent="DemandFlows" instance=ExtResource("4_flow")]
 flow_id = "F_RES_INDUSTRY"
+origin_zone_path = NodePath("../../Zones/Z_RES")
 origin_zone = "Z_RES"
+destination_zone_path = NodePath("../../Zones/Z_INDUSTRIAL")
 destination_zone = "Z_INDUSTRIAL"
 trip_purpose = "industrial shift commute"
 departure_start = 0
@@ -330,9 +371,11 @@ base_volume = 120
 route_policy = "CONGESTION_AWARE"
 vehicle_mix = {"CAR": 0.25, "MOTORBIKE": 0.6, "WORKER_SHUTTLE": 0.15}
 
-[node name="SP_MARKET" parent="Spawns" instance=ExtResource("4_spawn")]
+[node name="DF_MARKET" parent="DemandFlows" instance=ExtResource("4_flow")]
 flow_id = "F_MARKET"
+origin_zone_path = NodePath("../../Zones/Z_GATEWAY_W")
 origin_zone = "Z_GATEWAY_W"
+destination_zone_path = NodePath("../../Zones/Z_MARKET")
 destination_zone = "Z_MARKET"
 trip_purpose = "market delivery"
 departure_start = 300
@@ -341,9 +384,11 @@ base_volume = 80
 route_policy = "SHORTEST_TIME"
 vehicle_mix = {"DELIVERY_BIKE": 0.7, "LIGHT_TRUCK": 0.3}
 
-[node name="SP_LOGISTICS" parent="Spawns" instance=ExtResource("4_spawn")]
+[node name="DF_LOGISTICS" parent="DemandFlows" instance=ExtResource("4_flow")]
 flow_id = "F_LOGISTICS"
+origin_zone_path = NodePath("../../Zones/Z_GATEWAY_E")
 origin_zone = "Z_GATEWAY_E"
+destination_zone_path = NodePath("../../Zones/Z_INDUSTRIAL")
 destination_zone = "Z_INDUSTRIAL"
 trip_purpose = "industrial logistics"
 departure_start = 900
@@ -352,9 +397,11 @@ base_volume = 70
 route_policy = "TRUCK_LEGAL_ROUTE"
 vehicle_mix = {"HEAVY_TRUCK": 0.35, "LIGHT_TRUCK": 0.65}
 
-[node name="SP_HOSPITAL" parent="Spawns" instance=ExtResource("4_spawn")]
+[node name="DF_HOSPITAL" parent="DemandFlows" instance=ExtResource("4_flow")]
 flow_id = "F_MEDICAL_EMERGENCY"
+origin_zone_path = NodePath("../../Zones/Z_GATEWAY_W")
 origin_zone = "Z_GATEWAY_W"
+destination_zone_path = NodePath("../../Zones/Z_HOSPITAL")
 destination_zone = "Z_HOSPITAL"
 trip_purpose = "medical emergency"
 departure_start = 0
@@ -363,9 +410,11 @@ base_volume = 12
 route_policy = "PRIORITY_FASTEST"
 vehicle_mix = {"AMBULANCE": 1.0}
 
-[node name="SP_NIGHTLIFE" parent="Spawns" instance=ExtResource("4_spawn")]
+[node name="DF_NIGHTLIFE" parent="DemandFlows" instance=ExtResource("4_flow")]
 flow_id = "F_NIGHTLIFE_OUT"
+origin_zone_path = NodePath("../../Zones/Z_NIGHTLIFE")
 origin_zone = "Z_NIGHTLIFE"
+destination_zone_path = NodePath("../../Zones/Z_RES")
 destination_zone = "Z_RES"
 trip_purpose = "late evening entertainment return"
 departure_start = 2400
@@ -387,44 +436,57 @@ display_name = "Cổng trường"
 [node name="TrafficLights" type="Node3D" parent="."]
 
 [node name="TLS_I01" parent="TrafficLights" instance=ExtResource("6_tls")]
+intersection_path = NodePath("../../Intersections/I01")
 intersection_id = "I01"
 
 [node name="TLS_I02" parent="TrafficLights" instance=ExtResource("6_tls")]
+intersection_path = NodePath("../../Intersections/I02")
 intersection_id = "I02"
 
 [node name="TLS_I05" parent="TrafficLights" instance=ExtResource("6_tls")]
+intersection_path = NodePath("../../Intersections/I05")
 intersection_id = "I05"
 
 [node name="TLS_I07" parent="TrafficLights" instance=ExtResource("6_tls")]
+intersection_path = NodePath("../../Intersections/I07")
 intersection_id = "I07"
 
 [node name="TLS_I09" parent="TrafficLights" instance=ExtResource("6_tls")]
+intersection_path = NodePath("../../Intersections/I09")
 intersection_id = "I09"
 
 [node name="InvestmentCandidates" type="Node3D" parent="."]
 
 [node name="CAND_I01" parent="InvestmentCandidates" instance=ExtResource("7_candidate")]
 candidate_id = "CAND_I01"
+intersection_path = NodePath("../../Intersections/I01")
 intersection_id = "I01"
+affected_flow_paths = [NodePath("../../DemandFlows/DF_RES_SCHOOL"), NodePath("../../DemandFlows/DF_RES_INDUSTRY")]
 affected_flow_ids = ["F_RES_SCHOOL", "F_RES_INDUSTRY"]
 
 [node name="CAND_I05" parent="InvestmentCandidates" instance=ExtResource("7_candidate")]
 candidate_id = "CAND_I05"
+intersection_path = NodePath("../../Intersections/I05")
 intersection_id = "I05"
 capex_vnd = 650000000.0
 annual_maintenance_vnd = 60000000.0
+affected_flow_paths = [NodePath("../../DemandFlows/DF_MARKET"), NodePath("../../DemandFlows/DF_RES_SCHOOL"), NodePath("../../DemandFlows/DF_NIGHTLIFE")]
 affected_flow_ids = ["F_MARKET", "F_RES_SCHOOL", "F_NIGHTLIFE_OUT"]
 
 [node name="CAND_I07" parent="InvestmentCandidates" instance=ExtResource("7_candidate")]
 candidate_id = "CAND_I07"
+intersection_path = NodePath("../../Intersections/I07")
 intersection_id = "I07"
 capex_vnd = 700000000.0
 annual_maintenance_vnd = 70000000.0
+affected_flow_paths = [NodePath("../../DemandFlows/DF_HOSPITAL"), NodePath("../../DemandFlows/DF_RES_SCHOOL")]
 affected_flow_ids = ["F_MEDICAL_EMERGENCY", "F_RES_SCHOOL"]
 
 [node name="CAND_I09" parent="InvestmentCandidates" instance=ExtResource("7_candidate")]
 candidate_id = "CAND_I09"
+intersection_path = NodePath("../../Intersections/I09")
 intersection_id = "I09"
 capex_vnd = 750000000.0
 annual_maintenance_vnd = 80000000.0
+affected_flow_paths = [NodePath("../../DemandFlows/DF_RES_INDUSTRY"), NodePath("../../DemandFlows/DF_LOGISTICS")]
 affected_flow_ids = ["F_RES_INDUSTRY", "F_LOGISTICS"]

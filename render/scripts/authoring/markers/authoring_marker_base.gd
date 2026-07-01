@@ -38,6 +38,29 @@ func global_position_km() -> Vector2:
 	return Vector2(round3(global_position.x / 1000.0), round3(global_position.z / 1000.0))
 
 
+func node_id_from_path(node_path: NodePath, property_name: String) -> String:
+	if node_path.is_empty():
+		return ""
+	var node := get_node_or_null(node_path)
+	if node == null:
+		push_error("%s: cannot resolve node path %s" % [get_path(), node_path])
+		return ""
+	var value := String(node.get(property_name))
+	if value.strip_edges().is_empty():
+		push_error("%s: node %s has empty %s" % [get_path(), node.get_path(), property_name])
+		return ""
+	return value
+
+
+func ids_from_node_paths(node_paths: Array[NodePath], property_name: String) -> Array[String]:
+	var output: Array[String] = []
+	for node_path in node_paths:
+		var value := node_id_from_path(node_path, property_name)
+		if not value.is_empty():
+			output.append(value)
+	return output
+
+
 func round3(value: float) -> float:
 	return snappedf(value, 0.001)
 

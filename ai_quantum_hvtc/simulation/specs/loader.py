@@ -89,9 +89,18 @@ def _roads(items: list[dict[str, Any]]) -> dict[str, Road]:
             capacity=float(item["capacity"]),
             tags=_tuple_of_strings(item.get("tags", [])),
             truck_allowed=bool(item.get("truck_allowed", True)),
+            lane_width_m=float(item.get("lane_width_m", 3.2)),
+            sidewalk_width_m=float(item.get("sidewalk_width_m", 0.0)),
+            median_width_m=float(item.get("median_width_m", 0.0)),
+            visual_width_m=float(item.get("visual_width_m", 0.0)),
+            shape_points=_shape_points(item.get("shape_points", [])),
         )
         roads[road.road_id] = road
     return roads
+
+
+def _shape_points(items: list[dict[str, Any]]) -> tuple[tuple[float, float], ...]:
+    return tuple((float(item["x"]), float(item["y"])) for item in items)
 
 
 def _vehicle_types(items: list[dict[str, Any]]) -> dict[str, VehicleType]:
