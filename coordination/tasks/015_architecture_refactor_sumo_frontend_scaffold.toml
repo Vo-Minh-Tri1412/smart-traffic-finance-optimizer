@@ -14,8 +14,8 @@ dependencies = ["014_simulation_system_mvp"]
 acceptance_commands = [
   "uv sync --frozen",
   "uv run python -m ai_quantum_hvtc doctor",
-  "uv run python -m ai_quantum_hvtc simulate validate --spec simulation_projects/minh_khai_district_v1/specs/district_spec.json",
-  "uv run python -m ai_quantum_hvtc simulate run --engine reference --spec simulation_projects/minh_khai_district_v1/specs/district_spec.json --scenario normal_weekday --controller fixed_time --out simulation_projects/minh_khai_district_v1/outputs/run_normal_fixed_time.json",
+  "uv run python -m ai_quantum_hvtc simulate validate --spec tests/fixtures/specs/toy_public_district_v1.json",
+  "uv run python -m ai_quantum_hvtc simulate run --engine reference --spec tests/fixtures/specs/toy_public_district_v1.json --scenario normal_weekday --controller fixed_time --out artifacts/tmp/toy_public_district_v1/outputs/run_normal_fixed_time.json",
   "uv run ruff format --check .",
   "uv run ruff check .",
   "uv run mypy ai_quantum_hvtc scripts",
@@ -29,8 +29,8 @@ summary = "Refactored the technical architecture into clearer backend domains, m
 validation = [
   "uv sync --frozen",
   "uv run python -m ai_quantum_hvtc doctor",
-  "uv run python -m ai_quantum_hvtc simulate validate --spec simulation_projects/minh_khai_district_v1/specs/district_spec.json",
-  "uv run python -m ai_quantum_hvtc simulate run --engine reference --spec simulation_projects/minh_khai_district_v1/specs/district_spec.json --scenario normal_weekday --controller fixed_time --out simulation_projects/minh_khai_district_v1/outputs/run_normal_fixed_time.json",
+  "uv run python -m ai_quantum_hvtc simulate validate --spec tests/fixtures/specs/toy_public_district_v1.json",
+  "uv run python -m ai_quantum_hvtc simulate run --engine reference --spec tests/fixtures/specs/toy_public_district_v1.json --scenario normal_weekday --controller fixed_time --out artifacts/tmp/toy_public_district_v1/outputs/run_normal_fixed_time.json",
   "uv run ruff format --check .",
   "uv run ruff check .",
   "uv run mypy ai_quantum_hvtc scripts",

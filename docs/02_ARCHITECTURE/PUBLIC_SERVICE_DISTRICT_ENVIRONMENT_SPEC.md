@@ -62,12 +62,14 @@ convertible into:
 - a small custom component for unsupported public-finance behavior, if needed;
 - tables for the Economics team to review without reading code.
 
-## Reference district v1
+## Conceptual semantic overlay example
 
-Working name: **Minh Khai Public-Service Economic District**.
+This section is a reusable design checklist for the semantic layer that sits on top of a real
+OSM/SUMO map. It is not a committed district project and should not be treated as the final demo
+map.
 
-This is a synthetic/hybrid district inspired by real urban behavior, not a real map. It is deliberately
-designed to expose public-finance tradeoffs.
+The point is to list the kinds of corridors, zones, intersections, and public-finance tradeoffs that
+the team may annotate on top of a real map such as a District 7 OSM/SUMO intake.
 
 ### District corridors
 

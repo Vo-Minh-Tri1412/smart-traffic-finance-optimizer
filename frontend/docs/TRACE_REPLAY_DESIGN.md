@@ -44,7 +44,7 @@ Example:
   "schema_version": "simulation_trace_frame.v1",
   "timestep": 0,
   "time_seconds": 0.0,
-  "district_id": "minh_khai_district_v1",
+  "district_id": "toy_public_district_v1",
   "scenario_id": "normal_weekday",
   "controller_id": "fixed_time",
   "engine_id": "sumo",

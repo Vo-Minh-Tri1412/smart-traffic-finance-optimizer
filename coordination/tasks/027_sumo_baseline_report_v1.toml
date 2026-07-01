@@ -16,7 +16,7 @@ allowed_paths = [
 ]
 dependencies = ["023_sumo_baseline_controllers", "024_reference_backend_downgrade"]
 acceptance_commands = [
-  "uv run python -m ai_quantum_hvtc simulate compare-baselines --engine sumo --spec tests/fixtures/specs/minh_khai_district_v1.json --scenario normal_weekday --controllers fixed_time,rule_based --out <tmp> --report <tmp> --sumo-work-dir <tmp>",
+  "uv run python -m ai_quantum_hvtc simulate compare-baselines --engine sumo --spec tests/fixtures/specs/toy_public_district_v1.json --scenario normal_weekday --controllers fixed_time,rule_based --out <tmp> --report <tmp> --sumo-work-dir <tmp>",
   "uv run ruff format --check .",
   "uv run ruff check .",
   "uv run mypy ai_quantum_hvtc scripts",
@@ -29,7 +29,7 @@ status = "done"
 summary = "Added a baseline comparison workflow: fixed_time remains the static SUMO baseline, rule_based uses SUMO actuated traffic lights as the first non-RL baseline, and simulate compare-baselines now exports CSV + Markdown reports for technical controller comparison."
 validation = [
   "uv run python -m ai_quantum_hvtc doctor",
-  "uv run python -m ai_quantum_hvtc simulate compare-baselines --engine sumo --spec tests/fixtures/specs/minh_khai_district_v1.json --scenario normal_weekday --controllers fixed_time,rule_based --out <tmp> --report <tmp> --sumo-work-dir <tmp>",
+  "uv run python -m ai_quantum_hvtc simulate compare-baselines --engine sumo --spec tests/fixtures/specs/toy_public_district_v1.json --scenario normal_weekday --controllers fixed_time,rule_based --out <tmp> --report <tmp> --sumo-work-dir <tmp>",
   "uv run ruff format --check .",
   "uv run ruff check .",
   "uv run mypy ai_quantum_hvtc scripts",

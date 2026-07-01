@@ -5,7 +5,7 @@ from pathlib import Path
 from ai_quantum_hvtc.simulation.routing import RoutePlanner
 from ai_quantum_hvtc.simulation.specs.loader import load_district_spec
 
-SPEC_PATH = Path("tests/fixtures/specs/minh_khai_district_v1.json")
+SPEC_PATH = Path("tests/fixtures/specs/toy_public_district_v1.json")
 
 
 def test_heavy_truck_route_avoids_restricted_roads() -> None:

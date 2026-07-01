@@ -9,9 +9,7 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_SPEC = (
-    PROJECT_ROOT / "simulation_projects" / "minh_khai_district_v1" / "specs" / "district_spec.json"
-)
+DEFAULT_SPEC = PROJECT_ROOT / "tests" / "fixtures" / "specs" / "toy_public_district_v1.json"
 DEFAULT_OUTPUT_ROOT = PROJECT_ROOT / "data" / "processed" / "rl_training"
 
 

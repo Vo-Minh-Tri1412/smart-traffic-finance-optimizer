@@ -10,7 +10,7 @@ allowed_paths = [
   "docs/**",
   "ai_quantum_hvtc/simulation/README.md",
   "render/README.md",
-  "simulation_projects/minh_khai_district_v1/README.md",
+  "tests/fixtures/specs/toy_public_district_v1/README.md",
 ]
 dependencies = [
   "034_vehicle_asset_registry_factory",

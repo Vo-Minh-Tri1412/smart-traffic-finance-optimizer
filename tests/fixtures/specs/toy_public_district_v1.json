@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "id": "minh_khai_district_v1",
-    "name": "Minh Khai Public-Service Economic District v1",
+    "id": "toy_public_district_v1",
+    "name": "Toy Public-Service District Fixture v1",
     "version": "0.1.0",
     "horizon_seconds": 7200,
     "time_step_seconds": 30

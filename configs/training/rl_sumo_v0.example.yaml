@@ -8,6 +8,6 @@ scenario: normal_weekday
 controller_baselines:
   - fixed_time
   - rule_based
-spec_path: simulation_projects/minh_khai_district_v1/specs/district_spec.json
+spec_path: tests/fixtures/specs/toy_public_district_v1.json
 output_dir: /content/drive/MyDrive/AI Quantum HVTC/00_Data_Management/03_Training_Runs/rl/RUN-RL-V0-001
 notes: "SUMO on Colab/Kaggle may require extra system install; local SUMO remains fallback."

@@ -12,16 +12,17 @@ economic, and visual layers in Godot.
 raw/prepared map source
   -> map intake manifest
   -> conversion/import script or manual Godot import
-  -> Godot authoring scene
-  -> district_spec.generated.json
-  -> SUMO simulation
+  -> SUMO netconvert / SUMO .net.xml
+  -> semantic overlay + Godot annotation/render
+  -> SUMO simulation and replay traces
 ```
 
 This keeps the workflow clear:
 
-- `map_intake/` owns pre-Godot map sources and review notes.
+- `map_intake/` owns pre-Godot map sources, DVC pointers, and review notes.
 - `render/` owns Godot scenes and visual assets.
-- `simulation_projects/<district>/specs/` owns committed district specs.
+- `tests/fixtures/specs/` owns tiny committed test specs.
+- OSM/SUMO map artifacts are DVC-tracked when they need to be reproducible.
 - SUMO-generated artifacts stay in ignored output folders.
 
 ## Folder map
@@ -59,7 +60,8 @@ Raw and prepared map files are ignored by default. Commit only:
 - README files;
 - `.gitkeep` placeholders;
 - small templates;
+- `.dvc` pointer files for approved DVC-tracked artifacts;
 - small, explicitly approved sample maps with clear license/provenance.
 
-If a map source is large or license-sensitive, store it in Google Drive and record the Drive link in
-an intake manifest.
+If a map source is large or license-sensitive, track it with DVC or store it in Google Drive and
+record the Drive/DVC reference in an intake manifest.

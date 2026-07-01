@@ -1,0 +1,52 @@
+id = "044_dvc_data_infra_and_fixture_cleanup"
+owner = "integrator"
+branch = "main"
+base_commit = "43dddd637945848e5d5fec0149f63b5d9a0ad70e"
+allowed_paths = [
+  "coordination/tasks/044_dvc_data_infra_and_fixture_cleanup.toml",
+  "coordination/tasks/043_osm_district7_intake_analysis.toml",
+  "coordination/tasks/*.toml",
+  ".dvc/**",
+  ".dvcignore",
+  ".gitignore",
+  "data/**",
+  "docs/**",
+  "README.md",
+  "configs/**",
+  "scripts/**",
+  "notebooks/**",
+  "frontend/**",
+  "simulation_projects/**",
+  "tests/**",
+]
+dependencies = ["042_render_asset_and_map_intake_scaffold"]
+acceptance_commands = [
+  "dvc status",
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/044_dvc_data_infra_and_fixture_cleanup.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Set up DVC with Google Drive Desktop storage, organize data/artifact policy, and remove the old synthetic project-map folder from repo docs, scripts, and project folders while keeping only a neutral test fixture."
+validation = [
+  "dvc status -> Data and pipelines are up to date.",
+  "dvc push --no-run-cache -> 11 files pushed to drive_desktop.",
+  "uv run python -m ai_quantum_hvtc doctor -> OK.",
+  "uv run ruff format --check . -> OK after formatting affected Python files.",
+  "uv run ruff check . -> OK.",
+  "uv run mypy ai_quantum_hvtc scripts -> OK.",
+  "uv run pytest -> 50 passed.",
+]
+risks = [
+  "DVC remote uses the user's local Google Drive Desktop mount; collaborators may need to override the remote URL locally.",
+  "Raw OSM/SUMO artifacts remain ignored by Git; the District 7 seed is tracked through DVC pointer files and pushed to the Drive-backed DVC store.",
+]
+follow_up = [
+  "Add OSM/SUMO-first pipeline as a later task.",
+  "Update Google Drive taskboard after repo cleanup is validated.",
+]

@@ -10,7 +10,7 @@ allowed_paths = [
 ]
 dependencies = ["022_sumo_backend_v1_metrics_trace"]
 acceptance_commands = [
-  "uv run python -m ai_quantum_hvtc simulate run --engine sumo --spec tests/fixtures/specs/minh_khai_district_v1.json --scenario hospital_emergency --controller rule_based --out <tmp> --trace-out <tmp>",
+  "uv run python -m ai_quantum_hvtc simulate run --engine sumo --spec tests/fixtures/specs/toy_public_district_v1.json --scenario hospital_emergency --controller rule_based --out <tmp> --trace-out <tmp>",
   "uv run ruff format --check .",
   "uv run ruff check .",
   "uv run mypy ai_quantum_hvtc scripts",
@@ -22,8 +22,8 @@ status = "done"
 [handoff]
 summary = "Added SUMO fixed-time vs conservative rule-based baseline support, including a TraCI-controlled rule-based runner, controller intervention logs, a clear rl_policy placeholder error, and stable SUMO timing settings for controller runs."
 validation = [
-  "uv run python -m ai_quantum_hvtc simulate run --engine sumo --spec tests/fixtures/specs/minh_khai_district_v1.json --scenario hospital_emergency --controller rule_based --out <tmp> --trace-out <tmp>",
-  "uv run python -m ai_quantum_hvtc simulate run --engine sumo --spec tests/fixtures/specs/minh_khai_district_v1.json --scenario normal_weekday --controller rl_policy --out <tmp> returned exit code 1 with a clear placeholder message",
+  "uv run python -m ai_quantum_hvtc simulate run --engine sumo --spec tests/fixtures/specs/toy_public_district_v1.json --scenario hospital_emergency --controller rule_based --out <tmp> --trace-out <tmp>",
+  "uv run python -m ai_quantum_hvtc simulate run --engine sumo --spec tests/fixtures/specs/toy_public_district_v1.json --scenario normal_weekday --controller rl_policy --out <tmp> returned exit code 1 with a clear placeholder message",
   "uv run ruff format --check .",
   "uv run ruff check .",
   "uv run mypy ai_quantum_hvtc scripts",

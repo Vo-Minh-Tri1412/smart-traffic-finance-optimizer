@@ -10,7 +10,7 @@ from ai_quantum_hvtc.simulation.engines.sumo.exporter import export_sumo_project
 from ai_quantum_hvtc.simulation.engines.sumo.runner import has_sumo_runtime
 from ai_quantum_hvtc.simulation.specs import load_district_spec
 
-SPEC_PATH = Path("tests/fixtures/specs/minh_khai_district_v1.json")
+SPEC_PATH = Path("tests/fixtures/specs/toy_public_district_v1.json")
 
 
 def test_sumo_exporter_writes_xml_artifacts(tmp_path: Path) -> None:

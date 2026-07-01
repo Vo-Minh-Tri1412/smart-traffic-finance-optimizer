@@ -16,7 +16,7 @@ from scripts.render.godot_synthetic_cv_smoke import (  # noqa: E402
     find_godot_executable,
 )
 
-DEFAULT_SPEC = PROJECT_ROOT / "tests" / "fixtures" / "specs" / "minh_khai_district_v1.json"
+DEFAULT_SPEC = PROJECT_ROOT / "tests" / "fixtures" / "specs" / "toy_public_district_v1.json"
 GODOT_REPLAY_SCRIPT = "res://scripts/replay/run_trace_replay_smoke.gd"
 
 

@@ -10,7 +10,7 @@ from scripts.render.godot_sumo_trace_replay_smoke import main
 from scripts.render.godot_synthetic_cv_smoke import find_godot_executable
 
 TRACE_PATH = Path("frontend/mock-data/sample_vehicle_simulation_trace.jsonl")
-SPEC_PATH = Path("tests/fixtures/specs/minh_khai_district_v1.json")
+SPEC_PATH = Path("tests/fixtures/specs/toy_public_district_v1.json")
 
 
 def test_godot_sumo_trace_replay_smoke_runs_when_godot_is_available(tmp_path: Path) -> None:

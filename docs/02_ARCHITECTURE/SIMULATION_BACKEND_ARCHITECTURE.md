@@ -8,16 +8,18 @@ simulation folders do, where SUMO actually runs, and which pieces are only valid
 - SUMO is the official traffic simulation backend.
 - SUMO-RL is the intended RL environment path.
 - The reference backend is validation-only. It is not a simulator for final claims or demos.
-- `simulation_projects/minh_khai_district_v1` is a synthetic fixture/test project, not the final
+- `tests/fixtures/specs/toy_public_district_v1.json` is a synthetic fixture/test project, not the final
   district choice.
+- For real maps, the intended direction is OSM/SUMO-first: SUMO `.net.xml` owns road/lane/junction
+  geometry, while a semantic overlay owns zones, flows, investment candidates, and finance labels.
 
 ## Main flow
 
 ```text
-district_spec.json
-  -> specs/domain validation
-  -> routing and route-policy checks
-  -> SUMO XML export
+district_spec.json or OSM/SUMO map source
+  -> specs/domain validation or OSM/SUMO intake profile
+  -> routing and route-policy checks / external SUMO route generation
+  -> SUMO XML export or existing SUMO .net.xml
   -> SUMO/netconvert runtime
   -> tripinfo / edge_data / fcd outputs
   -> SimulationResult metrics
@@ -25,8 +27,12 @@ district_spec.json
   -> Godot replay / React dashboard / public-finance scoring
 ```
 
-Python does not replace SUMO. Python prepares SUMO inputs, calls SUMO, parses SUMO outputs, and
-normalizes results for the rest of the project.
+Python does not replace SUMO. Python prepares or accepts SUMO inputs, calls SUMO, parses SUMO
+outputs, and normalizes results for the rest of the project.
+
+For OSM-based maps, do not manually redraw the entire road network in Godot. Use SUMO geometry as
+the road/lane source of truth and use Godot for rendering, semantic annotation, assets, cameras, and
+dataset generation.
 
 ## Package map
 
@@ -180,7 +186,7 @@ from images. SUMO traces are the bridge between traffic dynamics and rendered ca
 
 ## Synthetic fixture policy
 
-`simulation_projects/minh_khai_district_v1` is a synthetic fixture used to keep tests reproducible.
+`tests/fixtures/specs/toy_public_district_v1.json` is a synthetic fixture used to keep tests reproducible.
 It is not the final demo district, not a real-world claim, and not a product direction.
 
 Use it for:

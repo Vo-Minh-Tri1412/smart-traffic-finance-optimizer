@@ -8,13 +8,13 @@ import pytest
 from ai_quantum_hvtc.simulation.specs import SpecValidationError, district_spec_from_dict
 from ai_quantum_hvtc.simulation.specs.loader import load_district_spec
 
-SPEC_PATH = Path("tests/fixtures/specs/minh_khai_district_v1.json")
+SPEC_PATH = Path("tests/fixtures/specs/toy_public_district_v1.json")
 
 
 def test_sample_district_spec_loads() -> None:
     spec = load_district_spec(SPEC_PATH)
 
-    assert spec.metadata.district_id == "minh_khai_district_v1"
+    assert spec.metadata.district_id == "toy_public_district_v1"
     assert len(spec.intersections) == 16
     assert "F_LOGISTICS_DELIVERY" in spec.flows
     assert "C_HOSPITAL_ACCESS" in spec.investment_candidates

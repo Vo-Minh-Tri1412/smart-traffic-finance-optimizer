@@ -12,7 +12,7 @@ from ai_quantum_hvtc.rl import (
 )
 from ai_quantum_hvtc.simulation.specs.loader import load_district_spec
 
-SPEC_PATH = Path("tests/fixtures/specs/minh_khai_district_v1.json")
+SPEC_PATH = Path("tests/fixtures/specs/toy_public_district_v1.json")
 PROFILE_PATH = Path("configs/training/rl_reward_profile_v0.example.toml")
 
 

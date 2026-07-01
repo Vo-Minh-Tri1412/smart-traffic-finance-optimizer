@@ -3,6 +3,8 @@
 !README.md
 !**/
 !**/.gitkeep
+!*.dvc
+!**/*.dvc
 !templates/**
 !04_review_notes/**
 *.tmp

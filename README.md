@@ -80,8 +80,9 @@ of claiming that one trained policy is universally optimal.
 
 ```text
                  +-------------------------+
-                 |  District spec/scenario |
-                 |  map, flows, candidates |
+                 | OSM/SUMO map source    |
+                 | + semantic overlay     |
+                 | flows, zones, finance  |
                  +-----------+-------------+
                              |
                              v
@@ -162,7 +163,7 @@ and public-finance evaluation. Godot receives exported simulation state and rend
 frames from the same district:
 
 ```text
-district_spec.json
+OSM/SUMO net + semantic overlay
   -> SUMO/SUMO-RL simulation
   -> vehicle trajectories + signal states
   -> Godot 3D camera renderer
@@ -253,7 +254,7 @@ Current status:
 - SUMO runtime and SUMO-RL imports are verified locally.
 - SUMO backend exports network/routes/additional outputs, runs fixed-time and preliminary
   rule-based baselines, parses trip/edge/FCD metrics, and can open in SUMO GUI for inspection.
-- `simulation_projects/minh_khai_district_v1` is a synthetic fixture/test network; it runs, but it
+- `tests/fixtures/specs/toy_public_district_v1.json` is a synthetic fixture/test network; it runs, but it
   is not the final district/map choice.
 - Final project-specific SUMO-RL training environment and trained policy are not complete yet.
 
@@ -307,8 +308,8 @@ Code and data are intentionally separated:
 
 ```text
 local code -> GitHub -> Colab/Kaggle
-local or Drive Desktop data -> preprocess -> Google Drive Data Hub
-Colab/Kaggle -> train/evaluate -> Google Drive Data Hub -> local via Drive Desktop
+local or Drive Desktop data -> preprocess -> DVC-tracked artifacts
+Colab/Kaggle -> train/evaluate -> DVC/Google Drive Data Hub -> local via Drive Desktop
 ```
 
 GitHub stores:
@@ -316,11 +317,20 @@ GitHub stores:
 - source code;
 - tests;
 - configuration examples;
-- small district specs;
+- tiny fixtures;
+- DVC pointer files;
 - notebook skeletons;
 - documentation and governance.
 
-Google Drive stores:
+DVC stores version pointers and checksums for:
+
+- OSM extracts;
+- SUMO networks, routes, traces, tripinfo, and edge/lane outputs;
+- Godot synthetic CV datasets;
+- training runs;
+- model checkpoints.
+
+Google Drive Desktop stores the physical large files behind DVC plus human-readable handoffs:
 
 - raw data;
 - processed data;
@@ -334,7 +344,22 @@ Google Drive stores:
 CS Data Hub:
 
 - Drive folder: `02_CS_Workspace/00_Data_Management`
+- DVC remote storage folder: `02_CS_Workspace/00_Data_Management/00_DVC_Store`
 - Registry sheet: `00_Data_Model_Run_Registry`
+
+Local DVC remote:
+
+```text
+drive_desktop -> D:\AIQ_HVTC_DVC_STORE
+```
+
+On the maintainer machine this ASCII path is a Windows junction to the Google Drive Desktop
+`00_DVC_Store` folder. Collaborators can override the remote locally if their Drive Desktop path is
+different:
+
+```powershell
+dvc remote modify --local drive_desktop url "<their local path to 00_DVC_Store>"
+```
 
 Local scripts are organized by responsibility:
 
@@ -387,6 +412,7 @@ Supporting folders:
 ```text
 configs/                  # local/cloud config examples
 data/catalog/             # dataset/run/model-card templates
+docs/02_ARCHITECTURE/DVC_DATA_MANAGEMENT.md
 docs/README.md            # canonical documentation index and reading order
 docs/01_PROJECT_BRIEF/    # product direction and public-finance problem framing
 docs/02_ARCHITECTURE/     # SUMO-RL, data workflow, sensors, Godot renderer contracts
@@ -394,7 +420,7 @@ docs/03_COMPETITION/      # AI Quantum HVTC competition facts
 frontend/                 # future React contract and mock-data layer
 notebooks/                # Colab/Kaggle entrypoints
 render/                   # Godot scene-first visual replay and synthetic sensor app
-simulation_projects/      # district specs and generated-output placeholders
+simulation_projects/      # map-intake workspace and DVC pointers for external map artifacts
 tests/                    # unit, integration, smoke, fixtures
 ```
 
@@ -426,19 +452,20 @@ Validate the project scaffold:
 
 ```powershell
 uv run python -m ai_quantum_hvtc doctor
-uv run python -m ai_quantum_hvtc simulate validate --spec simulation_projects/minh_khai_district_v1/specs/district_spec.json
+uv run python -m ai_quantum_hvtc simulate validate --spec tests/fixtures/specs/toy_public_district_v1.json
+dvc status
 ```
 
-Run the current SUMO backend:
+Run the current SUMO backend against the tiny test fixture:
 
 ```powershell
 uv run python -m ai_quantum_hvtc simulate run `
-  --spec simulation_projects/minh_khai_district_v1/specs/district_spec.json `
+  --spec tests/fixtures/specs/toy_public_district_v1.json `
   --scenario normal_weekday `
   --controller fixed_time `
-  --out simulation_projects/minh_khai_district_v1/outputs/run_normal_fixed_time.json `
-  --trace-out simulation_projects/minh_khai_district_v1/outputs/run_normal_fixed_time.trace.jsonl `
-  --sumo-work-dir simulation_projects/minh_khai_district_v1/sumo_generated
+  --out artifacts/tmp/toy_public_district_v1/outputs/run_normal_fixed_time.json `
+  --trace-out artifacts/tmp/toy_public_district_v1/outputs/run_normal_fixed_time.trace.jsonl `
+  --sumo-work-dir artifacts/tmp/toy_public_district_v1/sumo_generated
 ```
 
 The `reference` engine is still available only as a lightweight validation backend for fast schema
@@ -468,6 +495,17 @@ uv run python scripts/cloud/drive_desktop_sync.py `
 ```
 
 Add `--apply` only when the copy plan is correct.
+
+DVC data sync:
+
+```powershell
+dvc pull
+dvc status
+dvc push --no-run-cache
+```
+
+Use DVC for large/reproducible artifacts; export small summaries to Drive for teammates who do not
+read raw simulator/model files.
 
 ## Team workflow and governance
 

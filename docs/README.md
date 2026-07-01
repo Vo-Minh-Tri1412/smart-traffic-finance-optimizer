@@ -27,8 +27,9 @@ architecture/contract decision.
 5. [Public-service district environment spec](02_ARCHITECTURE/PUBLIC_SERVICE_DISTRICT_ENVIRONMENT_SPEC.md)
 6. [Observation space v1](02_ARCHITECTURE/OBSERVATION_SPACE_V1.md)
 7. [Data and artifact workflow](02_ARCHITECTURE/DATA_ARTIFACT_WORKFLOW.md)
-8. [Synthetic visual sensor dataset contract](02_ARCHITECTURE/SYNTHETIC_VISUAL_SENSOR_DATASET.md)
-9. [Godot synthetic CV smoke export](02_ARCHITECTURE/GODOT_SYNTHETIC_CV_SMOKE.md)
+8. [DVC data management](02_ARCHITECTURE/DVC_DATA_MANAGEMENT.md)
+9. [Synthetic visual sensor dataset contract](02_ARCHITECTURE/SYNTHETIC_VISUAL_SENSOR_DATASET.md)
+10. [Godot synthetic CV smoke export](02_ARCHITECTURE/GODOT_SYNTHETIC_CV_SMOKE.md)
 
 ## Current architecture stance
 
@@ -37,10 +38,13 @@ architecture/contract decision.
   active work.
 - Godot is a renderer/sensor-data generator, not the main traffic simulator.
 - YOLO/CV is a sensor layer over rendered frames, not a direct reader of hidden SUMO state.
-- Public-finance optimization chooses which intersections to invest in under a budget.
+- Public-finance optimization chooses which intersections to invest in under a budget **after**
+  baseline/RL evaluation has produced scenario metrics. Before evaluation, the team may only define
+  candidate sets and experiment scope.
 - Baseline/report work can proceed before reward is finalized; reward/public-value definitions need
   CS and Economics alignment before RL claims.
-- Generated datasets, training runs, checkpoints, videos, and local simulator outputs stay out of Git.
+- Generated datasets, training runs, checkpoints, videos, and local simulator outputs stay out of Git
+  and should be tracked with DVC when they must be reproducible.
 
 ## Cleanup rule
 

@@ -1,0 +1,6 @@
+outs:
+- md5: e9f97c2b719f614e915d9bd92a718126.dir
+  size: 6276252
+  nfiles: 2
+  hash: md5
+  path: district7_osm_seed_20260702

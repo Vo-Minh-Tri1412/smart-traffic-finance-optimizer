@@ -1,0 +1,33 @@
+id = "043_osm_district7_intake_analysis"
+owner = "integrator"
+branch = "main"
+base_commit = "43dddd637945848e5d5fec0149f63b5d9a0ad70e"
+allowed_paths = [
+  "coordination/tasks/043_osm_district7_intake_analysis.toml",
+  "simulation_projects/map_intake/01_raw_sources/**",
+  "simulation_projects/map_intake/02_prepared_sources/**",
+  "simulation_projects/map_intake/04_review_notes/**",
+]
+dependencies = ["042_render_asset_and_map_intake_scaffold"]
+acceptance_commands = [
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/043_osm_district7_intake_analysis.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Downloaded a District 7 OSM seed map into ignored map_intake storage, converted it with SUMO netconvert, ran a light random-trip SUMO smoke test, and wrote an infrastructure analysis note favoring OSM/SUMO-first upgrades over manual map trimming."
+validation = [
+  "Overpass download succeeded: raw OSM about 6.28 MB.",
+  "SUMO netconvert succeeded: generated net.xml about 51.65 MB with 169 traffic-light logics.",
+  "SUMO random-trip smoke run succeeded for 600 seconds with 100 inserted vehicles, 0 collisions, and 0 teleports.",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/043_osm_district7_intake_analysis.toml",
+]
+risks = [
+  "Raw OSM files are intentionally ignored by Git; only review notes are intended to be committed later if approved.",
+  "The first OSM seed is for infrastructure analysis, not yet the official demo map.",
+  "The OSM network is much larger than the toy fixture, so direct RL training/control over all traffic lights is not appropriate without candidate selection and demand generation.",
+]
+follow_up = [
+  "Implement 045_osm_sumo_first_pipeline if the team wants OSM/SUMO to become the official map source workflow.",
+  "Add semantic overlay and demand generation before treating the map as a policy demo.",
+]

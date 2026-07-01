@@ -14,7 +14,7 @@ dependencies = [
   "027_sumo_baseline_report_v1",
 ]
 acceptance_commands = [
-  "uv run python scripts/training/rl_sumo_train.py --spec tests/fixtures/specs/minh_khai_district_v1.json --scenario normal_weekday --reward-profile configs/training/rl_reward_profile_v0.example.toml --out-dir artifacts/tmp/rl_training_scaffold --dry-run",
+  "uv run python scripts/training/rl_sumo_train.py --spec tests/fixtures/specs/toy_public_district_v1.json --scenario normal_weekday --reward-profile configs/training/rl_reward_profile_v0.example.toml --out-dir artifacts/tmp/rl_training_scaffold --dry-run",
   "uv run pytest tests/unit/rl tests/integration/cli/test_rl_sumo_train_cli.py -q",
   "uv run python -m ai_quantum_hvtc doctor",
   "uv run ruff format --check .",
@@ -27,7 +27,7 @@ status = "done"
 [handoff]
 summary = "Added a cloud-oriented SUMO-RL training scaffold that is safe to keep untrained locally: reward profiles are loaded from TOML, validated against the district spec, exposed as a SUMO-RL callable reward, and checked by a dry-run CLI. The script blocks accidental local training, reports draft/pending hard-constraint blockers, and can train PPO on Colab/Kaggle once reward status and hard-constraint policy are intentionally resolved."
 validation = [
-  "uv run python scripts/training/rl_sumo_train.py --spec tests/fixtures/specs/minh_khai_district_v1.json --scenario normal_weekday --reward-profile configs/training/rl_reward_profile_v0.example.toml --out-dir artifacts/tmp/rl_training_scaffold --dry-run -> passed; validation_errors empty; expected blockers for draft reward and pending emergency preemption",
+  "uv run python scripts/training/rl_sumo_train.py --spec tests/fixtures/specs/toy_public_district_v1.json --scenario normal_weekday --reward-profile configs/training/rl_reward_profile_v0.example.toml --out-dir artifacts/tmp/rl_training_scaffold --dry-run -> passed; validation_errors empty; expected blockers for draft reward and pending emergency preemption",
   "uv run pytest tests/unit/rl tests/integration/cli/test_rl_sumo_train_cli.py -q -> 6 passed",
   "uv run python -m ai_quantum_hvtc doctor -> passed",
   "uv run ruff format --check . -> passed",

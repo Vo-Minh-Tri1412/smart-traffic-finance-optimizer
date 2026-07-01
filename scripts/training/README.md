@@ -7,7 +7,7 @@ without training or writing model artifacts:
 
 ```powershell
 uv run python scripts/training/rl_sumo_train.py `
-  --spec tests/fixtures/specs/minh_khai_district_v1.json `
+  --spec tests/fixtures/specs/toy_public_district_v1.json `
   --scenario normal_weekday `
   --reward-profile configs/training/rl_reward_profile_v0.example.toml `
   --out-dir artifacts/tmp/rl_training_scaffold `

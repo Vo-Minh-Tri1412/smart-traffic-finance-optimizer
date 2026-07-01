@@ -6,7 +6,7 @@ allowed_paths = [
   "coordination/tasks/024_reference_backend_downgrade.toml",
   "README.md",
   "docs/**",
-  "simulation_projects/minh_khai_district_v1/README.md",
+  "tests/fixtures/specs/toy_public_district_v1/README.md",
   "ai_quantum_hvtc/simulation/cli.py",
   "ai_quantum_hvtc/simulation/controllers/__init__.py",
   "tests/integration/cli/**",
@@ -16,7 +16,7 @@ allowed_paths = [
 dependencies = ["023_sumo_baseline_controllers"]
 acceptance_commands = [
   "uv run python -m ai_quantum_hvtc doctor",
-  "uv run python -m ai_quantum_hvtc simulate run --spec tests/fixtures/specs/minh_khai_district_v1.json --scenario normal_weekday --controller fixed_time --out <tmp> --trace-out <tmp>",
+  "uv run python -m ai_quantum_hvtc simulate run --spec tests/fixtures/specs/toy_public_district_v1.json --scenario normal_weekday --controller fixed_time --out <tmp> --trace-out <tmp>",
   "uv run ruff format --check .",
   "uv run ruff check .",
   "uv run mypy ai_quantum_hvtc scripts",
@@ -29,7 +29,7 @@ status = "done"
 summary = "Downgraded the reference engine to a validation-only backend by making SUMO the default CLI engine, updating README examples to use SUMO, preserving explicit reference regression tests, and removing public-finance test dependence on ReferenceGraphEngine."
 validation = [
   "uv run python -m ai_quantum_hvtc doctor",
-  "uv run python -m ai_quantum_hvtc simulate run --spec tests/fixtures/specs/minh_khai_district_v1.json --scenario normal_weekday --controller fixed_time --out <tmp> --trace-out <tmp>",
+  "uv run python -m ai_quantum_hvtc simulate run --spec tests/fixtures/specs/toy_public_district_v1.json --scenario normal_weekday --controller fixed_time --out <tmp> --trace-out <tmp>",
   "uv run ruff format --check .",
   "uv run ruff check .",
   "uv run mypy ai_quantum_hvtc scripts",

@@ -7,7 +7,7 @@ import pytest
 from ai_quantum_hvtc.simulation.cli import main
 from ai_quantum_hvtc.simulation.engines.sumo.runner import has_sumo_runtime
 
-SPEC_PATH = Path("tests/fixtures/specs/minh_khai_district_v1.json")
+SPEC_PATH = Path("tests/fixtures/specs/toy_public_district_v1.json")
 
 
 def test_simulate_reference_validation_backend_still_writes_aggregate_trace(

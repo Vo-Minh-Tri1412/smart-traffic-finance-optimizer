@@ -6,7 +6,7 @@ from ai_quantum_hvtc.public_finance import score_candidates
 from ai_quantum_hvtc.simulation.metrics import IntersectionMetric, SimulationResult
 from ai_quantum_hvtc.simulation.specs import load_district_spec
 
-SPEC_PATH = Path("tests/fixtures/specs/minh_khai_district_v1.json")
+SPEC_PATH = Path("tests/fixtures/specs/toy_public_district_v1.json")
 
 
 def test_public_finance_scores_candidates_from_simulation_results() -> None:
