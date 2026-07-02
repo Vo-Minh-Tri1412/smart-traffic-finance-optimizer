@@ -7,6 +7,8 @@ Full architecture:
 
 ```text
 ../docs/02_ARCHITECTURE/GODOT_RENDER_ARCHITECTURE.md
+../docs/02_ARCHITECTURE/SUMO_RENDER_BRIDGE_FRAMEWORK.md
+../docs/02_ARCHITECTURE/RENDER_BRIDGE_CONTRACTS.md
 ```
 
 Key rule:
@@ -47,10 +49,14 @@ Designer-editable visual catalogs live under:
 ```text
 res://resources/catalogs/VehicleAssetCatalog.tres
 res://resources/catalogs/ZoneAssetCatalog.tres
+res://resources/catalogs/RoadStyleCatalog.tres
 ```
 
 Use `.tres` catalogs for visual choices that only Godot needs, such as which scene/material a
-vehicle or zone should use. Keep SUMO/overlay/trace/project data as JSON/XML.
+vehicle, zone, or road style should use. Keep SUMO/overlay/trace/project data as JSON/XML.
+
+`Main.tscn` now includes a `SumoRenderBridge` node as the future central wiring point. Existing
+replay modules still run directly while the bridge migration happens incrementally.
 
 The current low-poly starter assets are Kenney CC0 assets. Crediting Kenney / kenney.nl in public
 materials is recommended.

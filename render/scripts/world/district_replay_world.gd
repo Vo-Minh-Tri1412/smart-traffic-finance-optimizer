@@ -6,6 +6,7 @@ const SumoNetGeometryDataScript := preload("res://scripts/world/sumo_net_geometr
 
 @export var spec_path := ""
 @export var net_path := ""
+@export var road_style_catalog_path := "res://resources/catalogs/RoadStyleCatalog.tres"
 @export var world_scale := 0.02
 @export var sumo_meters_per_spec_unit := 1000.0
 @export var road_width := 1.6
@@ -40,6 +41,7 @@ var _has_sumo_geometry := false
 var _mapper = null
 var _lane_material: StandardMaterial3D = null
 var _junction_material: StandardMaterial3D = null
+var _road_style_catalog = null
 
 
 func _ready() -> void:
@@ -90,8 +92,8 @@ func build_from_sumo_net(path: String) -> bool:
 	min_lane_width_m = float(width_summary.get("min_lane_width_m", 0.0))
 	max_lane_width_m = float(width_summary.get("max_lane_width_m", 0.0))
 	average_lane_width_m = float(width_summary.get("average_lane_width_m", 0.0))
-	_lane_material = _material(Color(0.07, 0.072, 0.075))
-	_junction_material = _material(Color(0.035, 0.036, 0.04))
+	_load_road_style_catalog()
+	_apply_default_road_style()
 
 	var lane_stride := _render_stride(_sumo_geometry.lanes.size(), max_visual_lanes)
 	for index in range(_sumo_geometry.lanes.size()):
@@ -126,6 +128,7 @@ func _clear_generated() -> void:
 	_mapper = null
 	_lane_material = null
 	_junction_material = null
+	_road_style_catalog = null
 
 
 func _build_intersections(intersections: Array) -> void:
@@ -201,6 +204,44 @@ func _material(color: Color) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
 	return material
+
+
+func _load_road_style_catalog() -> void:
+	if road_style_catalog_path.is_empty():
+		return
+	var loaded = ResourceLoader.load(road_style_catalog_path)
+	if loaded != null:
+		_road_style_catalog = loaded
+
+
+func _apply_default_road_style() -> void:
+	if _road_style_catalog != null and _road_style_catalog.has_method("material_for_road_role"):
+		var lane_material = _road_style_catalog.material_for_road_role(
+			"default",
+			"lane_material",
+			Color(0.07, 0.072, 0.075)
+		)
+		var junction_material = _road_style_catalog.material_for_road_role(
+			"default",
+			"junction_material",
+			Color(0.035, 0.036, 0.04)
+		)
+		if lane_material is StandardMaterial3D:
+			_lane_material = lane_material as StandardMaterial3D
+		elif lane_material is Material:
+			_lane_material = _material(Color(0.07, 0.072, 0.075))
+		if junction_material is StandardMaterial3D:
+			_junction_material = junction_material as StandardMaterial3D
+		elif junction_material is Material:
+			_junction_material = _material(Color(0.035, 0.036, 0.04))
+		var default_entry = _road_style_catalog.default_entry()
+		if default_entry != null:
+			visual_lane_width_multiplier = float(default_entry.get("width_multiplier"))
+			min_visual_lane_width = float(default_entry.get("min_visual_lane_width"))
+	if _lane_material == null:
+		_lane_material = _material(Color(0.07, 0.072, 0.075))
+	if _junction_material == null:
+		_junction_material = _material(Color(0.035, 0.036, 0.04))
 
 
 func _build_sumo_lane(lane_geometry) -> void:
@@ -460,6 +501,10 @@ func geometry_data_model() -> String:
 
 func lane_render_model() -> String:
 	return "SUMO lane-width mesh strips" if render_lane_mesh_strips else "segment box fallback"
+
+
+func road_style_model() -> String:
+	return "RoadStyleCatalog" if _road_style_catalog != null else "hard-coded fallback"
 
 
 func _render_stride(total_count: int, max_count: int) -> int:

@@ -1,0 +1,32 @@
+id = "066_godot_bridge_refactor_plan"
+owner = "integrator"
+branch = "main"
+base_commit = "56295a82e9bd90fada616786aeeb932ebb7a03fd"
+allowed_paths = [
+  "coordination/tasks/066_godot_bridge_refactor_plan.toml",
+  "docs/02_ARCHITECTURE/GODOT_BRIDGE_REFACTOR_PLAN.md",
+  "render/scripts/bridge/**",
+  "render/scenes/main/Main.tscn",
+  "tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py",
+]
+dependencies = [
+  "064_render_bridge_framework_docs",
+  "065_render_bridge_contracts_v1",
+]
+acceptance_commands = [
+  "uv run pytest tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/066_godot_bridge_refactor_plan.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added a Godot bridge refactor plan and a safe SumoRenderBridge skeleton node. Main.tscn now includes the bridge without taking over runtime wiring yet."
+validation = [
+  "uv run pytest tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py -> 5 passed",
+]
+risks = [
+  "Main.tscn still contains existing direct paths for backward compatibility; the bridge migration is staged to avoid breaking current preview workflow.",
+]
+follow_up = [
+  "Move Main.tscn direct paths into render_run_manifest.v1 and let SumoRenderBridge configure child modules.",
+]

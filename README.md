@@ -49,6 +49,11 @@ road geometry stays in DVC-tracked SUMO artifacts while Git stores only the proj
 overlay, demand config, and QA notes. Godot replays from the same SUMO net so vehicles and roads stay
 in one coordinate system.
 
+Render integration is organized as a **SUMO-backed render bridge**: SUMO/Python produce versioned
+geometry, vehicle trace, traffic-light, event, overlay, and sensor artifacts; Godot is the current
+reference renderer that consumes those artifacts. This keeps the backend renderer-agnostic so future
+Unity/Unreal/CARLA adapters can be explored without rewriting the simulation core.
+
 ## Research framing
 
 ### Problem

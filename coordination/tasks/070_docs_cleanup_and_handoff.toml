@@ -1,0 +1,40 @@
+id = "070_docs_cleanup_and_handoff"
+owner = "integrator"
+branch = "main"
+base_commit = "56295a82e9bd90fada616786aeeb932ebb7a03fd"
+allowed_paths = [
+  "coordination/tasks/070_docs_cleanup_and_handoff.toml",
+  "README.md",
+  "render/README.md",
+  "ai_quantum_hvtc/simulation/README.md",
+  "docs/README.md",
+  "docs/02_ARCHITECTURE/GODOT_RENDER_ARCHITECTURE.md",
+  "docs/02_ARCHITECTURE/SUMO_RENDER_BRIDGE_FRAMEWORK.md",
+  "docs/02_ARCHITECTURE/RENDER_BRIDGE_CONTRACTS.md",
+  "docs/02_ARCHITECTURE/GODOT_BRIDGE_REFACTOR_PLAN.md",
+]
+dependencies = [
+  "064_render_bridge_framework_docs",
+  "065_render_bridge_contracts_v1",
+  "066_godot_bridge_refactor_plan",
+  "067_road_visual_factory_and_style_catalog",
+  "068_traffic_light_visual_state_layer",
+  "069_integration_quality_report",
+]
+acceptance_commands = [
+  "uv run pytest tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/070_docs_cleanup_and_handoff.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Updated root/docs/render/simulation READMEs to point at the SUMO render bridge framework, render contracts, Godot implementation docs, and staged bridge refactor plan."
+validation = [
+  "uv run pytest tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py -> 5 passed",
+]
+risks = [
+  "Older docs still exist for durable architecture decisions; no destructive docs deletion was done in this pass.",
+]
+follow_up = [
+  "Do a separate docs pruning task if the team wants to archive older environment-design documents.",
+]

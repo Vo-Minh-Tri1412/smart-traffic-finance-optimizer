@@ -6,7 +6,20 @@ extends Node3D
 	set(value):
 		zone_id = value
 		_request_rebuild()
-@export_enum("residential", "commercial", "hospital", "school", "industrial", "gateway", "nightlife")
+@export_enum(
+	"residential",
+	"commercial",
+	"market_retail",
+	"education",
+	"healthcare",
+	"industrial",
+	"port_logistics",
+	"transport_hub",
+	"public_service",
+	"nightlife",
+	"gateway",
+	"mixed"
+)
 var zone_type := "residential":
 	set(value):
 		zone_type = value
@@ -34,6 +47,10 @@ var zone_type := "residential":
 @export var building_asset_scale := 0.32:
 	set(value):
 		building_asset_scale = value
+		_request_rebuild()
+@export var override_building_material: Material:
+	set(value):
+		override_building_material = value
 		_request_rebuild()
 @export var placeholder_building_scale := Vector3(0.9, 2.4, 0.9):
 	set(value):
@@ -195,7 +212,7 @@ func _add_buildings(entry) -> void:
 	var usable_x: float = max(1.0, lot_size.x - 2.0)
 	var usable_z: float = max(1.0, lot_size.y - 2.0)
 	for index in range(building_count):
-		var building := _create_building(index, scenes)
+		var building := _create_building(index, scenes, _building_material(entry))
 		if building == null:
 			continue
 		var column: int = index % columns
@@ -211,7 +228,17 @@ func _add_buildings(entry) -> void:
 		root.add_child(building)
 
 
-func _create_building(index: int, scenes: Array) -> Node3D:
+func _building_material(entry) -> Material:
+	if override_building_material != null:
+		return override_building_material
+	if entry != null:
+		var raw_material = entry.get("building_override_material")
+		if raw_material is Material:
+			return raw_material
+	return null
+
+
+func _create_building(index: int, scenes: Array, building_material: Material) -> Node3D:
 	if not scenes.is_empty():
 		var scene = scenes[index % scenes.size()]
 		if scene is PackedScene:
@@ -221,6 +248,8 @@ func _create_building(index: int, scenes: Array) -> Node3D:
 				wrapper.name = "BuildingAsset_%02d" % index
 				wrapper.scale = Vector3.ONE * max(0.001, building_asset_scale)
 				wrapper.add_child(instance as Node3D)
+				if building_material != null:
+					_apply_material_recursive(wrapper, building_material)
 				return wrapper
 			if instance != null:
 				instance.queue_free()
@@ -239,6 +268,13 @@ func _create_building(index: int, scenes: Array) -> Node3D:
 	return placeholder
 
 
+func _apply_material_recursive(node: Node, material: Material) -> void:
+	if node is MeshInstance3D:
+		(node as MeshInstance3D).set_surface_override_material(0, material)
+	for child in node.get_children():
+		_apply_material_recursive(child, material)
+
+
 func _clear_generated() -> void:
 	for child in get_children():
 		if child.is_in_group("zone_lot_authoring_generated"):
@@ -253,14 +289,22 @@ func _zone_color() -> Color:
 	match zone_type:
 		"residential":
 			return Color(0.25, 0.78, 0.38, 0.38)
-		"hospital":
+		"healthcare", "hospital":
 			return Color(0.95, 0.30, 0.30, 0.38)
 		"industrial":
 			return Color(0.72, 0.46, 0.25, 0.38)
+		"port_logistics":
+			return Color(0.45, 0.39, 0.28, 0.38)
 		"commercial":
 			return Color(0.25, 0.45, 0.82, 0.38)
-		"school":
+		"market_retail":
+			return Color(0.95, 0.58, 0.22, 0.38)
+		"education", "school":
 			return Color(0.95, 0.72, 0.25, 0.38)
+		"transport_hub":
+			return Color(0.32, 0.62, 0.92, 0.38)
+		"public_service":
+			return Color(0.5, 0.56, 0.72, 0.38)
 		"gateway":
 			return Color(0.55, 0.45, 0.78, 0.38)
 		"nightlife":

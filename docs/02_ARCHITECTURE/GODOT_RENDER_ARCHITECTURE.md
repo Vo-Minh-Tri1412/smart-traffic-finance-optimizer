@@ -1,7 +1,8 @@
 # Godot render architecture
 
-This document is the canonical architecture note for the `render/` Godot project. The local
-`render/README.md` is intentionally short and should only point here plus list quick commands.
+This document is the canonical implementation note for the `render/` Godot project. The framework
+architecture lives in `SUMO_RENDER_BRIDGE_FRAMEWORK.md`; this file explains how the Godot reference
+renderer implements that framework.
 
 ## Role
 
@@ -9,6 +10,9 @@ Godot is the visual authoring, replay, and synthetic sensor-render layer.
 
 It is not the traffic simulator. SUMO/SUMO-RL remains responsible for traffic dynamics, route
 movement, queues, traffic-light policies, RL training, and metrics.
+
+Godot is the first render adapter behind the SUMO render bridge, not the center of the whole
+simulation system.
 
 ## Current flow
 
@@ -23,6 +27,17 @@ Godot authored map scene
 
 Godot should prefer SUMO `district.net.xml` for road/lane geometry during replay so vehicles and
 roads share the same coordinate source.
+
+The intended bridge-level flow is:
+
+```text
+render_run_manifest.v1
+  -> SumoRenderBridge
+  -> geometry / vehicle trace / traffic lights / semantic overlay / sensors
+```
+
+The current scene keeps legacy direct wiring while `SumoRenderBridge` is introduced as the central
+coordination layer for the next refactor.
 
 SUMO lane rendering is width-aware. `SumoNetGeometryData` reads each lane shape and lane width from
 the SUMO `.net.xml`; `DistrictReplayWorld` renders each visible lane as a continuous mesh strip
@@ -86,8 +101,10 @@ render/
 ├── scripts/
 │   ├── assets/      # visual catalogs, factories, vehicle pool
 │   ├── authoring/   # Godot scene -> district_spec export
+│   ├── bridge/      # SumoRenderBridge orchestration layer
 │   ├── contracts/   # schema/version constants
 │   ├── replay/      # trace loading, clock, interpolation, replay controller
+│   ├── traffic/     # traffic-light trace/state visual layer
 │   ├── world/       # SUMO net geometry parsing/rendering
 │   ├── zones/       # semantic overlay renderer and zone visuals
 │   └── dataset_export/
@@ -132,6 +149,7 @@ res://resources/catalogs/ZoneAssetCatalog.tres
 `ZoneAssetCatalog.tres` maps semantic zone types to zone scenes, ground materials, and building
 cluster assets. The semantic overlay remains JSON because Python/SUMO and Godot both read it; the
 catalog only controls how those zones look in Godot.
+`RoadStyleCatalog.tres` maps SUMO road/lane rendering to Godot materials and road visual knobs.
 
 The current imported art uses Kenney CC0 low-poly assets. Credit Kenney / kenney.nl in public demo
 materials even though attribution is not required by the license.
@@ -207,6 +225,7 @@ It is not realtime SUMO ↔ Godot synchronization.
 
 Main pieces:
 
+- `SumoRenderBridge`: central orchestration layer for render run manifests and module wiring.
 - `TraceReplayData`: loads vehicle-level trace JSONL.
 - `TraceFrameData` / `TraceVehicleState`: typed runtime objects created after JSON parse.
 - `schema_versions.gd`: central Godot constants for supported cross-system schema versions.
@@ -217,6 +236,7 @@ Main pieces:
 - `DistrictReplayWorld`: renders SUMO lane-width mesh strips/junction polygons or spec fallback
   geometry.
 - `TraceReplayController`: asks the clock/interpolator for a frame, then updates vehicles.
+- `TrafficLightStateLayer`: loads first-class traffic-light trace state for visual synchronization.
 
 Replay smoke tests should fail when a SUMO net is supplied and vehicles are far from lane geometry.
 The current `off_lane_vehicle_count` check is intentionally strict for backend/render alignment; if a
@@ -227,6 +247,9 @@ Scenario events such as crashes, lane closures, road works, or temporary speed r
 part of the render layer. SUMO can support those later through a scenario-event layer, but this
 document intentionally treats render as a geometry/replay consumer, not as the source of traffic
 events.
+
+Traffic-light state is different from scenario events: SUMO owns the phase/state, but Godot should
+render the state as a first-class visual layer when a `traffic_light_trace.v1` artifact is provided.
 
 ## Vehicle asset layer
 
@@ -258,6 +281,47 @@ semantic_overlay.json -> SemanticOverlayRenderer -> ZoneAssetCatalog.tres -> Zon
 - Zone building clusters are visual placeholders for demo readability; they are not official OSM
   building imports.
 
+The Godot zone scene taxonomy follows traffic behavior, not every small OSM tag. Tags such as
+`school`, `university`, and `college` should map to one `education` visual because the traffic
+story is mainly drop-off/pick-up peaks. The current visual taxonomy is:
+
+```text
+residential
+commercial
+market_retail
+education
+healthcare
+industrial
+port_logistics
+transport_hub
+public_service
+nightlife
+gateway
+mixed
+```
+
+Bulk zone design should be data-first:
+
+```text
+OSM tags -> auto-zoning taxonomy -> semantic overlay -> ZoneAssetCatalog.tres -> Godot preview
+```
+
+Designers should tune zone profiles in batches by taxonomy, density, scale, material, and traffic
+meaning, then manually override only unusual zones. Do not hand-edit every generated zone unless the
+ROI is already tiny; the auto-zoning output should carry the repetitive work.
+
+## Road visual asset layer
+
+Road geometry comes from SUMO `.net.xml`; road appearance comes from Godot style resources:
+
+```text
+SUMO lane geometry -> DistrictReplayWorld -> RoadStyleCatalog.tres -> lane/junction materials
+```
+
+The road style catalog is deliberately separate from `SumoNetGeometryData`. SUMO data says where a
+lane is and how wide it is; the catalog says how Godot should draw it. Later road roles can include
+arterial, collector, service, bus-priority, truck-priority, bridge, tunnel, and render-only detail.
+
 ## Config and schema rule
 
 Cross-system/generated data stays JSON/XML:
@@ -279,6 +343,13 @@ Inspector-friendly editing:
 Current version labels:
 
 - `simulation_trace_frame.v1`;
+- `geometry_manifest.v1`;
+- `vehicle_trace.v2`;
+- `traffic_light_trace.v1`;
+- `semantic_overlay.v2`;
+- `event_trace.v1`;
+- `render_run_manifest.v1`;
+- `sensor_dataset_manifest.v1`;
 - `vehicle_asset_manifest.v1`;
 - `vehicle_asset_catalog.v1`;
 - `zone_asset_catalog.v1`;
@@ -323,6 +394,9 @@ Before this becomes a polished demo renderer, the project still needs:
 - better district/map design after the team chooses what to simulate;
 - better vehicle/building/road art assets and materials;
 - ROI-specific visual LOD/camera presets for the selected demo map;
+- bridge manifest wiring to replace hard-coded scene paths in `Main.tscn`;
+- road style catalog expansion for road categories and markings;
+- traffic-light visual models synced from `traffic_light_trace.v1`;
 - a later SUMO scenario-event layer for incidents, closures, and temporary speed changes;
 - camera rigs and render presets;
 - synthetic CV dataset exporter beyond smoke output;

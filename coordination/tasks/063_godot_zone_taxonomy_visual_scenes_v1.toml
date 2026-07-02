@@ -1,0 +1,43 @@
+id = "063_godot_zone_taxonomy_visual_scenes_v1"
+owner = "integrator"
+branch = "main"
+base_commit = "56295a82e9bd90fada616786aeeb932ebb7a03fd"
+allowed_paths = [
+  "coordination/tasks/063_godot_zone_taxonomy_visual_scenes_v1.toml",
+  "render/scenes/zones/**",
+  "render/resources/catalogs/ZoneAssetCatalog.tres",
+  "render/scripts/assets/zone_asset_catalog.gd",
+  "render/scripts/authoring/zone_lot_authoring.gd",
+  "docs/02_ARCHITECTURE/GODOT_RENDER_ARCHITECTURE.md",
+  "tests/integration/frontend_contracts/test_godot_visual_asset_catalogs.py",
+]
+dependencies = [
+  "050_godot_visual_asset_catalog_v1",
+  "061_map_roi_auto_zoning_pipeline",
+]
+acceptance_commands = [
+  "uv run pytest tests/integration/frontend_contracts/test_godot_visual_asset_catalogs.py",
+  "uv run ruff format --check tests/integration/frontend_contracts/test_godot_visual_asset_catalogs.py",
+  "uv run ruff check tests/integration/frontend_contracts/test_godot_visual_asset_catalogs.py",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/063_godot_zone_taxonomy_visual_scenes_v1.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added Godot zone visual scenes and catalog entries for the full auto-zoning taxonomy: residential, commercial, market_retail, education, healthcare, industrial, port_logistics, transport_hub, public_service, nightlife, gateway, and mixed. Updated zone type aliases so OSM-like tags map to behavior-level visual categories, expanded the no-code ZoneLotAuthoring dropdown, and documented the bulk zone design workflow."
+validation = [
+  "uv run pytest tests/integration/frontend_contracts/test_godot_visual_asset_catalogs.py -> 5 passed",
+  "uv run ruff format --check tests/integration/frontend_contracts/test_godot_visual_asset_catalogs.py",
+  "uv run ruff check tests/integration/frontend_contracts/test_godot_visual_asset_catalogs.py",
+  "Godot smoke with temp overlay containing all 12 taxonomy zones -> spawned_zone_count=12, fallback_zone_count=0, registered_zone_type_count=14",
+]
+risks = [
+  "Existing hospital/school entries remain for compatibility, so registered zone type count is 14 while canonical auto-zoning taxonomy is 12.",
+  "The renderer still emits a pre-existing material-null warning from the asset/material pipeline; taxonomy scenes load and spawn, but material health cleanup remains a separate task.",
+  "New zone scenes share ZoneVisualBase and current placeholder/low-poly assets; they communicate traffic meaning but are not final art direction.",
+]
+follow_up = [
+  "Add a dedicated zone profile/catalog layer if designers need batch edits for density, scale, labels, and visual emphasis across many generated zones.",
+  "Add asset/material health reporting so each zone can report asset scene count, fallback count, and material-null count.",
+  "Add road style profiles later for arterial, collector, local, service, bus-priority, and truck-priority visuals.",
+]

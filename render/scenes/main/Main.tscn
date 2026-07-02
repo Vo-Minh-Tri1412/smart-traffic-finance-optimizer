@@ -1,9 +1,11 @@
-[gd_scene load_steps=5 format=3 uid="uid://cxhs4wh57lw57"]
+[gd_scene load_steps=7 format=3 uid="uid://cxhs4wh57lw57"]
 
 [ext_resource type="PackedScene" path="res://scenes/world/DistrictReplayWorld.tscn" id="1_world"]
 [ext_resource type="Script" uid="uid://cucco7nbk3csx" path="res://scripts/replay/trace_replay_controller.gd" id="2_replay"]
 [ext_resource type="Script" uid="uid://qij8pijkpy86" path="res://scripts/zones/semantic_overlay_renderer.gd" id="3_overlay"]
 [ext_resource type="Script" path="res://scripts/world/preview_camera_controller.gd" id="4_camera"]
+[ext_resource type="Script" path="res://scripts/bridge/sumo_render_bridge.gd" id="5_bridge"]
+[ext_resource type="Script" path="res://scripts/traffic/traffic_light_state_layer.gd" id="6_tls"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -27,12 +29,19 @@ current = true
 fov = 70.0
 script = ExtResource("4_camera")
 
+[node name="SumoRenderBridge" type="Node3D" parent="." unique_id=739184226]
+script = ExtResource("5_bridge")
+auto_configure = false
+
 [node name="DistrictReplayWorld" parent="." unique_id=942558472 instance=ExtResource("1_world")]
 net_path = "D:/Desktop/Atem/hcmus/Year1/AI-Challenge-HVTC/simulation_projects/map_intake/02_prepared_sources/district7_osm_seed_20260702/district7_seed.net.xml"
 
 [node name="SemanticOverlayRenderer" type="Node3D" parent="." unique_id=362413856]
 script = ExtResource("3_overlay")
 overlay_path = "D:/Desktop/Atem/hcmus/Year1/AI-Challenge-HVTC/simulation_projects/map_intake/05_semantic_overlays/district7_overlay.v1.json"
+
+[node name="TrafficLightStateLayer" type="Node3D" parent="." unique_id=518901947]
+script = ExtResource("6_tls")
 
 [node name="TraceReplayController" type="Node3D" parent="." unique_id=260568818]
 script = ExtResource("2_replay")

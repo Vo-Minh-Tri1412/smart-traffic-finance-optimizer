@@ -30,6 +30,11 @@ district_spec.json or OSM/SUMO map source
 Python does not replace SUMO. Python prepares or accepts SUMO inputs, calls SUMO, parses SUMO
 outputs, and normalizes results for the rest of the project.
 
+For render integration, Python is the producer of bridge artifacts. It should normalize SUMO outputs
+into versioned contracts such as vehicle traces, traffic-light traces, event traces, semantic
+overlays, and render run manifests. Renderers consume those contracts; they should not call into
+private Python internals.
+
 For OSM-based maps, do not manually redraw the entire road network in Godot. Use SUMO geometry as
 the road/lane source of truth and use Godot for rendering, semantic annotation, assets, cameras, and
 dataset generation.
@@ -192,6 +197,18 @@ simulation_trace_frame.v1
 
 Vehicle-level trace frames are produced from SUMO FCD output and consumed by Godot replay. Aggregate
 frames are allowed for dashboard or validation backend views, but not for full vehicle replay.
+
+Render bridge work should use the names in `RENDER_BRIDGE_SCHEMA_VERSIONS`:
+
+```text
+geometry_manifest.v1
+vehicle_trace.v2
+traffic_light_trace.v1
+semantic_overlay.v2
+event_trace.v1
+render_run_manifest.v1
+sensor_dataset_manifest.v1
+```
 
 ## Data meanings by model
 

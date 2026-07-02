@@ -1,0 +1,32 @@
+id = "060_tiny_authoring_commute_lane_preview_fix"
+owner = "integrator"
+branch = "main"
+base_commit = "49a811d55e6afe251b61fa7609dd49801325f7b8"
+allowed_paths = [
+  "coordination/tasks/060_tiny_authoring_commute_lane_preview_fix.toml",
+  "render/scripts/authoring/tiny_authoring_map.gd",
+  "render/scripts/authoring/run_tiny_authoring_map_smoke.gd",
+]
+dependencies = [
+  "059_tiny_authoring_commute_flow_preview",
+]
+acceptance_commands = [
+  "D:/GoDot/Godot_v4.6.2-stable_win64_console.exe --headless --path render --script res://scripts/authoring/run_tiny_authoring_map_smoke.gd -- --output-root outputs/tiny_authoring_map_smoke",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/060_tiny_authoring_commute_lane_preview_fix.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Improved the TinyAuthoringMap commute preview so vehicles are smaller, keep constant spacing, use lane offsets, and route through simple road corridor waypoints instead of only drawing a straight zone-to-zone line."
+validation = [
+  "D:/GoDot/Godot_v4.6.2-stable_win64_console.exe --headless --path render --script res://scripts/authoring/run_tiny_authoring_map_smoke.gd -- --output-root outputs/tiny_authoring_map_smoke",
+  "Tiny authoring summary: zone_lot_count=4, building_visual_count=28, road_count=4, commute_vehicle_preview_count=10, commute_lane_offset_count=2, commute_vehicle_scale_multiplier=0.45, commute_route_length=23.3181643486023.",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/060_tiny_authoring_commute_lane_preview_fix.toml",
+]
+risks = [
+  "This remains a visual authoring preview, not SUMO car-following physics. It intentionally avoids complex collision behavior.",
+  "The path follows configured tiny-map corridors; for a different hand-authored road layout, tune commute_route_corridor_x_values and commute_route_corridor_z_values on the TinyAuthoringMap root.",
+]
+follow_up = [
+  "For real traffic behavior, use SUMO trace replay instead of this lightweight editor preview.",
+]

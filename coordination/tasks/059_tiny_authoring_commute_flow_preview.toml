@@ -1,0 +1,35 @@
+id = "059_tiny_authoring_commute_flow_preview"
+owner = "integrator"
+branch = "main"
+base_commit = "49a811d55e6afe251b61fa7609dd49801325f7b8"
+allowed_paths = [
+  "coordination/tasks/059_tiny_authoring_commute_flow_preview.toml",
+  "render/scripts/authoring/tiny_authoring_map.gd",
+  "render/scripts/authoring/run_tiny_authoring_map_smoke.gd",
+]
+dependencies = [
+  "038_vehicle_pool",
+  "050_godot_visual_asset_catalog_v1",
+  "057_tiny_authoring_zone_workflow",
+]
+acceptance_commands = [
+  "D:/GoDot/Godot_v4.6.2-stable_win64_console.exe --headless --path render --script res://scripts/authoring/run_tiny_authoring_map_smoke.gd -- --output-root outputs/tiny_authoring_map_smoke",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/059_tiny_authoring_commute_flow_preview.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added a TinyAuthoringMap commute preview that finds the residential zone Z_RES and industrial zone Z_IND, then spawns catalog-backed vehicle previews that loop along a simple road-corridor route between the two zones. The scene file itself is not overwritten, so user-edited zone layout stays intact."
+validation = [
+  "D:/GoDot/Godot_v4.6.2-stable_win64_console.exe --headless --path render --script res://scripts/authoring/run_tiny_authoring_map_smoke.gd -- --output-root outputs/tiny_authoring_map_smoke",
+  "Tiny authoring summary: zone_lot_count=4, building_visual_count=28, road_count=4, commute_vehicle_preview_count=10, commute_route_length=23.3181643486023.",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/059_tiny_authoring_commute_flow_preview.toml",
+]
+risks = [
+  "This is a Godot authoring preview, not SUMO traffic physics. It exists so the user can visually test zone-to-zone flow while editing the tiny map.",
+  "The route uses simple corridor waypoints based on zone positions and known preview road corridors; it should later be replaced by SUMO trace replay for real simulation output.",
+]
+follow_up = [
+  "If the user wants a different commute path, expose or tune commute_route_corridor_x_values on the TinyAuthoringMap root in the Inspector.",
+  "For demo-grade traffic, connect this visual layer to SUMO-generated trace.jsonl instead of this lightweight editor preview.",
+]

@@ -1,0 +1,38 @@
+id = "058_godot_kenney_texture_material_pipeline"
+owner = "integrator"
+branch = "main"
+base_commit = "49a811d55e6afe251b61fa7609dd49801325f7b8"
+allowed_paths = [
+  "coordination/tasks/058_godot_kenney_texture_material_pipeline.toml",
+  "render/imported_assets/textures/**",
+  "render/resources/materials/kenney_*",
+  "render/resources/catalogs/ZoneAssetCatalog.tres",
+  "render/scripts/assets/zone_asset_catalog.gd",
+  "render/scripts/assets/zone_asset_entry.gd",
+  "render/scripts/zones/zone_visual_base.gd",
+  "render/scripts/authoring/zone_lot_authoring.gd",
+]
+dependencies = [
+  "050_godot_visual_asset_catalog_v1",
+  "057_tiny_authoring_zone_workflow",
+]
+acceptance_commands = [
+  "D:/GoDot/Godot_v4.6.2-stable_win64_console.exe --headless --path render --script res://scripts/authoring/run_tiny_authoring_map_smoke.gd -- --output-root outputs/tiny_authoring_map_smoke",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/058_godot_kenney_texture_material_pipeline.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Imported Kenney colormap/variation textures from the user's Downloads asset zips into render/imported_assets/textures, added Godot material resources using those textures, connected zone catalog entries to building_override_material, and updated zone building spawn logic so imported building meshes can receive the zone/pack material automatically while still allowing manual override in ZoneLotAuthoring."
+validation = [
+  "D:/GoDot/Godot_v4.6.2-stable_win64_console.exe --headless --editor --path render --quit",
+  "D:/GoDot/Godot_v4.6.2-stable_win64_console.exe --headless --path render --script res://scripts/authoring/run_tiny_authoring_map_smoke.gd -- --output-root outputs/tiny_authoring_map_smoke",
+  "Tiny authoring summary: zone_lot_count=4, building_visual_count=20, road_count=4.",
+]
+risks = [
+  "Kenney colormap materials depend on UVs in the imported GLB meshes; if an individual model has unusual UVs, manual material override is still available.",
+  "This auto-colors building meshes but does not yet normalize final art direction, lighting, or road assets.",
+]
+follow_up = [
+  "Tune per-zone building_asset_scale and optional override_building_material in the Godot Inspector after visual inspection.",
+]

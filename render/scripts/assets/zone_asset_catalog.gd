@@ -1,3 +1,4 @@
+@tool
 class_name ZoneAssetCatalog
 extends Resource
 
@@ -10,15 +11,33 @@ const SchemaVersionsScript := preload("res://scripts/contracts/schema_versions.g
 
 func canonical_zone_type(type_id: String) -> String:
 	var canonical := type_id.strip_edges().to_lower().replace("-", "_").replace(" ", "_")
-	if canonical == "industry":
-		return "industrial"
-	if canonical == "commerce":
-		return "commercial"
-	if canonical == "market":
-		return "commercial"
-	if canonical == "logistics":
-		return "gateway"
-	return canonical
+	match canonical:
+		"house", "housing", "home", "homes", "residence", "residences", "res":
+			return "residential"
+		"commerce", "office", "offices", "service", "services", "business":
+			return "commercial"
+		"market", "retail", "shop", "shops", "shopping", "marketplace":
+			return "market_retail"
+		"school", "university", "college", "campus", "kindergarten", "education_zone", "edu":
+			return "education"
+		"hospital", "clinic", "medical", "health", "health_care", "emergency":
+			return "healthcare"
+		"industry", "factory", "manufacturing", "warehouse":
+			return "industrial"
+		"logistics", "port", "depot", "freight", "container", "harbor":
+			return "port_logistics"
+		"transport", "transit", "station", "bus_station", "terminal", "hub":
+			return "transport_hub"
+		"government", "civic", "administrative", "public", "public_office":
+			return "public_service"
+		"bar", "pub", "club", "entertainment", "restaurant_night":
+			return "nightlife"
+		"entry", "exit", "gate", "logistics_gateway":
+			return "gateway"
+		"unknown", "generic", "fallback":
+			return "mixed"
+		_:
+			return canonical
 
 
 func entry_for_zone_type(type_id: String):

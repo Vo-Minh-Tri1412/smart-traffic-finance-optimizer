@@ -42,6 +42,18 @@ func _run() -> void:
 		push_error("Tiny authoring map has too few roads.")
 		quit(6)
 		return
+	if int(summary.get("commute_vehicle_preview_count", 0)) < 1:
+		push_error("Tiny authoring map did not spawn commute preview vehicles.")
+		quit(7)
+		return
+	if int(summary.get("commute_lane_offset_count", 0)) < 2:
+		push_error("Tiny authoring map commute preview needs at least two lane offsets.")
+		quit(8)
+		return
+	if float(summary.get("commute_vehicle_scale_multiplier", 1.0)) > 0.75:
+		push_error("Tiny authoring map commute preview vehicle scale is too large for road preview.")
+		quit(9)
+		return
 	print("[OK] Tiny authoring map smoke wrote summary to %s" % summary_path)
 	quit(0)
 

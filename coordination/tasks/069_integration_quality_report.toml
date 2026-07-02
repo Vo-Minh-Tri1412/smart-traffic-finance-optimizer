@@ -1,0 +1,39 @@
+id = "069_integration_quality_report"
+owner = "integrator"
+branch = "main"
+base_commit = "56295a82e9bd90fada616786aeeb932ebb7a03fd"
+allowed_paths = [
+  "coordination/tasks/069_integration_quality_report.toml",
+  "scripts/render/godot_render_bridge_quality_report.py",
+  "docs/02_ARCHITECTURE/SUMO_RENDER_BRIDGE_FRAMEWORK.md",
+  "tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py",
+]
+dependencies = [
+  "064_render_bridge_framework_docs",
+  "065_render_bridge_contracts_v1",
+]
+acceptance_commands = [
+  "uv run pytest tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py",
+  "uv run ruff format --check scripts/render/godot_render_bridge_quality_report.py tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py",
+  "uv run ruff check scripts/render/godot_render_bridge_quality_report.py tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py",
+  "uv run mypy scripts/render/godot_render_bridge_quality_report.py",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/069_integration_quality_report.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added a render bridge quality report generator that normalizes Godot replay_summary.json into JSON/Markdown QA with geometry, vehicle, alignment, zone, and traffic-light sections."
+validation = [
+  "uv run pytest tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py -> 5 passed",
+  "uv run ruff format --check scripts/render/godot_render_bridge_quality_report.py tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py",
+  "uv run ruff check scripts/render/godot_render_bridge_quality_report.py tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py",
+  "uv run mypy scripts/render/godot_render_bridge_quality_report.py",
+  "uv run python scripts/render/godot_sumo_trace_replay_smoke.py --trace frontend/mock-data/sample_vehicle_simulation_trace.jsonl --spec tests/fixtures/specs/toy_public_district_v1.json --output-root artifacts/tmp/render_bridge_framework_smoke --max-frames 2 -> OK with pre-existing Godot material-null warning",
+  "uv run python scripts/render/godot_render_bridge_quality_report.py --replay-summary artifacts/tmp/render_bridge_framework_smoke/replay_summary.json --out-json artifacts/tmp/render_bridge_framework_smoke/render_bridge_quality_report.json --out-md artifacts/tmp/render_bridge_framework_smoke/render_bridge_quality_report.md",
+]
+risks = [
+  "The report currently consumes existing replay summaries; it does not run SUMO/Godot itself.",
+]
+follow_up = [
+  "Wrap SUMO run, Godot replay, and QA generation into a single command after render_run_manifest.v1 is active.",
+]

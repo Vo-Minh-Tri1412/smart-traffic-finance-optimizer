@@ -73,6 +73,7 @@ func _build_building_cluster(zone_entry) -> void:
 	var min_scale := 0.8
 	var max_scale := 1.25
 	var building_asset_scale := 0.05
+	var building_override_material: Material = null
 	var seed := 17 + zone_id.length() * 97
 	if zone_entry != null:
 		var raw_building_scenes = zone_entry.get("building_scenes")
@@ -88,13 +89,21 @@ func _build_building_cluster(zone_entry) -> void:
 		min_scale = float(zone_entry.get("min_building_scale"))
 		max_scale = float(zone_entry.get("max_building_scale"))
 		building_asset_scale = float(zone_entry.get("building_asset_scale"))
+		var raw_material = zone_entry.get("building_override_material")
+		if raw_material is Material:
+			building_override_material = raw_material
 		seed += int(zone_entry.get("seed"))
 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
 	var count: int = max(1, density)
 	for index in range(count):
-		var building: Node3D = _instantiate_building(building_scenes, index, building_asset_scale)
+		var building: Node3D = _instantiate_building(
+			building_scenes,
+			index,
+			building_asset_scale,
+			building_override_material
+		)
 		if building == null:
 			continue
 		var column := index % 3
@@ -111,7 +120,12 @@ func _build_building_cluster(zone_entry) -> void:
 		building_cluster_root.add_child(building)
 
 
-func _instantiate_building(building_scenes: Array, index: int, building_asset_scale: float) -> Node3D:
+func _instantiate_building(
+	building_scenes: Array,
+	index: int,
+	building_asset_scale: float,
+	building_override_material: Material
+) -> Node3D:
 	if not building_scenes.is_empty():
 		var raw_scene = building_scenes[index % building_scenes.size()]
 		if raw_scene is PackedScene:
@@ -121,6 +135,8 @@ func _instantiate_building(building_scenes: Array, index: int, building_asset_sc
 				wrapper.name = "BuildingAsset_%d" % index
 				wrapper.scale = Vector3.ONE * max(0.001, building_asset_scale)
 				wrapper.add_child(instance as Node3D)
+				if building_override_material != null:
+					_apply_material_recursive(wrapper, building_override_material)
 				return wrapper
 			if instance != null:
 				instance.queue_free()
@@ -133,6 +149,13 @@ func _instantiate_building(building_scenes: Array, index: int, building_asset_sc
 	material.albedo_color = default_zone_color.lightened(0.25)
 	placeholder.set_surface_override_material(0, material)
 	return placeholder
+
+
+func _apply_material_recursive(node: Node, material: Material) -> void:
+	if node is MeshInstance3D:
+		(node as MeshInstance3D).set_surface_override_material(0, material)
+	for child in node.get_children():
+		_apply_material_recursive(child, material)
 
 
 func _safe_node_name(value: String) -> String:
