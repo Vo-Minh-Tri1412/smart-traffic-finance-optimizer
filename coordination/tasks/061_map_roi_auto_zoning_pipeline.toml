@@ -1,0 +1,50 @@
+id = "061_map_roi_auto_zoning_pipeline"
+owner = "integrator"
+branch = "main"
+base_commit = "49a811d55e6afe251b61fa7609dd49801325f7b8"
+allowed_paths = [
+  "coordination/tasks/061_map_roi_auto_zoning_pipeline.toml",
+  "ai_quantum_hvtc/simulation/maps/**",
+  "scripts/maps/**",
+  "tests/unit/simulation/test_roi_map_prep.py",
+  "simulation_projects/map_intake/templates/roi_config.template.json",
+  "docs/02_ARCHITECTURE/MAP_ROI_AUTO_ZONING_PIPELINE.md",
+]
+dependencies = [
+  "045_district7_sumo_net_source",
+  "046_district7_overlay_and_demand_v1",
+  "047_existing_sumo_net_runner",
+  "050_godot_visual_asset_catalog_v1",
+]
+acceptance_commands = [
+  "uv run pytest tests/unit/simulation/test_roi_map_prep.py",
+  "uv run python scripts/maps/prepare_roi.py --config simulation_projects/map_intake/templates/roi_config.template.json --output-root artifacts/tmp/roi_template_smoke --dry-run",
+  "uv run ruff format --check ai_quantum_hvtc/simulation/maps scripts/maps tests/unit/simulation/test_roi_map_prep.py",
+  "uv run ruff check ai_quantum_hvtc/simulation/maps scripts/maps tests/unit/simulation/test_roi_map_prep.py",
+  "uv run mypy ai_quantum_hvtc/simulation/maps scripts/maps",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/061_map_roi_auto_zoning_pipeline.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added a generic ROI map-prep framework that reads OSM XML, validates ROI configs, infers many micro-zones from real OSM tags, classifies roads for simulation/render/review, detects small roads inside inferred zones, anchors zones to SUMO edge IDs when a net is provided, and exports generated semantic overlay, road review, Godot preview, and QA artifacts."
+validation = [
+  "uv run pytest tests/unit/simulation/test_roi_map_prep.py -> 6 passed",
+  "uv run python scripts/maps/prepare_roi.py --config simulation_projects/map_intake/templates/roi_config.template.json --output-root artifacts/tmp/roi_template_smoke --dry-run -> OK",
+  "uv run python scripts/maps/prepare_roi.py --config simulation_projects/map_intake/templates/roi_config.template.json --output-root artifacts/tmp/roi_template_real_smoke -> OK",
+  "District 7 template smoke QA: micro_zones=236, zone_groups=8, roads=4600, zone_internal_service=296, zones_without_anchor_edges=0.",
+  "uv run ruff format --check ai_quantum_hvtc/simulation/maps scripts/maps tests/unit/simulation/test_roi_map_prep.py",
+  "uv run ruff check ai_quantum_hvtc/simulation/maps scripts/maps tests/unit/simulation/test_roi_map_prep.py",
+  "uv run mypy ai_quantum_hvtc/simulation/maps scripts/maps",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/061_map_roi_auto_zoning_pipeline.toml",
+]
+risks = [
+  "V1 is review-safe: it flags road cleanup decisions but does not yet execute netconvert clipping or remove roads from SUMO.",
+  "Anchor-edge mapping relies on SUMO edge IDs retaining OSM way IDs, which is true for the current District 7 seed but should be checked for future import profiles.",
+  "OSM tag-derived zones are not official land-use boundaries and require Economics/CS review before policy claims.",
+]
+follow_up = [
+  "Add ROI-specific config files only after the team chooses a demo area.",
+  "Add a second task to consume road review decisions and run netconvert/subnetwork clipping for a prepared ROI net.",
+  "Connect generated roi_semantic_overlay.v1 into Godot overlay rendering once the ROI is selected.",
+]
