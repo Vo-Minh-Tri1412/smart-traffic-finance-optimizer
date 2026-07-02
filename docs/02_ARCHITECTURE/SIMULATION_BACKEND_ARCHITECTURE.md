@@ -34,6 +34,28 @@ For OSM-based maps, do not manually redraw the entire road network in Godot. Use
 the road/lane source of truth and use Godot for rendering, semantic annotation, assets, cameras, and
 dataset generation.
 
+## Quận 7 OSM/SUMO-first path
+
+Large real maps use a different source shape from the toy `district_spec` fixture:
+
+```text
+district7.project.json
+  -> SUMO .net.xml source
+  -> semantic_overlay.v1
+  -> synthetic demand/routes
+  -> SUMO run-sumo-net
+  -> FCD trace
+  -> Godot replay from the same .net.xml
+```
+
+The committed project descriptor and overlay are small metadata files. The actual OSM/SUMO artifacts
+stay in DVC/Drive. The semantic overlay is intentionally separate from geometry: zones, public-value
+tags, demand anchors, and candidate traffic lights reference SUMO IDs instead of copying every road
+into JSON.
+
+Use `simulate validate-sumo-net` to check a descriptor or `.net.xml`, and `simulate run-sumo-net` to
+run an existing net with a route file.
+
 ## Package map
 
 ```text

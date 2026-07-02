@@ -30,6 +30,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--trace", default=None, help="Existing vehicle-level trace JSONL.")
     parser.add_argument("--spec", default=str(DEFAULT_SPEC), help="District spec JSON.")
     parser.add_argument("--net", default=None, help="Optional SUMO district.net.xml for geometry.")
+    parser.add_argument(
+        "--overlay",
+        default=None,
+        help="Optional semantic overlay JSON for zone visuals.",
+    )
     parser.add_argument("--output-root", required=True, help="Directory for replay_summary.json.")
     parser.add_argument("--godot-project", default=str(DEFAULT_GODOT_PROJECT))
     parser.add_argument("--godot-exe", default=None)
@@ -95,6 +100,7 @@ def run_godot_replay_smoke(
     trace: Path,
     spec: Path,
     net: Path | None,
+    overlay: Path | None,
     output_root: Path,
     max_frames: int,
 ) -> subprocess.CompletedProcess[str]:
@@ -117,6 +123,8 @@ def run_godot_replay_smoke(
     ]
     if net is not None:
         command.extend(["--net", net.as_posix()])
+    if overlay is not None:
+        command.extend(["--overlay", overlay.as_posix()])
     return subprocess.run(
         command,
         cwd=PROJECT_ROOT,
@@ -175,11 +183,15 @@ def main(argv: list[str] | None = None) -> int:
                     work_dir=Path(temp_dir),
                 )
                 net = Path(args.net).resolve() if args.net else generated_net
+            overlay = Path(args.overlay).resolve() if args.overlay else None
             if not trace.is_file():
                 print(f"[FAIL] Trace file not found: {trace}")
                 return 1
             if net is not None and not net.is_file():
                 print(f"[FAIL] SUMO net file not found: {net}")
+                return 1
+            if overlay is not None and not overlay.is_file():
+                print(f"[FAIL] Semantic overlay file not found: {overlay}")
                 return 1
             completed = run_godot_replay_smoke(
                 godot_exe=godot_exe,
@@ -187,6 +199,7 @@ def main(argv: list[str] | None = None) -> int:
                 trace=trace,
                 spec=spec,
                 net=net,
+                overlay=overlay,
                 output_root=output_root,
                 max_frames=args.max_frames,
             )
@@ -218,6 +231,14 @@ def main(argv: list[str] | None = None) -> int:
     if _summary_int(summary, "off_lane_vehicle_count") != 0:
         print("[FAIL] replay_summary.json reports vehicles outside SUMO lane geometry")
         return 1
+    zone_overlay = summary.get("zone_overlay", {})
+    if args.overlay and isinstance(zone_overlay, dict):
+        if _summary_int(zone_overlay, "spawned_zone_count") <= 0:
+            print("[FAIL] replay_summary.json reports zero spawned zone visuals")
+            return 1
+        if _summary_int(zone_overlay, "overlay_parse_error_count") != 0:
+            print("[FAIL] replay_summary.json reports semantic overlay parse errors")
+            return 1
 
     print(f"[OK] Godot SUMO trace replay smoke valid: {output_root}")
     return 0

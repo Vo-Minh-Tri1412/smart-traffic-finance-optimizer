@@ -102,6 +102,69 @@ def parse_sumo_result(
     )
 
 
+def parse_existing_sumo_net_result(
+    *,
+    paths: Any,
+    district_id: str,
+    scenario_id: str,
+    controller_id: str,
+    seed: int,
+) -> SimulationResult:
+    tripinfos = _tripinfo_rows(paths)
+    waiting_times = [_float_attr(row, "waitingTime") for row in tripinfos]
+    total_waiting = sum(waiting_times)
+    total_vehicles = len(tripinfos)
+    average_waiting = total_waiting / total_vehicles if total_vehicles else 0.0
+    intersections: dict[str, IntersectionMetric] = {}
+
+    emergency_delay = 0.0
+    bus_passenger_delay = 0.0
+    truck_delay = 0.0
+    for row in tripinfos:
+        vehicle_type_id = row.get("vType", "")
+        waiting_time = _float_attr(row, "waitingTime")
+        if vehicle_type_id == "AMBULANCE":
+            emergency_delay += waiting_time
+        if vehicle_type_id in {"BUS", "SCHOOL_BUS", "WORKER_SHUTTLE"}:
+            bus_passenger_delay += waiting_time * 20.0
+        if vehicle_type_id in {"LIGHT_TRUCK", "HEAVY_TRUCK"}:
+            truck_delay += waiting_time
+
+    _apply_existing_edge_queue_metrics(paths=paths, intersections=intersections)
+    queue_values = [metric.queue_vehicles for metric in intersections.values()]
+
+    return SimulationResult(
+        scenario_id=scenario_id,
+        controller_id=controller_id,
+        engine_id="sumo_net",
+        seed=seed,
+        total_vehicles=total_vehicles,
+        throughput=sum(1 for row in tripinfos if _arrived(row)),
+        total_waiting_time_seconds=round(total_waiting, 3),
+        average_waiting_time_seconds=round(average_waiting, 3),
+        max_queue_vehicles=round(max(queue_values, default=0.0), 3),
+        average_queue_vehicles=round(
+            sum(queue_values) / len(queue_values) if queue_values else 0.0,
+            3,
+        ),
+        stopped_vehicles=sum(1 for value in waiting_times if value > 0),
+        emergency_delay_seconds=round(emergency_delay, 3),
+        bus_passenger_delay_seconds=round(bus_passenger_delay, 3),
+        truck_delay_seconds=round(truck_delay, 3),
+        reroute_count=0,
+        failed_route_count=0,
+        controller_interventions=_controller_intervention_count(paths),
+        intersections=intersections,
+        vehicle_trace_frames=_existing_fcd_trace_frames(
+            paths=paths,
+            district_id=district_id,
+            scenario_id=scenario_id,
+            controller_id=controller_id,
+            seed=seed,
+        ),
+    )
+
+
 def _tripinfo_rows(paths: SumoExportPaths) -> list[dict[str, str]]:
     if not paths.tripinfo.is_file():
         return []
@@ -192,6 +255,36 @@ def _apply_edge_queue_metrics(
             metric.queue_vehicles = max(metric.queue_vehicles, queue_proxy)
 
 
+def _apply_existing_edge_queue_metrics(
+    *,
+    paths: Any,
+    intersections: dict[str, IntersectionMetric],
+) -> None:
+    if not paths.edge_data.is_file():
+        return
+    tree = ET.parse(paths.edge_data)
+    for interval in tree.getroot().iter("interval"):
+        begin = _float_attr(dict(interval.attrib), "begin")
+        end = _float_attr(dict(interval.attrib), "end")
+        period = max(1.0, end - begin)
+        for edge in interval.iter("edge"):
+            row = dict(edge.attrib)
+            edge_id = row.get("id", "")
+            if not edge_id or edge_id.startswith(":"):
+                continue
+            metric = intersections.setdefault(
+                edge_id,
+                IntersectionMetric(intersection_id=edge_id),
+            )
+            waiting_time = _float_attr(row, "waitingTime")
+            halting_proxy = _float_attr(row, "halting")
+            queue_proxy = max(halting_proxy, waiting_time / period)
+            metric.queue_vehicles = max(metric.queue_vehicles, queue_proxy)
+            metric.delay_seconds += waiting_time
+            if "sampledSeconds" in row:
+                metric.vehicles += int(round(_float_attr(row, "sampledSeconds") / period))
+
+
 def _fcd_trace_frames(
     *,
     paths: SumoExportPaths,
@@ -231,6 +324,52 @@ def _fcd_trace_frames(
                 "scenario_id": scenario_id,
                 "controller_id": controller_id,
                 "engine_id": "sumo",
+                "seed": seed,
+                "vehicles": vehicles,
+            }
+        )
+    return frames
+
+
+def _existing_fcd_trace_frames(
+    *,
+    paths: Any,
+    district_id: str,
+    scenario_id: str,
+    controller_id: str,
+    seed: int,
+) -> list[dict[str, Any]]:
+    if not paths.fcd.is_file():
+        return []
+    tree = ET.parse(paths.fcd)
+    frames: list[dict[str, Any]] = []
+    for frame_index, timestep in enumerate(tree.getroot().iter("timestep")):
+        time_seconds = _float_attr(dict(timestep.attrib), "time")
+        vehicles = []
+        for vehicle in timestep.iter("vehicle"):
+            row = dict(vehicle.attrib)
+            lane_id = row.get("lane", "")
+            vehicles.append(
+                {
+                    "vehicle_id": row.get("id", ""),
+                    "vehicle_type": row.get("type", ""),
+                    "x": _float_attr(row, "x"),
+                    "y": _float_attr(row, "y"),
+                    "speed": _float_attr(row, "speed"),
+                    "angle": _float_attr(row, "angle"),
+                    "lane_id": lane_id,
+                    "road_id": _road_id_from_lane(lane_id),
+                }
+            )
+        frames.append(
+            {
+                "schema_version": SIMULATION_TRACE_FRAME_SCHEMA_VERSION,
+                "timestep": frame_index,
+                "time_seconds": time_seconds,
+                "district_id": district_id,
+                "scenario_id": scenario_id,
+                "controller_id": controller_id,
+                "engine_id": "sumo_net",
                 "seed": seed,
                 "vehicles": vehicles,
             }

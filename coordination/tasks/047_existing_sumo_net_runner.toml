@@ -1,0 +1,41 @@
+id = "047_existing_sumo_net_runner"
+owner = "integrator"
+branch = "main"
+base_commit = "8210e542118573a2f63e66a33380741c2a08498c"
+allowed_paths = [
+  "coordination/tasks/04*.toml",
+  "README.md",
+  "ai_quantum_hvtc/**",
+  "frontend/contracts/**",
+  "render/README.md",
+  "render/scripts/world/**",
+  "scripts/**",
+  "simulation_projects/map_intake/**",
+  "docs/**",
+  "tests/**",
+]
+dependencies = ["046_district7_overlay_and_demand_v1"]
+acceptance_commands = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/047_existing_sumo_net_runner.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added existing SUMO .net.xml runner support, run-sumo-net CLI, parser support for FCD trace frames without district_spec geometry, and compact CLI summaries for large real maps."
+validation = [
+  "uv run python -m ai_quantum_hvtc simulate run-sumo-net --project simulation_projects/map_intake/district7.project.json --routes simulation_projects/map_intake/02_prepared_sources/district7_osm_seed_20260702/district7_random.rou.xml --scenario random_smoke --controller fixed_time --horizon-seconds 120 --out <tmp>/result.json --trace-out <tmp>/trace.jsonl --sumo-work-dir <tmp>/sumo_work",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest -> 53 passed",
+]
+risks = [
+  "Existing-net V1 intentionally supports fixed_time only; rule-based/RL should come after District 7 demand/control subset is stable.",
+]
+follow_up = [
+  "Add TraCI/rule-based support for selected traffic lights after candidate/control subset selection.",
+]

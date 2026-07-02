@@ -55,6 +55,18 @@ def result_to_trace_jsonl(result: SimulationResult, spec: DistrictSpec, path: Pa
     )
 
 
+def result_vehicle_trace_to_jsonl(result: SimulationResult, path: Path) -> None:
+    if not result.vehicle_trace_frames:
+        frames: list[dict[str, Any]] = []
+    else:
+        frames = result.vehicle_trace_frames
+    ensure_parent_dir(path).write_text(
+        "\n".join(json.dumps(frame, ensure_ascii=False, sort_keys=True) for frame in frames)
+        + ("\n" if frames else ""),
+        encoding="utf-8",
+    )
+
+
 def candidate_scores_to_csv(scores: list[CandidateScore], path: Path) -> None:
     ensure_parent_dir(path)
     fieldnames = list(scores[0].to_dict()) if scores else []

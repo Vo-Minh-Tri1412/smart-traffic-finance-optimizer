@@ -24,6 +24,16 @@ Godot authored map scene
 Godot should prefer SUMO `district.net.xml` for road/lane geometry during replay so vehicles and
 roads share the same coordinate source.
 
+Large real maps should use preview LOD in Godot: keep the full parsed SUMO geometry for coordinate
+mapping, zone anchors, and off-lane checks, but render only a capped subset of lane/junction meshes
+for interactive preview. Rendering every Quận 7 lane and junction as a separate MeshInstance can
+freeze or close the game window on normal laptops.
+
+For real OSM/SUMO maps such as Quận 7, Godot should not render roads from a hand-authored
+`district_spec`. The replay layer must read the same SUMO `.net.xml` used by SUMO simulation, then
+map FCD vehicle positions through the same bounds/scale. This is the guardrail that prevents the
+visual bug where cars appear to drive through residential/background areas.
+
 ## Map source intake
 
 The team does not have to hand-author an entire city inside Godot from zero. A larger map may first
@@ -65,17 +75,21 @@ render/
 │   │   └── presets/ # reusable zone/intersection presets for no-code editing
 │   ├── world/       # replay world and future world objects
 │   ├── vehicles/    # editable vehicle scenes
+│   ├── zones/       # editable zone visual scenes
 │   ├── sensors/     # future camera/sensor scenes
 │   └── ui/          # future replay/demo UI
 ├── scripts/
-│   ├── assets/      # VehicleAssetRegistry, VehicleFactory, VehiclePool
+│   ├── assets/      # visual catalogs, factories, vehicle pool
 │   ├── authoring/   # Godot scene -> district_spec export
 │   ├── contracts/   # schema/version constants
 │   ├── replay/      # trace loading, clock, interpolation, replay controller
 │   ├── world/       # SUMO net geometry parsing/rendering
+│   ├── zones/       # semantic overlay renderer and zone visuals
 │   └── dataset_export/
 ├── resources/
-│   └── configs/     # manifest examples and future render/camera presets
+│   ├── catalogs/    # Godot .tres visual asset catalogs
+│   ├── configs/     # legacy JSON examples and future non-visual configs
+│   └── materials/   # Godot visual materials
 ├── imported_assets/ # Godot-ready art assets
 └── outputs/         # ignored local render outputs
 ```
@@ -101,9 +115,21 @@ The current asset scaffold separates:
 - materials/textures;
 - UI assets.
 
-This is intentionally a folder scaffold, not a registry. A `.tres` asset registry should be added
-only when multiple systems need to choose assets by semantic type. Until then, Godot scenes and
-presets can reference assets directly.
+Visual selection now uses Godot-native `.tres` catalogs when designers need Inspector-friendly
+editing:
+
+```text
+res://resources/catalogs/VehicleAssetCatalog.tres
+res://resources/catalogs/ZoneAssetCatalog.tres
+```
+
+`VehicleAssetCatalog.tres` maps SUMO vehicle types to editable vehicle scenes.
+`ZoneAssetCatalog.tres` maps semantic zone types to zone scenes, ground materials, and building
+cluster assets. The semantic overlay remains JSON because Python/SUMO and Godot both read it; the
+catalog only controls how those zones look in Godot.
+
+The current imported art uses Kenney CC0 low-poly assets. Credit Kenney / kenney.nl in public demo
+materials even though attribution is not required by the license.
 
 ## Authoring layer
 
@@ -112,6 +138,16 @@ The authoring scene is:
 ```text
 res://scenes/authoring/DistrictAuthoringMap.tscn
 ```
+
+This scene is a small sample/sandbox with hand-authored intersections. It is not Quận 7 and should
+not be presented as the main map. New manual authoring work should start from:
+
+```text
+res://scenes/authoring/BlankAuthoringMap.tscn
+```
+
+For Quận 7 and other real maps, the main replay path is SUMO `.net.xml` + semantic overlay + trace
+inside `res://scenes/main/Main.tscn`.
 
 Authoring markers are component-style scene nodes:
 
@@ -176,19 +212,40 @@ Main pieces:
 - `DistrictReplayWorld`: renders SUMO lanes/junctions or spec fallback geometry.
 - `TraceReplayController`: asks the clock/interpolator for a frame, then updates vehicles.
 
+Replay smoke tests should fail when a SUMO net is supplied and vehicles are far from lane geometry.
+The current `off_lane_vehicle_count` check is intentionally strict for backend/render alignment; if a
+future visual asset is wider than the lane, fix rendering scale/assets rather than hiding the
+geometry mismatch.
+
 ## Vehicle asset layer
 
 Vehicle selection must go through:
 
 ```text
-VehicleAssetRegistry -> VehicleFactory -> VehiclePool
+VehicleAssetCatalog.tres -> VehicleAssetRegistry -> VehicleFactory -> VehiclePool
 ```
 
-- `VehicleAssetRegistry` maps vehicle type to scene path.
+- `VehicleAssetCatalog.tres` maps vehicle type to editable Godot scenes.
+- `VehicleAssetRegistry` loads the `.tres` catalog first and keeps legacy JSON manifest support for
+  compatibility.
 - `VehicleFactory` instantiates the right scene.
 - `VehiclePool` reuses hidden nodes rather than constantly instancing/freeing vehicles.
 
 `TraceReplayController` should not contain `if vehicle_type == "BUS"` style scene selection.
+
+## Zone visual asset layer
+
+Zone visuals mirror the vehicle pattern but use Godot resources from the start:
+
+```text
+semantic_overlay.json -> SemanticOverlayRenderer -> ZoneAssetCatalog.tres -> ZoneVisualBase
+```
+
+- The overlay says what a zone means: hospital, residential, industrial, school, nightlife.
+- The catalog says how that zone looks: zone scene, material, building scenes, density, and seed.
+- `SemanticOverlayRenderer` anchors zone visuals to SUMO edge IDs when geometry is available.
+- Zone building clusters are visual placeholders for demo readability; they are not official OSM
+  building imports.
 
 ## Config and schema rule
 
@@ -206,12 +263,14 @@ Inspector-friendly editing:
 - visual render presets;
 - camera rig presets if Godot-only;
 - material/theme resources;
-- asset configuration that no Python tool needs to read.
+- vehicle/zone/building asset catalogs that no Python tool needs to read.
 
 Current version labels:
 
 - `simulation_trace_frame.v1`;
 - `vehicle_asset_manifest.v1`;
+- `vehicle_asset_catalog.v1`;
+- `zone_asset_catalog.v1`;
 - `sumo_net_xml.v1` as an internal parsed-data label.
 
 Loaders should reject unsupported versions clearly.
@@ -232,6 +291,19 @@ SUMO trace
 
 SUMO/Godot ground truth may generate labels and measure sensor error. The model input must still be
 rendered images/video if the work is presented as CV.
+
+The sensor architecture is V2-ready even before training:
+
+- `DetectionCamera3D` is a real Godot camera rig, not a fake 2D drawing script.
+- `CameraRigCatalog.tres` stores editable multi-camera positions, roles, splits, FOV, and image size.
+- `LabelMappingCatalog.tres` maps simulation vehicle types to CV class ids/names.
+- `ObjectIdRegistry` and the mask-pass interface create object-id mask artifacts for labels.
+- `SensorDatasetWriter` writes RGB frames, YOLO labels, object-id masks, and frame manifests.
+
+The first smoke implementation may use projected replay vehicle bounds to populate the object-id
+mask artifact, but the public interface is intentionally compatible with a later true
+material/object-id render pass. Do not train or claim real CV quality until the dataset is generated
+from reviewed assets, camera rigs, scenarios, and render presets.
 
 ## Current gaps
 

@@ -16,7 +16,7 @@ const TraceInterpolatorScript := preload("res://scripts/replay/trace_interpolato
 @export var playback_speed := 1.0
 @export var loop_trace := true
 @export var world_scale := 0.02
-@export var asset_manifest_path := "res://resources/configs/asset_manifest.example.json"
+@export var asset_manifest_path := "res://resources/catalogs/VehicleAssetCatalog.tres"
 @export var geometry_world_path: NodePath = NodePath("../DistrictReplayWorld")
 @export var off_lane_threshold_m := 8.0
 
@@ -199,7 +199,10 @@ func _write_summary(success: bool) -> void:
 		"lane_count": _geometry_metric("lane_count"),
 		"road_count": _geometry_metric("road_count"),
 		"intersection_count": _geometry_metric("intersection_count"),
+		"rendered_lane_count": _geometry_metric("rendered_lane_count"),
+		"rendered_junction_count": _geometry_metric("rendered_junction_count"),
 		"vehicle_asset_manifest_path": asset_manifest_path,
+		"vehicle_asset_catalog_path": asset_manifest_path,
 		"vehicle_asset_registry_loaded": (
 			vehicle_factory.manifest_loaded() if vehicle_factory != null else false
 		),
@@ -225,6 +228,7 @@ func _write_summary(success: bool) -> void:
 		"trace_data_model": "TraceFrameData/TraceVehicleState",
 		"trace_schema_version": replay_data.schema_version if replay_data != null else "",
 		"sumo_geometry_data_model": _geometry_data_model(),
+		"zone_overlay": _zone_overlay_summary(),
 		"playback_data_model": "TracePlaybackClock/TraceInterpolator",
 		"playback_speed": playback_speed,
 		"loop_trace": loop_trace,
@@ -261,6 +265,13 @@ func _geometry_data_model() -> String:
 	if geometry_node == null or not geometry_node.has_method("geometry_data_model"):
 		return "none"
 	return String(geometry_node.geometry_data_model())
+
+
+func _zone_overlay_summary() -> Dictionary:
+	var overlay_renderer = get_node_or_null("../SemanticOverlayRenderer")
+	if overlay_renderer != null and overlay_renderer.has_method("summary"):
+		return overlay_renderer.summary()
+	return {}
 
 
 func _headless_sample_time(index: int, sample_count: int) -> float:

@@ -1,0 +1,41 @@
+id = "046_district7_overlay_and_demand_v1"
+owner = "integrator"
+branch = "main"
+base_commit = "8210e542118573a2f63e66a33380741c2a08498c"
+allowed_paths = [
+  "coordination/tasks/04*.toml",
+  "README.md",
+  "ai_quantum_hvtc/**",
+  "frontend/contracts/**",
+  "render/README.md",
+  "render/scripts/world/**",
+  "scripts/**",
+  "simulation_projects/map_intake/**",
+  "docs/**",
+  "tests/**",
+]
+dependencies = ["045_district7_sumo_net_source"]
+acceptance_commands = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/046_district7_overlay_and_demand_v1.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added semantic_overlay.v1 contracts, a District 7 overlay seed, and deterministic synthetic demand generation that creates SUMO trips/routes from overlay zone anchors."
+validation = [
+  "uv run python -m ai_quantum_hvtc simulate validate-sumo-net --project simulation_projects/map_intake/district7.project.json",
+  "uv run python scripts/smoke/district7_roundtrip_smoke.py --output-root <tmp> --max-frames 40 --require-godot",
+  "uv run pytest -> 53 passed",
+]
+risks = [
+  "Overlay zones and volumes are synthetic placeholders; they are not policy evidence until reviewed.",
+  "Some trips may fail routing on the first overlay seed; QA reports attempted/routed/failed counts.",
+]
+follow_up = [
+  "Have Economics/CS review zone anchors, vehicle mix, and scenario multipliers before policy claims.",
+]

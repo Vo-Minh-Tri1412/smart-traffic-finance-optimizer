@@ -36,15 +36,19 @@ aligned with the simulated district, can include weather/lighting perturbations,
 awkward mismatch where a real-world dataset sees real cars while the demo city uses simple icons.
 
 The Godot project is intentionally organized as a real app under `render/`, not as a loose asset
-folder. Simulation vehicle types should map to Godot scenes through an asset manifest:
+folder. Simulation vehicle types should map to Godot scenes through the Godot-native vehicle asset
+catalog:
 
 ```text
 vehicle_type = "ambulance"
-  -> render/resources/configs/asset_manifest*.json
+  -> render/resources/catalogs/VehicleAssetCatalog.tres
   -> res://scenes/vehicles/Ambulance.tscn
   -> DetectionCamera captures rendered pixels
   -> YOLO label exporter writes class id and bounding box
 ```
+
+The old JSON asset manifest remains compatibility-only. Visual asset choices that only Godot needs
+belong in `.tres` catalogs so designers can edit them in the Inspector.
 
 ## Dataset layout
 
@@ -143,5 +147,26 @@ image/label pairing and YOLO label ranges.
 - It does not replace SUMO/SUMO-RL.
 - It does not claim synthetic data is equivalent to real traffic-camera footage.
 
-The current smoke exporter only proves the PNG/label plumbing. The real dataset will come from SUMO
-trace replay inside the Godot district scene.
+The original smoke exporter only proves the PNG/label plumbing. The newer sensor smoke path is the
+architecture target:
+
+```text
+SUMO trace replay in Godot
+  -> DetectionCamera3D rigs from CameraRigCatalog.tres
+  -> RGB viewport frame
+  -> ObjectIdRegistry + mask-pass interface
+  -> YOLO labels + object-id mask image + sensor_frame_manifest.jsonl
+```
+
+The current object-id mask smoke uses projected Godot replay vehicle nodes to produce an object-id
+mask artifact. That is intentionally shaped like the future material/object-id render pass so the
+dataset writer, label mapping, camera catalog, and manifests do not need to be replaced when the
+mask pass becomes a true separate render pass.
+
+Godot-only sensor configuration is stored as `.tres` resources:
+
+- `CameraRigCatalog.tres`: editable multi-camera rigs, roles, splits, FOV, and image size.
+- `LabelMappingCatalog.tres`: project vehicle types mapped to YOLO class ids/names.
+
+Cross-system outputs remain JSON/JSONL/YAML because Python, Colab/Kaggle, Drive, and review scripts
+need to read them.

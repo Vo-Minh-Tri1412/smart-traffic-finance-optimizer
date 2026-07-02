@@ -2,6 +2,8 @@ extends RefCounted
 
 const SIMULATION_TRACE_FRAME_SCHEMA_VERSION := "simulation_trace_frame.v1"
 const VEHICLE_ASSET_MANIFEST_SCHEMA_VERSION := "vehicle_asset_manifest.v1"
+const VEHICLE_ASSET_CATALOG_SCHEMA_VERSION := "vehicle_asset_catalog.v1"
+const ZONE_ASSET_CATALOG_SCHEMA_VERSION := "zone_asset_catalog.v1"
 const SUMO_NET_XML_SCHEMA_VERSION := "sumo_net_xml.v1"
 
 
@@ -11,6 +13,14 @@ static func supported_trace_frame_versions() -> Array[String]:
 
 static func supported_vehicle_asset_manifest_versions() -> Array[String]:
 	return [VEHICLE_ASSET_MANIFEST_SCHEMA_VERSION]
+
+
+static func supported_vehicle_asset_catalog_versions() -> Array[String]:
+	return [VEHICLE_ASSET_CATALOG_SCHEMA_VERSION]
+
+
+static func supported_zone_asset_catalog_versions() -> Array[String]:
+	return [ZONE_ASSET_CATALOG_SCHEMA_VERSION]
 
 
 static func require_supported_version(

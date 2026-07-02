@@ -10,11 +10,20 @@ const SumoNetGeometryDataScript := preload("res://scripts/world/sumo_net_geometr
 @export var sumo_meters_per_spec_unit := 1000.0
 @export var road_width := 1.6
 @export var lane_width_m := 3.2
+@export var enable_large_map_lod := true
+@export var max_visual_lanes := 3200
+@export var max_visual_junctions := 1200
+@export var visual_lane_width_multiplier := 2.4
+@export var min_visual_lane_width := 0.14
+@export var min_visual_junction_radius := 0.32
+@export var max_visual_junction_radius := 2.4
 
 var intersection_positions: Dictionary = {}
 var road_count := 0
 var intersection_count := 0
 var lane_count := 0
+var rendered_lane_count := 0
+var rendered_junction_count := 0
 var _spec_center := Vector2.ZERO
 var _sumo_geometry = null
 var _sumo_bounds_min := Vector2.ZERO
@@ -56,10 +65,21 @@ func build_from_sumo_net(path: String) -> bool:
 		return false
 
 	_configure_sumo_bounds(_sumo_geometry)
-	for lane in _sumo_geometry.lanes:
-		_build_sumo_lane(lane)
-	for junction in _sumo_geometry.junctions:
-		_build_sumo_junction(junction)
+	_fit_ground_to_sumo_bounds()
+	lane_count = _sumo_geometry.lane_count()
+	road_count = lane_count
+	intersection_count = _sumo_geometry.junction_count()
+	rendered_lane_count = 0
+	rendered_junction_count = 0
+
+	var lane_stride := _render_stride(_sumo_geometry.lanes.size(), max_visual_lanes)
+	for index in range(_sumo_geometry.lanes.size()):
+		if _should_render_index(index, lane_stride):
+			_build_sumo_lane(_sumo_geometry.lanes[index])
+	var junction_stride := _render_stride(_sumo_geometry.junctions.size(), max_visual_junctions)
+	for index in range(_sumo_geometry.junctions.size()):
+		if _should_render_index(index, junction_stride):
+			_build_sumo_junction(_sumo_geometry.junctions[index])
 	return true
 
 
@@ -71,6 +91,8 @@ func _clear_generated() -> void:
 	road_count = 0
 	intersection_count = 0
 	lane_count = 0
+	rendered_lane_count = 0
+	rendered_junction_count = 0
 	_sumo_geometry = null
 	_sumo_bounds_min = Vector2.ZERO
 	_sumo_bounds_max = Vector2.ZERO
@@ -154,9 +176,10 @@ func _material(color: Color) -> StandardMaterial3D:
 
 
 func _build_sumo_lane(lane_geometry) -> void:
-	var lane_material := _material(Color(0.16, 0.16, 0.16))
+	var lane_material := _material(Color(0.08, 0.08, 0.085))
 	var lane_id := String(lane_geometry.lane_id)
 	var points: Array = lane_geometry.points
+	var lane_width := float(lane_geometry.width_m)
 	for index in range(points.size() - 1):
 		var start := points[index] as Vector2
 		var end := points[index + 1] as Vector2
@@ -168,26 +191,48 @@ func _build_sumo_lane(lane_geometry) -> void:
 		var lane_mesh := MeshInstance3D.new()
 		lane_mesh.name = "Lane_%s_%d" % [lane_id, index]
 		var mesh := BoxMesh.new()
-		mesh.size = Vector3(max(0.08, lane_width_m * world_scale), 0.035, length_m * world_scale)
+		mesh.size = Vector3(
+			max(min_visual_lane_width, lane_width * world_scale * visual_lane_width_multiplier),
+			0.04,
+			length_m * world_scale
+		)
 		lane_mesh.mesh = mesh
 		lane_mesh.position = _mapper.sumo_to_world(midpoint.x, midpoint.y, 0.02)
 		lane_mesh.rotation.y = atan2(direction.x, direction.y)
 		lane_mesh.set_surface_override_material(0, lane_material)
 		lane_mesh.add_to_group("generated_world_object")
 		add_child(lane_mesh)
-	lane_count += 1
-	road_count += 1
+	rendered_lane_count += 1
 
 
 func _build_sumo_junction(junction) -> void:
 	var marker := MeshInstance3D.new()
 	marker.name = "Junction_%s" % String(junction.junction_id)
-	marker.mesh = _cylinder_mesh(0.22, 0.08)
+	marker.mesh = _cylinder_mesh(_junction_radius(junction), 0.08)
 	marker.position = _mapper.sumo_to_world(junction.point.x, junction.point.y, 0.05)
-	marker.set_surface_override_material(0, _material(Color(0.05, 0.05, 0.05)))
+	marker.set_surface_override_material(0, _material(Color(0.025, 0.025, 0.03)))
 	marker.add_to_group("generated_world_object")
 	add_child(marker)
-	intersection_count += 1
+	rendered_junction_count += 1
+
+
+func _junction_radius(junction) -> float:
+	var shape: Array = junction.shape_points
+	if shape.size() < 2:
+		return 0.22
+	var min_value := shape[0] as Vector2
+	var max_value := shape[0] as Vector2
+	for point in shape:
+		var value := point as Vector2
+		min_value.x = min(min_value.x, value.x)
+		min_value.y = min(min_value.y, value.y)
+		max_value.x = max(max_value.x, value.x)
+		max_value.y = max(max_value.y, value.y)
+	return clamp(
+		(max_value - min_value).length() * world_scale / 2.0,
+		min_visual_junction_radius,
+		max_visual_junction_radius
+	)
 
 
 func _configure_sumo_bounds(geometry) -> void:
@@ -196,6 +241,18 @@ func _configure_sumo_bounds(geometry) -> void:
 	_mapper = CoordinateMapperScript.new()
 	_mapper.configure(_sumo_bounds_min, _sumo_bounds_max, world_scale)
 	_has_sumo_geometry = true
+
+
+func _fit_ground_to_sumo_bounds() -> void:
+	var ground := get_node_or_null("Ground")
+	if not (ground is MeshInstance3D):
+		return
+	var ground_mesh = (ground as MeshInstance3D).mesh
+	if not (ground_mesh is PlaneMesh):
+		return
+	var width: float = abs(_sumo_bounds_max.x - _sumo_bounds_min.x) * world_scale
+	var depth: float = abs(_sumo_bounds_max.y - _sumo_bounds_min.y) * world_scale
+	(ground_mesh as PlaneMesh).size = Vector2(max(90.0, width * 1.12), max(90.0, depth * 1.12))
 
 
 func has_geometry_bounds() -> bool:
@@ -216,8 +273,45 @@ func distance_to_nearest_lane_m(x: float, y: float) -> float:
 	return float(_sumo_geometry.distance_to_nearest_lane_m(Vector2(x, y)))
 
 
+func world_position_for_edge_id(edge_id: String) -> Variant:
+	if _sumo_geometry == null or _mapper == null:
+		return null
+	var center = _sumo_geometry.center_for_edge(edge_id)
+	if center is Vector2:
+		return _mapper.sumo_to_world((center as Vector2).x, (center as Vector2).y, 0.18)
+	return null
+
+
+func world_position_for_edge_ids(edge_ids) -> Variant:
+	if not (edge_ids is Array):
+		return null
+	var total := Vector3.ZERO
+	var count := 0
+	var edge_id_values := edge_ids as Array
+	for edge_id in edge_id_values:
+		var point = world_position_for_edge_id(String(edge_id))
+		if point is Vector3:
+			total += point as Vector3
+			count += 1
+	if count == 0:
+		return null
+	return total / float(count)
+
+
 func geometry_data_model() -> String:
 	return "SumoNetGeometryData" if _sumo_geometry != null else "spec_fallback"
+
+
+func _render_stride(total_count: int, max_count: int) -> int:
+	if not enable_large_map_lod:
+		return 1
+	if max_count <= 0 or total_count <= max_count:
+		return 1
+	return int(ceil(float(total_count) / float(max_count)))
+
+
+func _should_render_index(index: int, stride: int) -> bool:
+	return stride <= 1 or index % stride == 0
 
 
 func _intersection_center(intersections: Array) -> Vector2:

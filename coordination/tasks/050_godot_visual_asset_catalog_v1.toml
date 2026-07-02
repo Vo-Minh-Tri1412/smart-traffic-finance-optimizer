@@ -1,0 +1,46 @@
+id = "050_godot_visual_asset_catalog_v1"
+owner = "integrator"
+branch = "main"
+base_commit = "8210e542118573a2f63e66a33380741c2a08498c"
+allowed_paths = [
+  "coordination/tasks/050_godot_visual_asset_catalog_v1.toml",
+  "docs/02_ARCHITECTURE/**",
+  "render/**",
+  "scripts/render/**",
+  "tests/**",
+]
+dependencies = [
+  "036_schema_versioning_and_contract_policy",
+  "038_vehicle_pool",
+  "042_render_asset_and_map_intake_scaffold",
+  "048_godot_sumo_net_geometry_fidelity",
+]
+acceptance_commands = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/050_godot_visual_asset_catalog_v1.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added Godot-native .tres visual asset catalogs for vehicles and zones, a semantic overlay renderer that spawns zone visuals from overlay JSON, selected Kenney CC0 assets under render/imported_assets, and clarified the old 16-intersection authoring scene as a sample rather than the main map."
+validation = [
+  "uv run python scripts/smoke/district7_roundtrip_smoke.py --output-root render/outputs/district7_catalog_smoke --max-frames 20 --require-godot --no-dvc-pull",
+  "Godot replay summary: spawned_zone_count=7, registered_zone_type_count=7, vehicle_scene_count=10, off_lane_vehicle_count=0.",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest -> 59 passed",
+]
+risks = [
+  "Kenney .glb assets are copied and imported, but default zone catalog stores their paths as strings so headless smoke can fallback if import metadata is missing.",
+  "Vehicle scenes still use existing project vehicle scenes; designers can now swap mappings in VehicleAssetCatalog.tres.",
+  "Godot headless still prints a non-fatal dummy renderer warning: Parameter \"material\" is null.",
+]
+follow_up = [
+  "Open Godot editor and swap imported Kenney vehicle/building assets into the .tres catalogs or wrapper scenes where final art is desired.",
+  "If the sample authoring scene keeps confusing the team, move it into an explicit samples/ folder in a separate cleanup task.",
+]

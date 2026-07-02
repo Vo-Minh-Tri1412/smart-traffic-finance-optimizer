@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SumoProjectDescriptor",
+  "type": "object",
+  "required": ["id", "name", "version", "source", "semantic_overlay_path", "demand_config_path"],
+  "properties": {
+    "id": {"type": "string"},
+    "name": {"type": "string"},
+    "version": {"type": "string"},
+    "import_profile": {"type": "string"},
+    "raw_dvc_path": {"type": "string"},
+    "prepared_dvc_path": {"type": "string"},
+    "source": {
+      "type": "object",
+      "required": ["id", "kind", "net_path"],
+      "properties": {
+        "id": {"type": "string"},
+        "kind": {"const": "sumo_net_xml"},
+        "net_path": {"type": "string"},
+        "sha256": {"type": "string"}
+      }
+    },
+    "semantic_overlay_path": {"type": "string"},
+    "demand_config_path": {"type": "string"},
+    "notes": {"type": "string"}
+  }
+}

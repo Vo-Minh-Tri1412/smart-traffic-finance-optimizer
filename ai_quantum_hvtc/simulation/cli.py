@@ -14,12 +14,25 @@ from ai_quantum_hvtc.reports import (
     load_candidate_options_from_csv,
     result_to_json,
     result_to_trace_jsonl,
+    result_vehicle_trace_to_jsonl,
     selected_options_to_csv,
     write_baseline_comparison_report,
     write_markdown_report,
 )
 from ai_quantum_hvtc.simulation.engines import ReferenceGraphEngine, SimulationEngine, SumoAdapter
-from ai_quantum_hvtc.simulation.engines.sumo import SumoRuntimeError
+from ai_quantum_hvtc.simulation.engines.sumo import (
+    SumoRuntimeConfig,
+    SumoRuntimeError,
+    prepare_existing_sumo_net_run,
+    run_existing_sumo_net,
+)
+from ai_quantum_hvtc.simulation.engines.sumo.parser import parse_existing_sumo_net_result
+from ai_quantum_hvtc.simulation.maps import (
+    load_semantic_overlay,
+    load_sumo_net_index,
+    load_sumo_project,
+)
+from ai_quantum_hvtc.simulation.maps.source import SumoMapSourceError
 from ai_quantum_hvtc.simulation.specs import load_district_spec
 
 
@@ -104,6 +117,95 @@ def _cmd_run(args: argparse.Namespace) -> int:
     if args.trace_out:
         result_to_trace_jsonl(result, spec, Path(args.trace_out))
     print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
+    return 0
+
+
+def _cmd_validate_sumo_net(args: argparse.Namespace) -> int:
+    try:
+        if args.project:
+            project = load_sumo_project(args.project)
+            net_path = project.source.net_path
+        else:
+            project = None
+            if not args.sumo_net:
+                print("[FAIL] pass --project or --sumo-net")
+                return 1
+            net_path = Path(args.sumo_net)
+        net_index = load_sumo_net_index(net_path)
+        overlay_status = "not_checked"
+        if project is not None:
+            load_semantic_overlay(project.overlay_path, net_index)
+            overlay_status = "ok"
+    except (OSError, SumoMapSourceError) as exc:
+        print(f"[FAIL] {exc}")
+        return 1
+    payload = {
+        "status": "ok",
+        "project_id": project.project_id if project is not None else "",
+        "net_path": str(net_path),
+        "edge_count": net_index.edge_count,
+        "lane_count": net_index.lane_count,
+        "junction_count": net_index.junction_count,
+        "traffic_light_count": net_index.traffic_light_count,
+        "overlay_status": overlay_status,
+        "bounds_min": list(net_index.bounds_min),
+        "bounds_max": list(net_index.bounds_max),
+    }
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _cmd_run_sumo_net(args: argparse.Namespace) -> int:
+    try:
+        if args.project:
+            project = load_sumo_project(args.project)
+            district_id = project.project_id
+            net_path = project.source.net_path
+        else:
+            project = None
+            if not args.sumo_net:
+                print("[FAIL] pass --project or --sumo-net")
+                return 1
+            district_id = args.district_id or Path(args.sumo_net).stem
+            net_path = Path(args.sumo_net)
+        routes = Path(args.routes)
+        work_dir = Path(args.sumo_work_dir)
+        paths = prepare_existing_sumo_net_run(
+            net=net_path,
+            routes=routes,
+            work_dir=work_dir,
+            scenario_id=args.scenario,
+            controller_id=args.controller,
+            seed=args.seed,
+            horizon_seconds=args.horizon_seconds,
+            step_length_seconds=args.step_length,
+        )
+        run_existing_sumo_net(paths, SumoRuntimeConfig())
+        result = parse_existing_sumo_net_result(
+            paths=paths,
+            district_id=district_id,
+            scenario_id=args.scenario,
+            controller_id=args.controller,
+            seed=args.seed,
+        )
+    except (OSError, SumoMapSourceError, SumoRuntimeError) as exc:
+        print(f"[FAIL] {exc}")
+        return 1
+    result_to_json(result, Path(args.out))
+    if args.trace_out:
+        result_vehicle_trace_to_jsonl(result, Path(args.trace_out))
+    print(
+        json.dumps(
+            {
+                **{key: value for key, value in result.to_dict().items() if key != "intersections"},
+                "intersection_metric_count": len(result.intersections),
+                "out": args.out,
+                "trace_out": args.trace_out or "",
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
     return 0
 
 
@@ -231,6 +333,14 @@ def build_parser() -> argparse.ArgumentParser:
     validate_parser.add_argument("--spec", required=True)
     validate_parser.set_defaults(func=_cmd_validate)
 
+    validate_net_parser = subparsers.add_parser(
+        "validate-sumo-net",
+        help="Validate an existing SUMO .net.xml or SUMO project descriptor.",
+    )
+    validate_net_parser.add_argument("--project", default=None)
+    validate_net_parser.add_argument("--sumo-net", default=None)
+    validate_net_parser.set_defaults(func=_cmd_validate_sumo_net)
+
     run_parser = subparsers.add_parser("run", help="Run one scenario/controller.")
     run_parser.add_argument("--spec", required=True)
     run_parser.add_argument("--scenario", required=True)
@@ -250,6 +360,24 @@ def build_parser() -> argparse.ArgumentParser:
         help="Keep SUMO artifacts under this directory when --engine sumo is used.",
     )
     run_parser.set_defaults(func=_cmd_run)
+
+    run_net_parser = subparsers.add_parser(
+        "run-sumo-net",
+        help="Run SUMO from an existing .net.xml and route file.",
+    )
+    run_net_parser.add_argument("--project", default=None)
+    run_net_parser.add_argument("--sumo-net", default=None)
+    run_net_parser.add_argument("--routes", required=True)
+    run_net_parser.add_argument("--scenario", required=True)
+    run_net_parser.add_argument("--controller", default="fixed_time")
+    run_net_parser.add_argument("--district-id", default="")
+    run_net_parser.add_argument("--seed", type=int, default=42)
+    run_net_parser.add_argument("--horizon-seconds", type=int, default=900)
+    run_net_parser.add_argument("--step-length", type=float, default=1.0)
+    run_net_parser.add_argument("--out", required=True)
+    run_net_parser.add_argument("--trace-out", default=None)
+    run_net_parser.add_argument("--sumo-work-dir", required=True)
+    run_net_parser.set_defaults(func=_cmd_run_sumo_net)
 
     compare_parser = subparsers.add_parser(
         "compare", help="Compare controllers and score candidates."

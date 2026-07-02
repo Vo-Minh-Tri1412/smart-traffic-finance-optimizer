@@ -5,7 +5,11 @@
 !**/.gitkeep
 !*.dvc
 !**/*.dvc
+!*.project.json
+!**/*.project.json
 !templates/**
 !04_review_notes/**
+!05_semantic_overlays/**
+!06_demand_configs/**
 *.tmp
 *.bak

@@ -1,0 +1,48 @@
+id = "049_district7_roundtrip_smoke"
+owner = "integrator"
+branch = "main"
+base_commit = "8210e542118573a2f63e66a33380741c2a08498c"
+allowed_paths = [
+  "coordination/tasks/04*.toml",
+  "README.md",
+  "ai_quantum_hvtc/**",
+  "frontend/contracts/**",
+  "render/README.md",
+  "render/scripts/world/**",
+  "scripts/**",
+  "simulation_projects/map_intake/**",
+  "docs/**",
+  "tests/**",
+]
+dependencies = [
+  "045_district7_sumo_net_source",
+  "046_district7_overlay_and_demand_v1",
+  "047_existing_sumo_net_runner",
+  "048_godot_sumo_net_geometry_fidelity",
+]
+acceptance_commands = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/049_district7_roundtrip_smoke.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added a one-command District 7 smoke wrapper that validates DVC-backed SUMO net data, generates overlay demand, runs SUMO, exports trace/result, runs Godot replay, and writes compact QA reports."
+validation = [
+  "uv run python scripts/smoke/district7_roundtrip_smoke.py --output-root <tmp> --max-frames 40 --require-godot",
+  "QA report: attempted_trips=55, routed_trips=47, total_vehicles=27, throughput=18, off_lane_vehicle_count=0.",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest -> 53 passed",
+]
+risks = [
+  "Roundtrip depends on local SUMO, Godot, and pulled DVC District 7 artifacts.",
+]
+follow_up = [
+  "Promote a reviewed demand/overlay profile before RL training or investment optimization claims.",
+]

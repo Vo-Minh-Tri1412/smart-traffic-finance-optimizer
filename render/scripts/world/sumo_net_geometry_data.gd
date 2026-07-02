@@ -5,7 +5,11 @@ const SumoLaneGeometryScript := preload("res://scripts/world/sumo_lane_geometry.
 const SumoJunctionGeometryScript := preload("res://scripts/world/sumo_junction_geometry.gd")
 
 var lanes: Array = []
+var distance_lanes: Array = []
 var junctions: Array = []
+var lane_by_id: Dictionary = {}
+var lane_to_edge: Dictionary = {}
+var edge_to_lanes: Dictionary = {}
 var bounds_min := Vector2.ZERO
 var bounds_max := Vector2.ZERO
 var has_bounds := false
@@ -14,7 +18,11 @@ var errors: Array[String] = []
 
 func load_xml(path: String) -> bool:
 	lanes.clear()
+	distance_lanes.clear()
 	junctions.clear()
+	lane_by_id.clear()
+	lane_to_edge.clear()
+	edge_to_lanes.clear()
 	errors.clear()
 	has_bounds = false
 	bounds_min = Vector2.ZERO
@@ -27,12 +35,24 @@ func load_xml(path: String) -> bool:
 		return false
 
 	var all_points: Array[Vector2] = []
+	var current_edge_id := ""
+	var current_edge_is_internal := false
 	while parser.read() == OK:
-		if parser.get_node_type() != XMLParser.NODE_ELEMENT:
+		var node_type := parser.get_node_type()
+		if node_type == XMLParser.NODE_ELEMENT_END and parser.get_node_name() == "edge":
+			current_edge_id = ""
+			current_edge_is_internal = false
+			continue
+		if node_type != XMLParser.NODE_ELEMENT:
 			continue
 		var node_name := parser.get_node_name()
-		if node_name == "lane":
-			_parse_lane(parser, all_points)
+		if node_name == "edge":
+			current_edge_id = _attr(parser, "id")
+			current_edge_is_internal = current_edge_id.begins_with(":") or _attr(parser, "function") == "internal"
+			if not current_edge_is_internal and not current_edge_id.is_empty():
+				edge_to_lanes[current_edge_id] = []
+		elif node_name == "lane":
+			_parse_lane(parser, current_edge_id, current_edge_is_internal, all_points)
 		elif node_name == "junction":
 			_parse_junction(parser, all_points)
 
@@ -53,15 +73,41 @@ func junction_count() -> int:
 
 
 func distance_to_nearest_lane_m(point: Vector2) -> float:
-	if lanes.is_empty():
+	var search_lanes := distance_lanes if not distance_lanes.is_empty() else lanes
+	if search_lanes.is_empty():
 		return 0.0
 	var best := INF
-	for lane in lanes:
+	for lane in search_lanes:
 		best = min(best, float(lane.distance_to_point_m(point)))
 	return best
 
 
-func _parse_lane(parser: XMLParser, all_points: Array[Vector2]) -> void:
+func center_for_edge(edge_id: String) -> Variant:
+	if not edge_to_lanes.has(edge_id):
+		return null
+	var lane_ids := edge_to_lanes[edge_id] as Array
+	var points: Array[Vector2] = []
+	for lane_id in lane_ids:
+		if lane_by_id.has(lane_id):
+			var lane = lane_by_id[lane_id]
+			for point in lane.points:
+				points.append(point as Vector2)
+	if points.is_empty():
+		return null
+	var total := Vector2.ZERO
+	for point in points:
+		total += point
+	return total / float(points.size())
+
+
+func _parse_lane(
+	parser: XMLParser,
+	current_edge_id: String,
+	current_edge_is_internal: bool,
+	all_points: Array[Vector2]
+) -> void:
+	if current_edge_id.is_empty():
+		return
 	var shape := _attr(parser, "shape")
 	var lane_id := _attr(parser, "id")
 	if shape.is_empty():
@@ -70,12 +116,21 @@ func _parse_lane(parser: XMLParser, all_points: Array[Vector2]) -> void:
 	if points.size() < 2:
 		return
 	var lane = SumoLaneGeometryScript.new()
-	lane.configure(lane_id, points)
+	var width := float(_attr(parser, "width")) if not _attr(parser, "width").is_empty() else 3.2
+	lane.configure(lane_id, current_edge_id, points, width)
 	if not lane.is_valid():
 		return
-	lanes.append(lane)
+	lane_by_id[lane_id] = lane
+	distance_lanes.append(lane)
 	for point in points:
 		all_points.append(point)
+	if current_edge_is_internal:
+		return
+	lanes.append(lane)
+	lane_to_edge[lane_id] = current_edge_id
+	if not edge_to_lanes.has(current_edge_id):
+		edge_to_lanes[current_edge_id] = []
+	(edge_to_lanes[current_edge_id] as Array).append(lane_id)
 
 
 func _parse_junction(parser: XMLParser, all_points: Array[Vector2]) -> void:
@@ -85,12 +140,15 @@ func _parse_junction(parser: XMLParser, all_points: Array[Vector2]) -> void:
 	if _attr(parser, "x").is_empty() or _attr(parser, "y").is_empty():
 		return
 	var point := Vector2(float(_attr(parser, "x")), float(_attr(parser, "y")))
+	var shape := _parse_shape(_attr(parser, "shape"))
 	var junction = SumoJunctionGeometryScript.new()
-	junction.configure(junction_id, point)
+	junction.configure(junction_id, point, shape)
 	if not junction.is_valid():
 		return
 	junctions.append(junction)
 	all_points.append(point)
+	for shape_point in shape:
+		all_points.append(shape_point)
 
 
 func _configure_bounds(points: Array[Vector2]) -> void:

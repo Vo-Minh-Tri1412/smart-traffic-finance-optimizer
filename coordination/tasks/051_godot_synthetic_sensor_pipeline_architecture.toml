@@ -1,0 +1,52 @@
+id = "051_godot_synthetic_sensor_pipeline_architecture"
+owner = "integrator"
+branch = "main"
+base_commit = "8210e542118573a2f63e66a33380741c2a08498c"
+allowed_paths = [
+  "coordination/tasks/051_godot_synthetic_sensor_pipeline_architecture.toml",
+  "docs/02_ARCHITECTURE/**",
+  "render/README.md",
+  "render/resources/catalogs/**",
+  "render/scenes/main/**",
+  "render/scenes/sensors/**",
+  "render/scripts/replay/vehicle_base.gd",
+  "render/scripts/sensors/**",
+  "scripts/render/**",
+  "tests/**",
+]
+dependencies = [
+  "038_vehicle_pool",
+  "048_godot_sumo_net_geometry_fidelity",
+  "050_godot_visual_asset_catalog_v1",
+]
+acceptance_commands = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run pytest",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/051_godot_synthetic_sensor_pipeline_architecture.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added a V2-ready Godot synthetic sensor architecture with editable camera/label .tres catalogs, DetectionCamera3D, object-id registry, sensor render pipeline, dataset writer, and a Python smoke wrapper that exports RGB smoke frames, object-id mask artifacts, YOLO labels, and sensor frame manifests from replay vehicles."
+validation = [
+  "Godot check-only: res://scripts/sensors/run_sensor_dataset_smoke.gd",
+  "uv run python scripts/render/godot_sensor_dataset_smoke.py --dataset-root <tmp> --force --max-frames 2",
+  "uv run pytest tests/integration/frontend_contracts/test_godot_sensor_pipeline_contracts.py -> 3 passed",
+  "uv run pytest -> 59 passed",
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy ai_quantum_hvtc scripts",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/051_godot_synthetic_sensor_pipeline_architecture.toml --changed-file <051 scoped files>",
+]
+risks = [
+  "The current smoke RGB frame is synthetic background, not a true viewport screenshot, because Godot headless viewport image capture hung during testing.",
+  "The object-id mask artifact is generated from projected replay vehicle bounds; it is shaped for replacement by a future true material/object-id render pass.",
+  "Godot dummy renderer still emits a non-fatal material warning already seen in replay smoke.",
+]
+follow_up = [
+  "Replace the projected object-id mask smoke with a true material/object-id render pass when renderer stability is ready.",
+  "Add reviewed camera rigs for District 7 scenarios before producing training-scale YOLO datasets.",
+]

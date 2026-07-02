@@ -1,0 +1,137 @@
+{
+  "schema_version": "semantic_overlay.v1",
+  "id": "district7_overlay_v1",
+  "name": "District 7 semantic overlay seed",
+  "zones": [
+    {
+      "id": "gateway_west",
+      "name": "Cửa ngõ phía tây",
+      "type": "gateway",
+      "anchor_edges": ["188641241#1", "-220818788#9"],
+      "public_value_tags": ["commuter_access", "regional_access"],
+      "notes": "Synthetic anchor selected from routed smoke trips."
+    },
+    {
+      "id": "residential_south",
+      "name": "Khu dân cư phía nam",
+      "type": "residential",
+      "anchor_edges": ["-1228572418#2", "-225072306#0"],
+      "public_value_tags": ["household_time", "fairness"],
+      "notes": "Synthetic policy zone; not a calibrated residential boundary."
+    },
+    {
+      "id": "industrial_logistics",
+      "name": "Cụm công nghiệp / logistics",
+      "type": "industry",
+      "anchor_edges": ["221308782#7", "32585865#0"],
+      "public_value_tags": ["logistics_delay", "worker_commute"],
+      "notes": "Synthetic anchor for truck and worker-shuttle pressure."
+    },
+    {
+      "id": "commercial_core",
+      "name": "Khu thương mại / dịch vụ",
+      "type": "commercial",
+      "anchor_edges": ["221425055#0", "234919082#4"],
+      "public_value_tags": ["retail_access", "bus_passenger_time"],
+      "notes": "Synthetic anchor for mixed private and public-service trips."
+    },
+    {
+      "id": "hospital_service",
+      "name": "Cụm bệnh viện / y tế",
+      "type": "hospital",
+      "anchor_edges": ["-836264478", "-1044171426"],
+      "public_value_tags": ["emergency_delay", "service_access"],
+      "notes": "Synthetic emergency access anchor."
+    },
+    {
+      "id": "school_service",
+      "name": "Cụm trường học",
+      "type": "school",
+      "anchor_edges": ["-1267694077#8", "32585538#14"],
+      "public_value_tags": ["student_safety", "family_time"],
+      "notes": "Synthetic school rush anchor."
+    },
+    {
+      "id": "nightlife_service",
+      "name": "Khu ăn uống / giải trí buổi tối",
+      "type": "nightlife",
+      "anchor_edges": ["732142879#2", "-722062010"],
+      "public_value_tags": ["evening_congestion", "safety"],
+      "notes": "Synthetic evening demand anchor."
+    }
+  ],
+  "investment_candidates": [
+    {
+      "id": "CAND_TLS_10951100701",
+      "junction_id": "10951100701",
+      "label": "Ứng viên đèn 10951100701",
+      "public_value_tags": ["commuter_access", "commercial_access"],
+      "caveat": "Candidate seed only; final investment ranking requires baseline/RL metrics."
+    },
+    {
+      "id": "CAND_TLS_13449656126",
+      "junction_id": "13449656126",
+      "label": "Ứng viên đèn 13449656126",
+      "public_value_tags": ["school_access", "hospital_access"],
+      "caveat": "Candidate seed only; final investment ranking requires baseline/RL metrics."
+    },
+    {
+      "id": "CAND_TLS_1996654360",
+      "junction_id": "1996654360",
+      "label": "Ứng viên đèn 1996654360",
+      "public_value_tags": ["logistics_delay", "regional_access"],
+      "caveat": "Candidate seed only; final investment ranking requires baseline/RL metrics."
+    }
+  ],
+  "demand_flows": [
+    {
+      "id": "F_GATEWAY_TO_RESIDENTIAL",
+      "origin_zone": "gateway_west",
+      "destination_zone": "residential_south",
+      "trip_purpose": "commute_return",
+      "begin": 0,
+      "end": 420,
+      "volume": 18,
+      "vehicle_mix": {"MOTORBIKE": 0.55, "PRIVATE_CAR": 0.35, "BUS": 0.10},
+      "scenario_multipliers": {"normal_weekday": 1.0, "morning_rush": 1.2, "hospital_emergency": 0.8}
+    },
+    {
+      "id": "F_INDUSTRY_TO_COMMERCIAL",
+      "origin_zone": "industrial_logistics",
+      "destination_zone": "commercial_core",
+      "trip_purpose": "worker_and_delivery",
+      "begin": 30,
+      "end": 480,
+      "volume": 20,
+      "vehicle_mix": {"MOTORBIKE": 0.45, "PRIVATE_CAR": 0.25, "LIGHT_TRUCK": 0.30},
+      "scenario_multipliers": {"normal_weekday": 1.0, "morning_rush": 1.3, "logistics_peak": 1.6}
+    },
+    {
+      "id": "F_HOSPITAL_TO_SCHOOL",
+      "origin_zone": "hospital_service",
+      "destination_zone": "school_service",
+      "trip_purpose": "public_service_access",
+      "begin": 60,
+      "end": 540,
+      "volume": 12,
+      "vehicle_mix": {"AMBULANCE": 0.15, "PRIVATE_CAR": 0.35, "MOTORBIKE": 0.50},
+      "scenario_multipliers": {"normal_weekday": 1.0, "hospital_emergency": 2.0, "morning_rush": 1.2}
+    },
+    {
+      "id": "F_NIGHTLIFE_TO_GATEWAY",
+      "origin_zone": "nightlife_service",
+      "destination_zone": "gateway_west",
+      "trip_purpose": "evening_departure",
+      "begin": 120,
+      "end": 600,
+      "volume": 10,
+      "vehicle_mix": {"MOTORBIKE": 0.65, "PRIVATE_CAR": 0.35},
+      "scenario_multipliers": {"normal_weekday": 0.5, "evening_nightlife": 1.8}
+    }
+  ],
+  "caveats": [
+    "Overlay v1 is a synthetic policy scaffold on top of real OSM/SUMO geometry.",
+    "Zones are semantic anchors, not official administrative or land-use polygons.",
+    "Investment candidates are not recommendations until model metrics and costs are available."
+  ]
+}

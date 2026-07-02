@@ -1,0 +1,84 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/authoring/tiny_authoring_map.gd" id="1_map"]
+[ext_resource type="Script" path="res://scripts/authoring/zone_lot_authoring.gd" id="2_zone"]
+[ext_resource type="Script" path="res://scripts/world/preview_camera_controller.gd" id="3_camera"]
+
+[sub_resource type="Environment" id="Environment_tiny_authoring"]
+background_mode = 1
+background_color = Color(0.55, 0.68, 0.8, 1)
+ambient_light_source = 3
+ambient_light_color = Color(1, 1, 1, 1)
+ambient_light_energy = 0.9
+
+[node name="TinyAuthoringMap" type="Node3D" groups=["tiny_authoring_map"]]
+script = ExtResource("1_map")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_tiny_authoring")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707107, -0.353553, 0.612372, 0, 0.866025, 0.5, -0.707107, -0.353553, 0.612372, 0, 24, 0)
+light_energy = 2.0
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.573576, 0.819152, 0, -0.819152, 0.573576, 0, 31, 30)
+current = true
+projection = 1
+size = 42.0
+script = ExtResource("3_camera")
+target_world_path = NodePath("")
+auto_fit_on_ready = false
+manual_start_when_no_target = true
+manual_start_position = Vector3(0, 31, 30)
+manual_start_rotation_degrees = Vector3(-55, 0, 0)
+manual_start_orthographic_size = 42.0
+min_zoom_size = 8.0
+max_zoom_size = 80.0
+keyboard_pan_units_per_second = 42.0
+
+[node name="ZoneLots" type="Node3D" parent="."]
+
+[node name="Zone_RES_Residential" type="Node3D" parent="ZoneLots" groups=["zone_lot_authoring"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 0.18, -11)
+script = ExtResource("2_zone")
+zone_id = "Z_RES"
+zone_type = "residential"
+display_name = "Khu dân cư"
+lot_size = Vector2(8.2, 8.2)
+building_count = 6
+building_asset_scale = 0.42
+random_seed = 101
+
+[node name="Zone_HOSP_Hospital" type="Node3D" parent="ZoneLots" groups=["zone_lot_authoring"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 0.18, -11)
+script = ExtResource("2_zone")
+zone_id = "Z_HOSP"
+zone_type = "hospital"
+display_name = "Bệnh viện"
+lot_size = Vector2(8.2, 8.2)
+building_count = 4
+building_asset_scale = 0.42
+random_seed = 202
+
+[node name="Zone_IND_Industrial" type="Node3D" parent="ZoneLots" groups=["zone_lot_authoring"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 0.18, 11)
+script = ExtResource("2_zone")
+zone_id = "Z_IND"
+zone_type = "industrial"
+display_name = "Khu công nghiệp"
+lot_size = Vector2(8.2, 8.2)
+building_count = 5
+building_asset_scale = 0.42
+random_seed = 303
+
+[node name="Zone_COM_Commercial" type="Node3D" parent="ZoneLots" groups=["zone_lot_authoring"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 0.18, 11)
+script = ExtResource("2_zone")
+zone_id = "Z_COM"
+zone_type = "commercial"
+display_name = "Thương mại"
+lot_size = Vector2(8.2, 8.2)
+building_count = 5
+building_asset_scale = 0.42
+random_seed = 404

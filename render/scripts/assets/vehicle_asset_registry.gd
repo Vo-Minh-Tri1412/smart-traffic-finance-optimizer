@@ -6,6 +6,7 @@ const DEFAULT_FALLBACK_VEHICLE_SCENE := "res://scenes/vehicles/VehicleBase.tscn"
 var manifest_path := ""
 var manifest_version := ""
 var vehicle_scene_paths: Dictionary = {}
+var vehicle_scenes: Dictionary = {}
 var fallbacks: Dictionary = {}
 var scene_cache: Dictionary = {}
 var errors: Array[String] = []
@@ -15,6 +16,7 @@ func load_manifest(path: String) -> bool:
 	manifest_path = path
 	errors.clear()
 	vehicle_scene_paths.clear()
+	vehicle_scenes.clear()
 	fallbacks.clear()
 	scene_cache.clear()
 
@@ -24,6 +26,10 @@ func load_manifest(path: String) -> bool:
 	if not FileAccess.file_exists(path):
 		errors.append("Vehicle asset manifest not found: %s" % path)
 		return false
+
+	var extension := path.get_extension().to_lower()
+	if extension == "tres" or extension == "res":
+		return _load_resource_catalog(path)
 
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
@@ -76,6 +82,10 @@ func scene_path_for_vehicle_type(type_id: String) -> String:
 	var canonical_key := canonical_vehicle_type(type_id)
 	if vehicle_scene_paths.has(canonical_key):
 		return String(vehicle_scene_paths[canonical_key])
+	if vehicle_scenes.has(canonical_key):
+		var scene := vehicle_scenes[canonical_key] as PackedScene
+		if scene != null and not scene.resource_path.is_empty():
+			return scene.resource_path
 	return fallback_vehicle_scene_path()
 
 
@@ -84,6 +94,12 @@ func fallback_vehicle_scene_path() -> String:
 
 
 func scene_for_vehicle_type(type_id: String) -> PackedScene:
+	var canonical_key := canonical_vehicle_type(type_id)
+	if vehicle_scenes.has(canonical_key):
+		var cached_scene := vehicle_scenes[canonical_key] as PackedScene
+		if cached_scene != null:
+			return cached_scene
+
 	var requested_path := scene_path_for_vehicle_type(type_id)
 	var scene := _load_scene(requested_path)
 	if scene != null:
@@ -100,7 +116,7 @@ func scene_for_vehicle_type(type_id: String) -> PackedScene:
 
 
 func registered_vehicle_type_count() -> int:
-	return vehicle_scene_paths.size()
+	return max(vehicle_scene_paths.size(), vehicle_scenes.size())
 
 
 func _extract_scene_path(value) -> String:
@@ -122,3 +138,52 @@ func _load_scene(path: String) -> PackedScene:
 		return resource as PackedScene
 	errors.append("Vehicle scene is missing or not a PackedScene: %s" % path)
 	return null
+
+
+func _load_resource_catalog(path: String) -> bool:
+	var resource := load(path)
+	if resource == null:
+		errors.append("Vehicle asset catalog not found or unreadable: %s" % path)
+		return false
+
+	var schema_version := str(resource.get("schema_version"))
+	if not SchemaVersionsScript.supported_vehicle_asset_catalog_versions().has(schema_version):
+		errors.append(
+			"Vehicle asset catalog uses unsupported schema_version=%s. Supported: %s"
+			% [schema_version, ", ".join(SchemaVersionsScript.supported_vehicle_asset_catalog_versions())]
+		)
+		return false
+	manifest_version = schema_version
+
+	var fallback_scene = resource.get("fallback_vehicle_scene")
+	if fallback_scene is PackedScene:
+		fallbacks["missing_vehicle_scene"] = (fallback_scene as PackedScene).resource_path
+		scene_cache[(fallback_scene as PackedScene).resource_path] = fallback_scene
+	else:
+		fallbacks["missing_vehicle_scene"] = DEFAULT_FALLBACK_VEHICLE_SCENE
+
+	var raw_entries = resource.get("entries")
+	if not (raw_entries is Array):
+		errors.append("Vehicle asset catalog entries must be an array: %s" % path)
+		return false
+
+	var entries := raw_entries as Array
+	for raw_entry in entries:
+		if raw_entry == null:
+			continue
+		var vehicle_type := str(raw_entry.get("vehicle_type"))
+		var scene = raw_entry.get("vehicle_scene")
+		if vehicle_type.strip_edges().is_empty():
+			errors.append("Vehicle asset catalog has an entry with an empty vehicle_type.")
+			continue
+		if not (scene is PackedScene):
+			errors.append("Vehicle asset catalog entry for %s has no PackedScene." % vehicle_type)
+			continue
+		var canonical_key := canonical_vehicle_type(vehicle_type)
+		vehicle_scenes[canonical_key] = scene
+		var scene_path := (scene as PackedScene).resource_path
+		if not scene_path.is_empty():
+			vehicle_scene_paths[canonical_key] = scene_path
+			scene_cache[scene_path] = scene
+
+	return errors.is_empty()

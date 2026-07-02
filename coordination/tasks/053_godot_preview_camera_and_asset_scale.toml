@@ -1,0 +1,37 @@
+id = "053_godot_preview_camera_and_asset_scale"
+owner = "integrator"
+branch = "main"
+base_commit = "8210e542118573a2f63e66a33380741c2a08498c"
+allowed_paths = [
+  "coordination/tasks/053_godot_preview_camera_and_asset_scale.toml",
+  "render/scripts/world/**",
+  "render/scripts/replay/**",
+  "render/scripts/zones/**",
+  "render/scripts/assets/**",
+  "render/resources/catalogs/**",
+  "render/scenes/main/**",
+  "render/scenes/world/**",
+]
+dependencies = [
+  "052_godot_large_map_preview_lod",
+]
+acceptance_commands = [
+  "uv run python scripts/smoke/district7_roundtrip_smoke.py --output-root render/outputs/district7_preview_camera_smoke --max-frames 20 --require-godot --no-dvc-pull",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/053_godot_preview_camera_and_asset_scale.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added a runtime PreviewCameraController that auto-fits the main camera to SUMO geometry bounds, expanded the SUMO ground plane to map bounds, thickened lane/junction visuals, added per-zone building_asset_scale for imported GLBs, and updated the headless replay smoke runner to avoid accidental double-loading of saved Main.tscn paths."
+validation = [
+  "uv run python scripts/render/godot_sumo_trace_replay_smoke.py --trace render/outputs/district7_preview_camera_smoke/trace.jsonl --net simulation_projects/map_intake/02_prepared_sources/district7_osm_seed_20260702/district7_seed.net.xml --overlay simulation_projects/map_intake/05_semantic_overlays/district7_overlay.v1.json --spec tests/fixtures/specs/toy_public_district_v1.json --output-root render/outputs/godot_direct_camera_debug --max-frames 5",
+  "uv run python scripts/smoke/district7_roundtrip_smoke.py --output-root render/outputs/district7_preview_camera_smoke --max-frames 20 --require-godot --no-dvc-pull",
+  "Godot replay summary: lane_count=32013, rendered_lane_count=2911, intersection_count=13073, rendered_junction_count=1189, spawned_zone_count=7, off_lane_vehicle_count=0.",
+]
+risks = [
+  "Godot dummy renderer still emits a nonfatal `Parameter \"material\" is null` warning during headless runs.",
+  "Visuals remain preview-quality; this fixes readability and scale, not final art direction.",
+]
+follow_up = [
+  "Add prettier camera presets and road/material styling after the geometry/asset pipeline stabilizes.",
+]

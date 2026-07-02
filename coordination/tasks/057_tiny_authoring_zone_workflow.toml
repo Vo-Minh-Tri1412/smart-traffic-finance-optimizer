@@ -1,0 +1,34 @@
+id = "057_tiny_authoring_zone_workflow"
+owner = "integrator"
+branch = "main"
+base_commit = "8210e542118573a2f63e66a33380741c2a08498c"
+allowed_paths = [
+  "coordination/tasks/057_tiny_authoring_zone_workflow.toml",
+  "render/project.godot",
+  "render/scenes/authoring/**",
+  "render/scripts/authoring/**",
+  "render/scripts/world/preview_camera_controller.gd",
+]
+dependencies = [
+  "050_godot_visual_asset_catalog_v1",
+  "056_godot_zone_visual_ready_lifecycle_fix",
+]
+acceptance_commands = [
+  "D:/GoDot/Godot_v4.6.2-stable_win64_console.exe --headless --path render --script res://scripts/authoring/run_tiny_authoring_map_smoke.gd -- --output-root outputs/tiny_authoring_map_smoke",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/057_tiny_authoring_zone_workflow.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added a tiny Godot authoring map as the temporary main scene. It includes editable ZoneLotAuthoring nodes that can be moved/resized in the editor, changed by zone_type/display_name/building_count/building_asset_scale, and populated from the existing ZoneAssetCatalog/custom PackedScene assets. The camera controller now supports a manual start view for scenes without SUMO bounds."
+validation = [
+  "D:/GoDot/Godot_v4.6.2-stable_win64_console.exe --headless --path render --script res://scripts/authoring/run_tiny_authoring_map_smoke.gd -- --output-root outputs/tiny_authoring_map_smoke",
+  "Tiny authoring summary: zone_lot_count=4, building_visual_count=20, road_count=4.",
+]
+risks = [
+  "TinyAuthoringMap is now the temporary run/main_scene in render/project.godot for workflow testing; switch back to Main.tscn when returning to SUMO replay.",
+  "Roads in TinyAuthoringMap are still simple authoring-preview roads, not final SUMO road rendering.",
+]
+follow_up = [
+  "Add export from ZoneLotAuthoring nodes to semantic overlay once the authoring workflow feels acceptable.",
+]

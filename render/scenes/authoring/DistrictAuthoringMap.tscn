@@ -11,6 +11,9 @@
 
 [node name="DistrictAuthoringMap" type="Node3D"]
 script = ExtResource("8_map")
+district_id = "sample_authoring_district_v1"
+display_name = "Sample Authoring District — not District 7"
+version = "0.1.0-sample"
 
 [node name="Intersections" type="Node3D" parent="."]
 

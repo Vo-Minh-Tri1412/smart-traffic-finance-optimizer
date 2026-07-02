@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SemanticOverlay",
+  "type": "object",
+  "required": ["schema_version", "id", "name", "zones", "investment_candidates", "demand_flows"],
+  "properties": {
+    "schema_version": {"const": "semantic_overlay.v1"},
+    "id": {"type": "string"},
+    "name": {"type": "string"},
+    "zones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "type", "anchor_edges"],
+        "properties": {
+          "id": {"type": "string"},
+          "name": {"type": "string"},
+          "type": {"type": "string"},
+          "anchor_edges": {"type": "array", "items": {"type": "string"}},
+          "anchor_junctions": {"type": "array", "items": {"type": "string"}},
+          "public_value_tags": {"type": "array", "items": {"type": "string"}},
+          "notes": {"type": "string"}
+        }
+      }
+    },
+    "investment_candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "junction_id"],
+        "properties": {
+          "id": {"type": "string"},
+          "junction_id": {"type": "string"},
+          "label": {"type": "string"},
+          "public_value_tags": {"type": "array", "items": {"type": "string"}},
+          "caveat": {"type": "string"}
+        }
+      }
+    },
+    "demand_flows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "origin_zone",
+          "destination_zone",
+          "begin",
+          "end",
+          "volume",
+          "vehicle_mix"
+        ],
+        "properties": {
+          "id": {"type": "string"},
+          "origin_zone": {"type": "string"},
+          "destination_zone": {"type": "string"},
+          "trip_purpose": {"type": "string"},
+          "begin": {"type": "integer"},
+          "end": {"type": "integer"},
+          "volume": {"type": "integer"},
+          "vehicle_mix": {"type": "object", "additionalProperties": {"type": "number"}},
+          "scenario_multipliers": {"type": "object", "additionalProperties": {"type": "number"}}
+        }
+      }
+    },
+    "caveats": {"type": "array", "items": {"type": "string"}}
+  }
+}

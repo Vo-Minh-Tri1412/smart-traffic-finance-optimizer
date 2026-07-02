@@ -2,11 +2,15 @@ class_name SumoLaneGeometry
 extends RefCounted
 
 var lane_id := ""
+var edge_id := ""
+var width_m := 3.2
 var points: Array[Vector2] = []
 
 
-func configure(id: String, shape_points: Array[Vector2]) -> void:
+func configure(id: String, parent_edge_id: String, shape_points: Array[Vector2], lane_width_m: float) -> void:
 	lane_id = id
+	edge_id = parent_edge_id
+	width_m = lane_width_m
 	points = shape_points.duplicate()
 
 
@@ -20,7 +24,7 @@ func distance_to_point_m(point: Vector2) -> float:
 	var best := INF
 	for index in range(points.size() - 1):
 		best = min(best, _distance_point_to_segment(point, points[index], points[index + 1]))
-	return best
+	return max(0.0, best - width_m / 2.0)
 
 
 func _distance_point_to_segment(point: Vector2, start: Vector2, end: Vector2) -> float:

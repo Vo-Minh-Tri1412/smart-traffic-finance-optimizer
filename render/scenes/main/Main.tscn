@@ -1,7 +1,9 @@
-[gd_scene format=3 uid="uid://cxhs4wh57lw57"]
+[gd_scene load_steps=5 format=3 uid="uid://cxhs4wh57lw57"]
 
 [ext_resource type="PackedScene" path="res://scenes/world/DistrictReplayWorld.tscn" id="1_world"]
 [ext_resource type="Script" uid="uid://cucco7nbk3csx" path="res://scripts/replay/trace_replay_controller.gd" id="2_replay"]
+[ext_resource type="Script" uid="uid://qij8pijkpy86" path="res://scripts/zones/semantic_overlay_renderer.gd" id="3_overlay"]
+[ext_resource type="Script" path="res://scripts/world/preview_camera_controller.gd" id="4_camera"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -20,11 +22,18 @@ transform = Transform3D(0.707107, -0.353553, 0.612372, 0, 0.866025, 0.5, -0.7071
 light_energy = 1.5
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=299839342]
-transform = Transform3D(1, 0, 0, 0, 0.573576, 0.819152, 0, -0.819152, 0.573576, 0, 62, 58)
+transform = Transform3D(1, 0, 0, 0, 0.573576, 0.819152, 0, -0.819152, 0.573576, 0, 210, 220)
 current = true
-fov = 48.0
+fov = 70.0
+script = ExtResource("4_camera")
 
 [node name="DistrictReplayWorld" parent="." unique_id=942558472 instance=ExtResource("1_world")]
+net_path = "D:/Desktop/Atem/hcmus/Year1/AI-Challenge-HVTC/simulation_projects/map_intake/02_prepared_sources/district7_osm_seed_20260702/district7_seed.net.xml"
+
+[node name="SemanticOverlayRenderer" type="Node3D" parent="." unique_id=362413856]
+script = ExtResource("3_overlay")
+overlay_path = "D:/Desktop/Atem/hcmus/Year1/AI-Challenge-HVTC/simulation_projects/map_intake/05_semantic_overlays/district7_overlay.v1.json"
 
 [node name="TraceReplayController" type="Node3D" parent="." unique_id=260568818]
 script = ExtResource("2_replay")
+trace_path = "D:/Desktop/Atem/hcmus/Year1/AI-Challenge-HVTC/render/outputs/district7_catalog_smoke/trace.jsonl"

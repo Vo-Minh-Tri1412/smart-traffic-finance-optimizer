@@ -17,6 +17,18 @@ raw/prepared map source
   -> SUMO simulation and replay traces
 ```
 
+For Quận 7 V1, the committed source of truth is:
+
+```text
+district7.project.json
+  -> 02_prepared_sources/district7_osm_seed_20260702/district7_seed.net.xml  (DVC)
+  -> 05_semantic_overlays/district7_overlay.v1.json
+  -> 06_demand_configs/district7_demand.v1.json
+```
+
+The `.net.xml` owns road/lane/junction geometry. The overlay owns policy semantics such as zones,
+demand anchors, candidate traffic lights, and public-value tags.
+
 This keeps the workflow clear:
 
 - `map_intake/` owns pre-Godot map sources, DVC pointers, and review notes.
@@ -33,6 +45,8 @@ simulation_projects/map_intake/
 ├── 02_prepared_sources/  # clipped/simplified/cleaned sources; ignored by Git
 ├── 03_godot_seed_specs/  # generated seed specs before manual Godot editing; ignored by Git
 ├── 04_review_notes/      # small notes/checklists about map quality and assumptions
+├── 05_semantic_overlays/  # small committed SUMO-ID overlays for zones/candidates/demand anchors
+├── 06_demand_configs/    # small committed scenario/demand runtime config
 └── templates/            # committed templates for future map intake packages
 ```
 

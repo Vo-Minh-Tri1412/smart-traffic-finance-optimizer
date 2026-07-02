@@ -20,6 +20,7 @@ func configure(type_id: String, id: String = "") -> void:
 
 
 func _ready() -> void:
+	add_to_group("sensor_target_vehicle")
 	if vehicle_type == "UNKNOWN" and default_vehicle_type != "UNKNOWN":
 		vehicle_type = default_vehicle_type
 	_apply_visual_style()
@@ -53,3 +54,11 @@ func _vehicle_value(vehicle, key: String, fallback):
 		var value = (vehicle as Object).get(key)
 		return fallback if value == null else value
 	return fallback
+
+
+func sensor_vehicle_id() -> String:
+	return vehicle_id
+
+
+func sensor_vehicle_type() -> String:
+	return vehicle_type

@@ -44,6 +44,11 @@ baselines, frontend/Godot contracts, Drive-backed data/artifact workflow, and no
 It does **not** yet contain a final trained RL policy, final YOLO model, polished Godot demo UI,
 production camera dataset exporter, or approved real-world finance assumptions.
 
+Current real-map work starts from a SUMO `.net.xml` source plus a semantic overlay. For Quận 7, the
+road geometry stays in DVC-tracked SUMO artifacts while Git stores only the project descriptor,
+overlay, demand config, and QA notes. Godot replays from the same SUMO net so vehicles and roads stay
+in one coordinate system.
+
 ## Research framing
 
 ### Problem

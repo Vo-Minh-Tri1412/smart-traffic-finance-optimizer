@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/zones/ZoneVisualBase.tscn" id="1_base"]
+
+[node name="SchoolZoneVisual" instance=ExtResource("1_base")]
+default_zone_type = "school"
+default_zone_color = Color(0.98, 0.78, 0.16, 0.34)

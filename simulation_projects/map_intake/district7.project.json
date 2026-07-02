@@ -1,0 +1,16 @@
+{
+  "id": "district7_osm_seed_20260702",
+  "name": "District 7 OSM/SUMO seed",
+  "version": "v1",
+  "import_profile": "district7_full_road_seed",
+  "raw_dvc_path": "01_raw_sources/district7_osm_seed_20260702.dvc",
+  "prepared_dvc_path": "02_prepared_sources/district7_osm_seed_20260702.dvc",
+  "source": {
+    "id": "district7_seed_net",
+    "kind": "sumo_net_xml",
+    "net_path": "02_prepared_sources/district7_osm_seed_20260702/district7_seed.net.xml"
+  },
+  "semantic_overlay_path": "05_semantic_overlays/district7_overlay.v1.json",
+  "demand_config_path": "06_demand_configs/district7_demand.v1.json",
+  "notes": "Real OSM/SUMO geometry seed for infrastructure smoke tests. Demand and public-value overlays are synthetic placeholders until reviewed."
+}

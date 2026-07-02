@@ -1,0 +1,51 @@
+[gd_resource type="Resource" load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://scripts/sensors/label_mapping_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" path="res://scripts/sensors/label_mapping_entry.gd" id="2_entry"]
+
+[sub_resource type="Resource" id="Label_motorbike"]
+script = ExtResource("2_entry")
+vehicle_type = "MOTORBIKE"
+class_id = 0
+label_name = "motorbike"
+vehicle_type_aliases = ["DELIVERY_BIKE"]
+
+[sub_resource type="Resource" id="Label_car"]
+script = ExtResource("2_entry")
+vehicle_type = "PRIVATE_CAR"
+class_id = 1
+label_name = "car"
+vehicle_type_aliases = ["CAR"]
+
+[sub_resource type="Resource" id="Label_bus"]
+script = ExtResource("2_entry")
+vehicle_type = "BUS"
+class_id = 2
+label_name = "bus"
+vehicle_type_aliases = ["SCHOOL_BUS", "WORKER_SHUTTLE"]
+
+[sub_resource type="Resource" id="Label_truck"]
+script = ExtResource("2_entry")
+vehicle_type = "LIGHT_TRUCK"
+class_id = 3
+label_name = "truck"
+vehicle_type_aliases = ["HEAVY_TRUCK", "TRUCK"]
+
+[sub_resource type="Resource" id="Label_ambulance"]
+script = ExtResource("2_entry")
+vehicle_type = "AMBULANCE"
+class_id = 4
+label_name = "ambulance"
+
+[sub_resource type="Resource" id="Label_taxi"]
+script = ExtResource("2_entry")
+vehicle_type = "TAXI_RIDE_HAILING"
+class_id = 5
+label_name = "taxi_ride_hailing"
+vehicle_type_aliases = ["TAXI"]
+
+[resource]
+script = ExtResource("1_catalog")
+entries = [SubResource("Label_motorbike"), SubResource("Label_car"), SubResource("Label_bus"), SubResource("Label_truck"), SubResource("Label_ambulance"), SubResource("Label_taxi")]
+fallback_class_id = -1
+fallback_class_name = "unknown"

@@ -1,0 +1,38 @@
+[gd_resource type="Resource" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/sensors/camera_rig_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" path="res://scripts/sensors/camera_rig_entry.gd" id="2_entry"]
+
+[sub_resource type="Resource" id="CameraRig_intersection_high"]
+script = ExtResource("2_entry")
+sensor_id = "CAM_INTERSECTION_HIGH_01"
+display_name = "High intersection overview"
+role = "intersection"
+enabled = true
+split = "train"
+position = Vector3(0, 48, 42)
+rotation_degrees = Vector3(-52, 0, 0)
+fov_degrees = 58.0
+image_size = Vector2i(640, 640)
+capture_interval_seconds = 1.0
+target_tags = ["intersection", "arterial"]
+notes = "General traffic signal camera."
+
+[sub_resource type="Resource" id="CameraRig_hospital_gate"]
+script = ExtResource("2_entry")
+sensor_id = "CAM_HOSPITAL_GATE_01"
+display_name = "Hospital gate oblique sensor"
+role = "hospital"
+enabled = true
+split = "val"
+position = Vector3(-28, 30, 34)
+rotation_degrees = Vector3(-42, -32, 0)
+fov_degrees = 55.0
+image_size = Vector2i(640, 640)
+capture_interval_seconds = 1.0
+target_tags = ["hospital", "emergency"]
+notes = "Validation camera for emergency-access visibility."
+
+[resource]
+script = ExtResource("1_catalog")
+entries = [SubResource("CameraRig_intersection_high"), SubResource("CameraRig_hospital_gate")]

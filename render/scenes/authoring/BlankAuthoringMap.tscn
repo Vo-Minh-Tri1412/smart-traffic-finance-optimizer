@@ -1,0 +1,23 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/authoring/district_authoring_map.gd" id="1_map"]
+
+[node name="BlankAuthoringMap" type="Node3D"]
+script = ExtResource("1_map")
+district_id = "blank_authoring_district_v1"
+display_name = "Blank Authoring District"
+version = "0.1.0"
+
+[node name="Intersections" type="Node3D" parent="."]
+
+[node name="Roads" type="Node3D" parent="."]
+
+[node name="Zones" type="Node3D" parent="."]
+
+[node name="DemandFlows" type="Node3D" parent="."]
+
+[node name="Destinations" type="Node3D" parent="."]
+
+[node name="TrafficLights" type="Node3D" parent="."]
+
+[node name="InvestmentCandidates" type="Node3D" parent="."]

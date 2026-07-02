@@ -12,6 +12,7 @@ func _run() -> void:
 	var trace_path := String(options.get("trace", ""))
 	var spec_path := String(options.get("spec", ""))
 	var net_path := String(options.get("net", ""))
+	var overlay_path := String(options.get("overlay", ""))
 	var output_root := String(options.get("output_root", ""))
 	var max_frames := int(options.get("max_frames", "60"))
 
@@ -25,15 +26,28 @@ func _run() -> void:
 		return
 
 	var main := MainScene.instantiate()
+	var world = main.get_node_or_null("DistrictReplayWorld")
+	if world != null:
+		world.net_path = ""
+		world.spec_path = ""
+	var overlay_renderer = main.get_node_or_null("SemanticOverlayRenderer")
+	if overlay_renderer != null:
+		overlay_renderer.auto_render = false
+		overlay_renderer.overlay_path = ""
+	var controller = main.get_node_or_null("TraceReplayController")
+	if controller != null:
+		controller.trace_path = ""
+
 	root.add_child(main)
 
-	var world = main.get_node_or_null("DistrictReplayWorld")
 	if world != null and not net_path.is_empty():
 		world.build_from_sumo_net(net_path)
 	elif world != null and not spec_path.is_empty():
 		world.build_from_spec(spec_path)
 
-	var controller = main.get_node_or_null("TraceReplayController")
+	if overlay_renderer != null and not overlay_path.is_empty():
+		overlay_renderer.render_overlay(overlay_path)
+
 	if controller == null:
 		push_error("TraceReplayController node not found in Main scene.")
 		quit(3)
@@ -56,6 +70,9 @@ func _parse_user_args() -> Dictionary:
 			index += 2
 		elif arg == "--net" and index + 1 < args.size():
 			parsed["net"] = String(args[index + 1])
+			index += 2
+		elif arg == "--overlay" and index + 1 < args.size():
+			parsed["overlay"] = String(args[index + 1])
 			index += 2
 		elif arg == "--spec" and index + 1 < args.size():
 			parsed["spec"] = String(args[index + 1])
