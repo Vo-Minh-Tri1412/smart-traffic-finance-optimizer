@@ -24,6 +24,11 @@ Godot authored map scene
 Godot should prefer SUMO `district.net.xml` for road/lane geometry during replay so vehicles and
 roads share the same coordinate source.
 
+SUMO lane rendering is width-aware. `SumoNetGeometryData` reads each lane shape and lane width from
+the SUMO `.net.xml`; `DistrictReplayWorld` renders each visible lane as a continuous mesh strip
+instead of many detached boxes. This is still a lightweight preview renderer, but the road surface is
+now tied to SUMO lane geometry rather than hand-drawn visual guesses.
+
 Large real maps should use preview LOD in Godot: keep the full parsed SUMO geometry for coordinate
 mapping, zone anchors, and off-lane checks, but render only a capped subset of lane/junction meshes
 for interactive preview. Rendering every Quận 7 lane and junction as a separate MeshInstance can
@@ -209,13 +214,19 @@ Main pieces:
 - `TraceInterpolator`: samples vehicle positions between neighboring trace frames.
 - `CoordinateMapper`: maps SUMO meters into Godot world coordinates.
 - `SumoNetGeometryData` / `SumoLaneGeometry` / `SumoJunctionGeometry`: typed SUMO net geometry.
-- `DistrictReplayWorld`: renders SUMO lanes/junctions or spec fallback geometry.
+- `DistrictReplayWorld`: renders SUMO lane-width mesh strips/junction polygons or spec fallback
+  geometry.
 - `TraceReplayController`: asks the clock/interpolator for a frame, then updates vehicles.
 
 Replay smoke tests should fail when a SUMO net is supplied and vehicles are far from lane geometry.
 The current `off_lane_vehicle_count` check is intentionally strict for backend/render alignment; if a
 future visual asset is wider than the lane, fix rendering scale/assets rather than hiding the
 geometry mismatch.
+
+Scenario events such as crashes, lane closures, road works, or temporary speed reductions are not
+part of the render layer. SUMO can support those later through a scenario-event layer, but this
+document intentionally treats render as a geometry/replay consumer, not as the source of traffic
+events.
 
 ## Vehicle asset layer
 
@@ -310,7 +321,9 @@ from reviewed assets, camera rigs, scenarios, and render presets.
 Before this becomes a polished demo renderer, the project still needs:
 
 - better district/map design after the team chooses what to simulate;
-- real vehicle/building/road assets;
+- better vehicle/building/road art assets and materials;
+- ROI-specific visual LOD/camera presets for the selected demo map;
+- a later SUMO scenario-event layer for incidents, closures, and temporary speed changes;
 - camera rigs and render presets;
 - synthetic CV dataset exporter beyond smoke output;
 - optional UI/HUD for demo;

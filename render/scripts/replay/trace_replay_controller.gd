@@ -201,6 +201,12 @@ func _write_summary(success: bool) -> void:
 		"intersection_count": _geometry_metric("intersection_count"),
 		"rendered_lane_count": _geometry_metric("rendered_lane_count"),
 		"rendered_junction_count": _geometry_metric("rendered_junction_count"),
+		"rendered_lane_mesh_count": _geometry_metric("rendered_lane_mesh_count"),
+		"rendered_lane_segment_count": _geometry_metric("rendered_lane_segment_count"),
+		"lane_render_model": _geometry_string_metric("lane_render_model"),
+		"min_lane_width_m": _geometry_float_metric("min_lane_width_m"),
+		"max_lane_width_m": _geometry_float_metric("max_lane_width_m"),
+		"average_lane_width_m": _geometry_float_metric("average_lane_width_m"),
 		"vehicle_asset_manifest_path": asset_manifest_path,
 		"vehicle_asset_catalog_path": asset_manifest_path,
 		"vehicle_asset_registry_loaded": (
@@ -258,6 +264,20 @@ func _geometry_metric(field_name: String) -> int:
 	if geometry_node == null:
 		return 0
 	return int(geometry_node.get(field_name))
+
+
+func _geometry_float_metric(field_name: String) -> float:
+	var geometry_node := _geometry_node()
+	if geometry_node == null:
+		return 0.0
+	return float(geometry_node.get(field_name))
+
+
+func _geometry_string_metric(method_name: String) -> String:
+	var geometry_node := _geometry_node()
+	if geometry_node == null or not geometry_node.has_method(method_name):
+		return ""
+	return String(geometry_node.call(method_name))
 
 
 func _geometry_data_model() -> String:

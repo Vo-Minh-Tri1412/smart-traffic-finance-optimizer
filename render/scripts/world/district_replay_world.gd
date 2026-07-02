@@ -17,6 +17,9 @@ const SumoNetGeometryDataScript := preload("res://scripts/world/sumo_net_geometr
 @export var min_visual_lane_width := 0.14
 @export var min_visual_junction_radius := 0.32
 @export var max_visual_junction_radius := 2.4
+@export var lane_surface_height := 0.022
+@export var junction_surface_height := 0.018
+@export var render_lane_mesh_strips := true
 
 var intersection_positions: Dictionary = {}
 var road_count := 0
@@ -24,12 +27,19 @@ var intersection_count := 0
 var lane_count := 0
 var rendered_lane_count := 0
 var rendered_junction_count := 0
+var rendered_lane_mesh_count := 0
+var rendered_lane_segment_count := 0
+var min_lane_width_m := 0.0
+var max_lane_width_m := 0.0
+var average_lane_width_m := 0.0
 var _spec_center := Vector2.ZERO
 var _sumo_geometry = null
 var _sumo_bounds_min := Vector2.ZERO
 var _sumo_bounds_max := Vector2.ZERO
 var _has_sumo_geometry := false
 var _mapper = null
+var _lane_material: StandardMaterial3D = null
+var _junction_material: StandardMaterial3D = null
 
 
 func _ready() -> void:
@@ -71,6 +81,17 @@ func build_from_sumo_net(path: String) -> bool:
 	intersection_count = _sumo_geometry.junction_count()
 	rendered_lane_count = 0
 	rendered_junction_count = 0
+	rendered_lane_mesh_count = 0
+	rendered_lane_segment_count = 0
+	min_lane_width_m = 0.0
+	max_lane_width_m = 0.0
+	average_lane_width_m = 0.0
+	var width_summary: Dictionary = _sumo_geometry.lane_width_summary()
+	min_lane_width_m = float(width_summary.get("min_lane_width_m", 0.0))
+	max_lane_width_m = float(width_summary.get("max_lane_width_m", 0.0))
+	average_lane_width_m = float(width_summary.get("average_lane_width_m", 0.0))
+	_lane_material = _material(Color(0.07, 0.072, 0.075))
+	_junction_material = _material(Color(0.035, 0.036, 0.04))
 
 	var lane_stride := _render_stride(_sumo_geometry.lanes.size(), max_visual_lanes)
 	for index in range(_sumo_geometry.lanes.size()):
@@ -93,11 +114,18 @@ func _clear_generated() -> void:
 	lane_count = 0
 	rendered_lane_count = 0
 	rendered_junction_count = 0
+	rendered_lane_mesh_count = 0
+	rendered_lane_segment_count = 0
+	min_lane_width_m = 0.0
+	max_lane_width_m = 0.0
+	average_lane_width_m = 0.0
 	_sumo_geometry = null
 	_sumo_bounds_min = Vector2.ZERO
 	_sumo_bounds_max = Vector2.ZERO
 	_has_sumo_geometry = false
 	_mapper = null
+	_lane_material = null
+	_junction_material = null
 
 
 func _build_intersections(intersections: Array) -> void:
@@ -176,7 +204,14 @@ func _material(color: Color) -> StandardMaterial3D:
 
 
 func _build_sumo_lane(lane_geometry) -> void:
-	var lane_material := _material(Color(0.08, 0.08, 0.085))
+	if render_lane_mesh_strips:
+		_build_sumo_lane_strip(lane_geometry)
+		return
+	_build_sumo_lane_segment_boxes(lane_geometry)
+
+
+func _build_sumo_lane_segment_boxes(lane_geometry) -> void:
+	var lane_material := _lane_material if _lane_material != null else _material(Color(0.08, 0.08, 0.085))
 	var lane_id := String(lane_geometry.lane_id)
 	var points: Array = lane_geometry.points
 	var lane_width := float(lane_geometry.width_m)
@@ -202,18 +237,139 @@ func _build_sumo_lane(lane_geometry) -> void:
 		lane_mesh.set_surface_override_material(0, lane_material)
 		lane_mesh.add_to_group("generated_world_object")
 		add_child(lane_mesh)
+		rendered_lane_segment_count += 1
 	rendered_lane_count += 1
+	rendered_lane_mesh_count += 1
+
+
+func _build_sumo_lane_strip(lane_geometry) -> void:
+	var mesh: ArrayMesh = _lane_strip_mesh(lane_geometry)
+	if mesh == null:
+		return
+	var lane_mesh := MeshInstance3D.new()
+	lane_mesh.name = "Lane_%s" % String(lane_geometry.lane_id)
+	lane_mesh.mesh = mesh
+	lane_mesh.set_surface_override_material(
+		0,
+		_lane_material if _lane_material != null else _material(Color(0.07, 0.072, 0.075))
+	)
+	lane_mesh.add_to_group("generated_world_object")
+	add_child(lane_mesh)
+	rendered_lane_count += 1
+	rendered_lane_mesh_count += 1
+	rendered_lane_segment_count += max(0, (lane_geometry.points as Array).size() - 1)
+
+
+func _lane_strip_mesh(lane_geometry) -> ArrayMesh:
+	var points: Array = lane_geometry.points
+	if points.size() < 2:
+		return null
+	var width_world: float = max(
+		min_visual_lane_width,
+		float(lane_geometry.width_m) * world_scale * visual_lane_width_multiplier
+	)
+	var half_width_m: float = max(0.05, width_world / max(0.000001, world_scale) / 2.0)
+	var vertices := PackedVector3Array()
+	var normals := PackedVector3Array()
+	var indices := PackedInt32Array()
+	for index in range(points.size()):
+		var point := points[index] as Vector2
+		var normal_2d := _polyline_normal(points, index)
+		var left := point + normal_2d * half_width_m
+		var right := point - normal_2d * half_width_m
+		vertices.append(_mapper.sumo_to_world(left.x, left.y, lane_surface_height))
+		vertices.append(_mapper.sumo_to_world(right.x, right.y, lane_surface_height))
+		normals.append(Vector3.UP)
+		normals.append(Vector3.UP)
+	for index in range(points.size() - 1):
+		var base := index * 2
+		indices.append(base)
+		indices.append(base + 2)
+		indices.append(base + 1)
+		indices.append(base + 1)
+		indices.append(base + 2)
+		indices.append(base + 3)
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
+
+
+func _polyline_normal(points: Array, index: int) -> Vector2:
+	var current := points[index] as Vector2
+	var tangent := Vector2.ZERO
+	if index > 0:
+		tangent += (current - (points[index - 1] as Vector2)).normalized()
+	if index < points.size() - 1:
+		tangent += ((points[index + 1] as Vector2) - current).normalized()
+	if tangent.length_squared() <= 0.000001:
+		if index < points.size() - 1:
+			tangent = ((points[index + 1] as Vector2) - current).normalized()
+		elif index > 0:
+			tangent = (current - (points[index - 1] as Vector2)).normalized()
+	if tangent.length_squared() <= 0.000001:
+		return Vector2.RIGHT
+	tangent = tangent.normalized()
+	return Vector2(-tangent.y, tangent.x)
 
 
 func _build_sumo_junction(junction) -> void:
+	if (junction.shape_points as Array).size() >= 3:
+		var junction_mesh: ArrayMesh = _junction_shape_mesh(junction)
+		if junction_mesh != null:
+			var polygon := MeshInstance3D.new()
+			polygon.name = "Junction_%s" % String(junction.junction_id)
+			polygon.mesh = junction_mesh
+			polygon.set_surface_override_material(
+				0,
+				_junction_material if _junction_material != null else _material(Color(0.025, 0.025, 0.03))
+			)
+			polygon.add_to_group("generated_world_object")
+			add_child(polygon)
+			rendered_junction_count += 1
+			return
 	var marker := MeshInstance3D.new()
 	marker.name = "Junction_%s" % String(junction.junction_id)
 	marker.mesh = _cylinder_mesh(_junction_radius(junction), 0.08)
 	marker.position = _mapper.sumo_to_world(junction.point.x, junction.point.y, 0.05)
-	marker.set_surface_override_material(0, _material(Color(0.025, 0.025, 0.03)))
+	marker.set_surface_override_material(
+		0,
+		_junction_material if _junction_material != null else _material(Color(0.025, 0.025, 0.03))
+	)
 	marker.add_to_group("generated_world_object")
 	add_child(marker)
 	rendered_junction_count += 1
+
+
+func _junction_shape_mesh(junction) -> ArrayMesh:
+	var shape: Array = junction.shape_points
+	if shape.size() < 3:
+		return null
+	var polygon := PackedVector2Array()
+	for point in shape:
+		var value := point as Vector2
+		polygon.append(value)
+	var triangulated := Geometry2D.triangulate_polygon(polygon)
+	if triangulated.size() < 3:
+		return null
+	var vertices := PackedVector3Array()
+	var normals := PackedVector3Array()
+	for point in shape:
+		var value := point as Vector2
+		vertices.append(_mapper.sumo_to_world(value.x, value.y, junction_surface_height))
+		normals.append(Vector3.UP)
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_INDEX] = triangulated
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
 
 
 func _junction_radius(junction) -> float:
@@ -300,6 +456,10 @@ func world_position_for_edge_ids(edge_ids) -> Variant:
 
 func geometry_data_model() -> String:
 	return "SumoNetGeometryData" if _sumo_geometry != null else "spec_fallback"
+
+
+func lane_render_model() -> String:
+	return "SUMO lane-width mesh strips" if render_lane_mesh_strips else "segment box fallback"
 
 
 func _render_stride(total_count: int, max_count: int) -> int:

@@ -1,0 +1,49 @@
+id = "062_godot_sumo_lane_width_render_v1"
+owner = "integrator"
+branch = "main"
+base_commit = "e21b662bf84621babbf80382643a762b0879fd45"
+allowed_paths = [
+  "coordination/tasks/062_godot_sumo_lane_width_render_v1.toml",
+  "render/scripts/world/**",
+  "render/scripts/replay/trace_replay_controller.gd",
+  "render/README.md",
+  "docs/02_ARCHITECTURE/GODOT_RENDER_ARCHITECTURE.md",
+  "tests/integration/cli/test_godot_sumo_trace_replay_cli.py",
+]
+dependencies = [
+  "028_godot_sumo_trace_replay_v1",
+  "031_sumo_geometry_import_for_godot",
+  "048_godot_sumo_net_geometry_fidelity",
+  "050_godot_visual_asset_catalog_v1",
+  "061_map_roi_auto_zoning_pipeline",
+]
+acceptance_commands = [
+  "uv run pytest tests/integration/cli/test_godot_sumo_trace_replay_cli.py",
+  "uv run ruff format --check tests/integration/cli/test_godot_sumo_trace_replay_cli.py",
+  "uv run ruff check tests/integration/cli/test_godot_sumo_trace_replay_cli.py",
+  "uv run mypy scripts/render",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/062_godot_sumo_lane_width_render_v1.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Upgraded Godot SUMO replay rendering from detached segment boxes to continuous lane-width mesh strips built from SUMO lane shapes and lane width. Junctions now prefer SUMO junction polygons when available, replay summaries expose lane width/render metrics, and docs clarify that render consumes SUMO geometry while scenario events remain future SUMO backend work."
+validation = [
+  "uv run python scripts/render/godot_sumo_trace_replay_smoke.py --trace frontend/mock-data/sample_vehicle_simulation_trace.jsonl --spec tests/fixtures/specs/toy_public_district_v1.json --output-root artifacts/tmp/godot_lane_width_sample_smoke --max-frames 2 -> OK",
+  "uv run python scripts/render/godot_sumo_trace_replay_smoke.py --spec tests/fixtures/specs/toy_public_district_v1.json --output-root artifacts/tmp/godot_lane_width_sumo_smoke --max-frames 10 -> OK; lane_render_model=SUMO lane-width mesh strips; rendered_lane_mesh_count=72; off_lane_vehicle_count=0",
+  "uv run pytest tests/integration/cli/test_godot_sumo_trace_replay_cli.py -q -> 3 passed",
+  "uv run ruff format --check tests/integration/cli/test_godot_sumo_trace_replay_cli.py",
+  "uv run ruff check tests/integration/cli/test_godot_sumo_trace_replay_cli.py",
+  "uv run mypy scripts/render",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/062_godot_sumo_lane_width_render_v1.toml",
+]
+risks = [
+  "This improves geometry fidelity but is still a lightweight renderer, not polished city art.",
+  "Large real maps still need ROI/LOD selection so Godot does not instantiate too many lane meshes at once.",
+  "A pre-existing Godot material warning appears during smoke due to asset/material pipeline state; it does not fail replay validation and is outside this render-geometry task.",
+]
+follow_up = [
+  "After ROI selection, tune max_visual_lanes/max_visual_junctions and camera presets for the selected area.",
+  "Add scenario-event support later in the SUMO backend, not in Godot render.",
+  "Improve road materials/lane markings once the geometry layer is stable.",
+]

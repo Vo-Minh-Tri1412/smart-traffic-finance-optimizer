@@ -29,6 +29,10 @@ alignment checks but renders a capped LOD subset by default. If the game window 
 for the first load, then use the editor camera/game camera controls; do not disable LOD unless you
 really want Godot to instantiate tens of thousands of lane/junction meshes.
 
+Road rendering now reads lane shape and width from the SUMO `.net.xml` and draws visible lanes as
+continuous mesh strips. If roads look like isolated dots or detached black dashes, treat that as a
+render regression and run the replay smoke command below.
+
 Visual assets live under:
 
 ```text

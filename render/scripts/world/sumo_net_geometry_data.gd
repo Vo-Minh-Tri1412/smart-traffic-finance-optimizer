@@ -13,6 +13,9 @@ var edge_to_lanes: Dictionary = {}
 var bounds_min := Vector2.ZERO
 var bounds_max := Vector2.ZERO
 var has_bounds := false
+var min_lane_width_m := 0.0
+var max_lane_width_m := 0.0
+var average_lane_width_m := 0.0
 var errors: Array[String] = []
 
 
@@ -27,6 +30,9 @@ func load_xml(path: String) -> bool:
 	has_bounds = false
 	bounds_min = Vector2.ZERO
 	bounds_max = Vector2.ZERO
+	min_lane_width_m = 0.0
+	max_lane_width_m = 0.0
+	average_lane_width_m = 0.0
 
 	var parser := XMLParser.new()
 	var open_error := parser.open(path)
@@ -61,6 +67,7 @@ func load_xml(path: String) -> bool:
 		return false
 
 	_configure_bounds(all_points)
+	_configure_lane_width_stats()
 	return errors.is_empty()
 
 
@@ -98,6 +105,14 @@ func center_for_edge(edge_id: String) -> Variant:
 	for point in points:
 		total += point
 	return total / float(points.size())
+
+
+func lane_width_summary() -> Dictionary:
+	return {
+		"min_lane_width_m": min_lane_width_m,
+		"max_lane_width_m": max_lane_width_m,
+		"average_lane_width_m": average_lane_width_m,
+	}
 
 
 func _parse_lane(
@@ -162,6 +177,26 @@ func _configure_bounds(points: Array[Vector2]) -> void:
 	bounds_min = min_value
 	bounds_max = max_value
 	has_bounds = true
+
+
+func _configure_lane_width_stats() -> void:
+	var source_lanes := distance_lanes if not distance_lanes.is_empty() else lanes
+	if source_lanes.is_empty():
+		min_lane_width_m = 0.0
+		max_lane_width_m = 0.0
+		average_lane_width_m = 0.0
+		return
+	var min_width := INF
+	var max_width := 0.0
+	var total := 0.0
+	for lane in source_lanes:
+		var width := float(lane.width_m)
+		min_width = min(min_width, width)
+		max_width = max(max_width, width)
+		total += width
+	min_lane_width_m = min_width
+	max_lane_width_m = max_width
+	average_lane_width_m = total / float(source_lanes.size())
 
 
 func _parse_shape(shape: String) -> Array[Vector2]:
