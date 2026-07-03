@@ -1,0 +1,47 @@
+id = "072_remove_toy_authoring_sandbox"
+owner = "integrator"
+branch = "main"
+base_commit = "8f68e871d70db084a4fd4d1aa0554c8f5253f441"
+allowed_paths = [
+  "coordination/tasks/072_remove_toy_authoring_sandbox.toml",
+  "render/project.godot",
+  "render/README.md",
+  "render/scenes/authoring/**",
+  "render/scripts/authoring/**",
+  "render/scenes/debug/TinyZonePreview.tscn",
+  "render/scripts/debug/tiny_zone_preview.gd",
+  "render/scripts/debug/run_tiny_zone_preview_smoke.gd",
+  "scripts/render/godot_authoring_export.py",
+  "scripts/render/godot_authoring_roundtrip_smoke.py",
+  "tests/integration/cli/test_godot_authoring_export_cli.py",
+  "tests/integration/cli/test_godot_authoring_roundtrip_cli.py",
+  "docs/02_ARCHITECTURE/GODOT_RENDER_ARCHITECTURE.md",
+  "docs/02_ARCHITECTURE/GODOT_BRIDGE_REFACTOR_PLAN.md",
+  "docs/02_ARCHITECTURE/SUMO_RENDER_BRIDGE_FRAMEWORK.md",
+]
+dependencies = [
+  "064_render_bridge_framework_docs",
+]
+acceptance_commands = [
+  "uv run pytest tests/integration/frontend_contracts/test_godot_visual_asset_catalogs.py tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py",
+  "uv run ruff check tests/integration/frontend_contracts/test_godot_visual_asset_catalogs.py tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/072_remove_toy_authoring_sandbox.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Removed standalone Godot toy authoring/tiny preview scenes, scripts, wrappers, and tests. Set Godot main scene back to Main.tscn and updated render docs so production editing must happen on real SUMO geometry, semantic overlay data, and render manifests."
+validation = [
+  "uv run pytest tests/integration/frontend_contracts/test_godot_visual_asset_catalogs.py tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py -> 13 passed",
+  "uv run ruff check tests/integration/frontend_contracts/test_godot_visual_asset_catalogs.py tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py -> passed",
+  "uv run pytest tests/integration/cli -> 11 passed",
+  "rg godot_authoring/TinyAuthoring/TinyZonePreview/ZoneLotAuthoring/scenes/authoring/scripts/authoring/run_tiny across scripts/tests/render/docs/README/ai_quantum_hvtc -> no matches",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/072_remove_toy_authoring_sandbox.toml -> passed",
+]
+risks = [
+  "Historical coordination task manifests still mention prior authoring work as project history; product docs and executable paths no longer do.",
+]
+follow_up = [
+  "Implement real-map overlay editing against prepared SUMO net + semantic overlay instead of restoring toy authoring scenes.",
+  "Move visual asset editing into real scene presets/catalog tooling without creating separate toy maps.",
+]

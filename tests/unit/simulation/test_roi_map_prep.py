@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 from ai_quantum_hvtc.simulation.maps.roi import (
-    RoiBounds,
+    OsmPoint,
     RoiConfig,
+    RoiPolygon,
     classify_road_tags,
     classify_zone_tags,
     prepare_roi,
@@ -14,13 +16,13 @@ from ai_quantum_hvtc.simulation.maps.roi import (
 )
 
 
-def test_roi_bbox_selects_osm_features_and_infers_micro_zones(tmp_path: Path) -> None:
+def test_roi_polygon_selects_osm_features_and_infers_micro_zones(tmp_path: Path) -> None:
     osm = _write_tiny_osm(tmp_path)
     net = _write_tiny_net(tmp_path)
     config = RoiConfig(
         roi_id="tiny_roi",
         name="Tiny ROI",
-        bounds=RoiBounds(west=-0.01, south=-0.01, east=0.12, north=0.12),
+        polygon=_tiny_polygon(),
         osm_path=osm,
         source_net_path=net,
     )
@@ -28,10 +30,17 @@ def test_roi_bbox_selects_osm_features_and_infers_micro_zones(tmp_path: Path) ->
     result = prepare_roi(config)
 
     zone_types = {zone.zone_type for zone in result.micro_zones}
-    assert {"residential", "education", "industrial", "market_retail"}.issubset(zone_types)
+    assert {"residential", "education", "industrial", "market_retail", "neutral"}.issubset(
+        zone_types
+    )
     assert len(result.micro_zones) >= 4
     assert any(group.zone_type == "residential" for group in result.zone_groups)
-    assert all(zone.anchor_edges for zone in result.micro_zones)
+    assert all(zone.anchor_edges for zone in result.micro_zones if zone.zone_type != "neutral")
+    assert all(
+        zone.geometry["type"] == "polygon"
+        for zone in result.micro_zones
+        if zone.source_element_kind == "node"
+    )
 
 
 def test_road_classifier_flags_small_roads_inside_zone(tmp_path: Path) -> None:
@@ -40,7 +49,7 @@ def test_road_classifier_flags_small_roads_inside_zone(tmp_path: Path) -> None:
     config = RoiConfig(
         roi_id="tiny_roi",
         name="Tiny ROI",
-        bounds=RoiBounds(west=-0.01, south=-0.01, east=0.12, north=0.12),
+        polygon=_tiny_polygon(),
         osm_path=osm,
         source_net_path=net,
     )
@@ -60,7 +69,7 @@ def test_roi_artifact_writer_outputs_overlay_review_preview_and_qa(tmp_path: Pat
     config = RoiConfig(
         roi_id="tiny_roi",
         name="Tiny ROI",
-        bounds=RoiBounds(west=-0.01, south=-0.01, east=0.12, north=0.12),
+        polygon=_tiny_polygon(),
         osm_path=osm,
         source_net_path=net,
     )
@@ -75,16 +84,77 @@ def test_roi_artifact_writer_outputs_overlay_review_preview_and_qa(tmp_path: Pat
 
     assert overlay["schema_version"] == "roi_semantic_overlay.v1"
     assert len(overlay["zones"]) >= 4
+    neutral_zones = [zone for zone in overlay["zones"] if zone["type"] == "neutral"]
+    assert len(neutral_zones) == 1
+    assert neutral_zones[0]["demand_enabled"] is False
+    assert neutral_zones[0]["traffic_role"] == "background_no_demand"
+    assert all(
+        zone["geometry"]["type"] == "polygon"
+        for zone in overlay["zones"]
+        if zone["source_element_kind"] == "node"
+    )
     assert review["summary"]["zone_internal_service"] == 1
     assert preview["geometry_source"]["source_of_truth"] == "source_sumo_net"
     assert qa["counts"]["micro_zones"] >= 4
     assert paths.qa_markdown.read_text(encoding="utf-8").startswith("# ROI prep QA")
 
 
+def test_prepare_roi_can_clip_sumo_net_with_geo_boundary(
+    tmp_path: Path, monkeypatch
+) -> None:
+    osm = _write_tiny_osm(tmp_path)
+    net = _write_tiny_net(tmp_path)
+    config = RoiConfig(
+        roi_id="tiny_roi",
+        name="Tiny ROI",
+        polygon=_tiny_polygon(),
+        osm_path=osm,
+        source_net_path=net,
+    )
+    commands: list[list[str]] = []
+
+    def fake_resolve_sumo_binary(_binary_name: str) -> str:
+        return "netconvert"
+
+    def fake_run(
+        command: list[str],
+        *,
+        cwd: Path,
+        check: bool,
+        capture_output: bool,
+        text: bool,
+    ) -> subprocess.CompletedProcess[str]:
+        del cwd, check, capture_output, text
+        commands.append(command)
+        output_path = Path(command[command.index("--output-file") + 1])
+        output_path.write_text("<net />\n", encoding="utf-8")
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(
+        "ai_quantum_hvtc.simulation.maps.roi.resolve_sumo_binary",
+        fake_resolve_sumo_binary,
+    )
+    monkeypatch.setattr("ai_quantum_hvtc.simulation.maps.roi.subprocess.run", fake_run)
+
+    result = prepare_roi(config, clip_sumo_net=True, output_root=tmp_path / "out")
+
+    assert result.prepared_net_path is not None
+    assert result.prepared_net_path.name == "tiny_roi.prepared.net.xml"
+    assert commands
+    command = commands[0]
+    assert "-s" in command
+    assert "--keep-edges.in-geo-boundary" in command
+    assert "-0.01,-0.01 0.12,-0.01 0.12,0.12 -0.01,0.12" in command
+    assert "--keep-edges.components" in command
+
+
 def test_tag_taxonomy_and_road_classification_are_stable() -> None:
     assert classify_zone_tags({"amenity": "bus_station"}) == ("transport_hub", "bus_station", 0.78)
     assert classify_zone_tags({"industrial": "port"}) == ("port_logistics", "port", 0.88)
     assert classify_zone_tags({"landuse": "retail"}) == ("market_retail", "retail", 0.82)
+    assert classify_zone_tags({"building": "apartments"}) == ("residential", "apartments", 0.72)
+    assert classify_zone_tags({"amenity": "parking"}) == ("transport_hub", "parking", 0.78)
+    assert classify_zone_tags({"building": "warehouse"}) == ("industrial", "warehouse", 0.76)
     assert classify_road_tags(tags={"highway": "primary"}, inside_zone=True)[0] == "keep_simulation"
     assert (
         classify_road_tags(tags={"highway": "service"}, inside_zone=True)[0]
@@ -100,7 +170,7 @@ def test_roi_without_sumo_net_warns_about_missing_zone_access(tmp_path: Path) ->
     config = RoiConfig(
         roi_id="tiny_roi",
         name="Tiny ROI",
-        bounds=RoiBounds(west=-0.01, south=-0.01, east=0.12, north=0.12),
+        polygon=_tiny_polygon(),
         osm_path=osm,
     )
 
@@ -110,15 +180,26 @@ def test_roi_without_sumo_net_warns_about_missing_zone_access(tmp_path: Path) ->
     assert any(zone.manual_review_required for zone in result.micro_zones)
 
 
-def test_read_osm_roi_keeps_only_bbox_content(tmp_path: Path) -> None:
+def test_read_osm_roi_keeps_only_polygon_content(tmp_path: Path) -> None:
     osm = _write_tiny_osm(tmp_path)
 
-    nodes, ways = read_osm_roi(osm, RoiBounds(west=-0.01, south=-0.01, east=0.12, north=0.12))
+    nodes, ways = read_osm_roi(osm, _tiny_polygon())
 
     assert "1" in nodes
     assert "999" not in nodes
     assert {way.way_id for way in ways} >= {"100", "200", "201"}
     assert "9999" not in {way.way_id for way in ways}
+
+
+def _tiny_polygon() -> RoiPolygon:
+    return RoiPolygon(
+        points=(
+            OsmPoint(lon=-0.01, lat=-0.01),
+            OsmPoint(lon=0.12, lat=-0.01),
+            OsmPoint(lon=0.12, lat=0.12),
+            OsmPoint(lon=-0.01, lat=0.12),
+        )
+    )
 
 
 def _write_tiny_osm(tmp_path: Path) -> Path:

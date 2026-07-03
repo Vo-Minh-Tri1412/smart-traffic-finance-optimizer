@@ -1,12 +1,13 @@
 {
   "id": "roi_template_replace_me",
   "name": "ROI template - replace before real map prep",
-  "bounds": {
-    "west": 106.7000,
-    "south": 10.7200,
-    "east": 106.7400,
-    "north": 10.7600
-  },
+  "polygon": [
+    [106.7000, 10.7200],
+    [106.7400, 10.7200],
+    [106.7400, 10.7600],
+    [106.7200, 10.7700],
+    [106.7000, 10.7600]
+  ],
   "source": {
     "osm_path": "../01_raw_sources/district7_osm_seed_20260702/district7_seed.osm",
     "sumo_net_path": "../02_prepared_sources/district7_osm_seed_20260702/district7_seed.net.xml"
@@ -14,5 +15,5 @@
   "zoning_profile": "osm_tags_v1",
   "road_cleanup_profile": "safe_review_v1",
   "output_profile": "review_only_v1",
-  "reviewer_notes": "Copy this file before use. Adjust bounds to a real ROI; do not treat this template as the official demo ROI."
+  "reviewer_notes": "Copy this file before use. Replace polygon with the reviewed ROI boundary; rectangular ROI is not the production workflow."
 }

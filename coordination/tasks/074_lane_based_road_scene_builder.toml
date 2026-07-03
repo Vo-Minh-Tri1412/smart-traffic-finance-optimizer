@@ -1,0 +1,45 @@
+id = "074_lane_based_road_scene_builder"
+owner = "integrator"
+branch = "main"
+base_commit = "8f68e871d70db084a4fd4d1aa0554c8f5253f441"
+allowed_paths = [
+  "coordination/tasks/074_lane_based_road_scene_builder.toml",
+  "render/scenes/roads/**",
+  "render/scripts/roads/**",
+  "render/scripts/world/district_replay_world.gd",
+  "render/resources/catalogs/RoadStyleCatalog.tres",
+  "render/scripts/assets/road_style_entry.gd",
+  "render/scripts/assets/road_style_catalog.gd",
+  "docs/02_ARCHITECTURE/GODOT_RENDER_ARCHITECTURE.md",
+  "docs/02_ARCHITECTURE/SUMO_RENDER_BRIDGE_FRAMEWORK.md",
+  "render/README.md",
+  "tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py",
+  "tests/integration/cli/test_godot_sumo_trace_replay_cli.py",
+]
+dependencies = [
+  "067_road_visual_factory_and_style_catalog",
+  "072_remove_toy_authoring_sandbox",
+  "073_scene_level_visual_asset_tools",
+]
+acceptance_commands = [
+  "uv run pytest tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py tests/integration/cli/test_godot_sumo_trace_replay_cli.py",
+  "uv run ruff check tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py tests/integration/cli/test_godot_sumo_trace_replay_cli.py",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/074_lane_based_road_scene_builder.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added a Godot-native lane-based road visual architecture and updated render docs. SUMO lanes now render through RoadSceneBuilder -> RoadVisualRoot.tscn -> LaneVisualBase.tscn by default, so a multi-lane SUMO edge is represented as one road scene root containing multiple lane scene instances plus an attachments hook. Mesh-strip rendering remains as a fallback."
+validation = [
+  "uv run pytest tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py tests/integration/cli/test_godot_sumo_trace_replay_cli.py -> 8 passed",
+  "uv run ruff check ai_quantum_hvtc/simulation/maps/roi.py scripts/maps/prepare_roi.py tests/unit/simulation/test_roi_map_prep.py tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py tests/integration/cli/test_godot_sumo_trace_replay_cli.py -> passed",
+  "uv run python scripts/render/godot_sumo_trace_replay_smoke.py --trace <toy trace> --net <toy SUMO net> --spec tests/fixtures/specs/toy_public_district_v1.json --output-root <tmp> --max-frames 10 -> passed; lane_render_model=SUMO lane scene builder; off_lane_vehicle_count=0",
+]
+risks = [
+  "LaneVisualBase currently renders lane surfaces and a simple center marking; richer road markings, sidewalks, medians, barriers, and street furniture should be added as attachments/styles later.",
+  "Large maps still need LOD/culling discipline; lane scene instances are cleaner architecturally but can be heavier than a single batched mesh if overused on full-city nets.",
+]
+follow_up = [
+  "Add RoadStyleCatalog entries for arterial/local/service roads after ROI road classification is stable.",
+  "Move traffic lights/signs/barriers into RoadVisualRoot attachments after TLS/event layer is finalized.",
+]

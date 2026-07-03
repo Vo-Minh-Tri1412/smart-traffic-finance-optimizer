@@ -1,8 +1,10 @@
+@tool
 class_name DistrictReplayWorld
 extends Node3D
 
 const CoordinateMapperScript := preload("res://scripts/replay/coordinate_mapper.gd")
 const SumoNetGeometryDataScript := preload("res://scripts/world/sumo_net_geometry_data.gd")
+const RoadSceneBuilderScript := preload("res://scripts/roads/road_scene_builder.gd")
 
 @export var spec_path := ""
 @export var net_path := ""
@@ -20,7 +22,16 @@ const SumoNetGeometryDataScript := preload("res://scripts/world/sumo_net_geometr
 @export var max_visual_junction_radius := 2.4
 @export var lane_surface_height := 0.022
 @export var junction_surface_height := 0.018
+@export var editor_preview_enabled := false
+@export var rebuild_editor_preview := false:
+	set(value):
+		rebuild_editor_preview = false
+		if value and Engine.is_editor_hint() and editor_preview_enabled:
+			call_deferred("_build_editor_preview")
+@export var render_lane_as_scenes := true
 @export var render_lane_mesh_strips := true
+@export var road_visual_root_scene: PackedScene = preload("res://scenes/roads/RoadVisualRoot.tscn")
+@export var lane_visual_scene: PackedScene = preload("res://scenes/roads/LaneVisualBase.tscn")
 
 var intersection_positions: Dictionary = {}
 var road_count := 0
@@ -42,9 +53,24 @@ var _mapper = null
 var _lane_material: StandardMaterial3D = null
 var _junction_material: StandardMaterial3D = null
 var _road_style_catalog = null
+var _road_scene_builder: Object = null
+var _road_visual_roots: Dictionary = {}
 
 
 func _ready() -> void:
+	if Engine.is_editor_hint():
+		if editor_preview_enabled:
+			call_deferred("_build_editor_preview")
+		return
+	if not net_path.is_empty():
+		build_from_sumo_net(net_path)
+	elif not spec_path.is_empty():
+		build_from_spec(spec_path)
+
+
+func _build_editor_preview() -> void:
+	if not Engine.is_editor_hint() or not editor_preview_enabled:
+		return
 	if not net_path.is_empty():
 		build_from_sumo_net(net_path)
 	elif not spec_path.is_empty():
@@ -79,7 +105,7 @@ func build_from_sumo_net(path: String) -> bool:
 	_configure_sumo_bounds(_sumo_geometry)
 	_fit_ground_to_sumo_bounds()
 	lane_count = _sumo_geometry.lane_count()
-	road_count = lane_count
+	road_count = _sumo_geometry.edge_to_lanes.size()
 	intersection_count = _sumo_geometry.junction_count()
 	rendered_lane_count = 0
 	rendered_junction_count = 0
@@ -129,6 +155,8 @@ func _clear_generated() -> void:
 	_lane_material = null
 	_junction_material = null
 	_road_style_catalog = null
+	_road_scene_builder = null
+	_road_visual_roots.clear()
 
 
 func _build_intersections(intersections: Array) -> void:
@@ -245,10 +273,63 @@ func _apply_default_road_style() -> void:
 
 
 func _build_sumo_lane(lane_geometry) -> void:
+	if render_lane_as_scenes and _build_sumo_lane_scene(lane_geometry):
+		return
 	if render_lane_mesh_strips:
 		_build_sumo_lane_strip(lane_geometry)
 		return
 	_build_sumo_lane_segment_boxes(lane_geometry)
+
+
+func _build_sumo_lane_scene(lane_geometry) -> bool:
+	var builder: Object = _road_builder()
+	if builder == null:
+		return false
+	var style_entry = _style_entry_for_lane(lane_geometry)
+	var lane_node: Node3D = builder.build_lane_visual(
+		lane_geometry,
+		_mapper,
+		style_entry,
+		_lane_material if _lane_material != null else _material(Color(0.07, 0.072, 0.075)),
+		world_scale,
+		lane_surface_height
+	)
+	if lane_node == null:
+		return false
+	var road_root := _road_root_for_lane(lane_geometry, style_entry)
+	var lane_parent: Node3D = builder.lane_parent_for(road_root)
+	lane_parent.add_child(lane_node)
+	rendered_lane_count += 1
+	rendered_lane_mesh_count += 1
+	rendered_lane_segment_count += max(0, (lane_geometry.points as Array).size() - 1)
+	return true
+
+
+func _road_builder() -> Object:
+	if _road_scene_builder == null:
+		_road_scene_builder = RoadSceneBuilderScript.new()
+		_road_scene_builder.configure(lane_visual_scene, road_visual_root_scene)
+	return _road_scene_builder
+
+
+func _style_entry_for_lane(_lane_geometry):
+	if _road_style_catalog != null and _road_style_catalog.has_method("default_entry"):
+		return _road_style_catalog.default_entry()
+	return null
+
+
+func _road_root_for_lane(lane_geometry, style_entry) -> Node3D:
+	var edge_id := String(lane_geometry.edge_id)
+	if _road_visual_roots.has(edge_id):
+		return _road_visual_roots[edge_id] as Node3D
+	var lane_ids := []
+	if _sumo_geometry != null and _sumo_geometry.edge_to_lanes.has(edge_id):
+		lane_ids = (_sumo_geometry.edge_to_lanes[edge_id] as Array).duplicate()
+	var root: Node3D = _road_builder().build_road_root(edge_id, lane_ids, style_entry)
+	root.add_to_group("generated_world_object")
+	add_child(root)
+	_road_visual_roots[edge_id] = root
+	return root
 
 
 func _build_sumo_lane_segment_boxes(lane_geometry) -> void:
@@ -495,11 +576,45 @@ func world_position_for_edge_ids(edge_ids) -> Variant:
 	return total / float(count)
 
 
+func world_position_for_lon_lat(lon: float, lat: float, height := 0.04) -> Variant:
+	if _sumo_geometry == null or _mapper == null:
+		return null
+	if not _sumo_geometry.has_method("sumo_point_for_lon_lat"):
+		return null
+	var sumo_point = _sumo_geometry.sumo_point_for_lon_lat(lon, lat)
+	if not (sumo_point is Vector2):
+		return null
+	var point := sumo_point as Vector2
+	return _mapper.sumo_to_world(point.x, point.y, height)
+
+
+func world_polygon_for_geo_coordinates(coordinates, height := 0.04) -> Array:
+	var output: Array[Vector3] = []
+	if not (coordinates is Array):
+		return output
+	for raw_point in coordinates as Array:
+		if not (raw_point is Array):
+			continue
+		var values := raw_point as Array
+		if values.size() < 2:
+			continue
+		var world_position = world_position_for_lon_lat(
+			float(values[0]),
+			float(values[1]),
+			height
+		)
+		if world_position is Vector3:
+			output.append(world_position as Vector3)
+	return output
+
+
 func geometry_data_model() -> String:
 	return "SumoNetGeometryData" if _sumo_geometry != null else "spec_fallback"
 
 
 func lane_render_model() -> String:
+	if render_lane_as_scenes:
+		return "SUMO lane scene builder"
 	return "SUMO lane-width mesh strips" if render_lane_mesh_strips else "segment box fallback"
 
 

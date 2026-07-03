@@ -10,6 +10,7 @@ var vehicle_scenes: Dictionary = {}
 var fallbacks: Dictionary = {}
 var scene_cache: Dictionary = {}
 var errors: Array[String] = []
+var resource_catalog = null
 
 
 func load_manifest(path: String) -> bool:
@@ -19,6 +20,7 @@ func load_manifest(path: String) -> bool:
 	vehicle_scenes.clear()
 	fallbacks.clear()
 	scene_cache.clear()
+	resource_catalog = null
 
 	if path.is_empty():
 		errors.append("Vehicle asset manifest path is empty.")
@@ -115,6 +117,36 @@ func scene_for_vehicle_type(type_id: String) -> PackedScene:
 	return null
 
 
+func visual_asset_scene_for_vehicle_type(type_id: String) -> PackedScene:
+	if resource_catalog != null and resource_catalog.has_method("visual_asset_scene_for_vehicle_type"):
+		return resource_catalog.visual_asset_scene_for_vehicle_type(type_id)
+	return null
+
+
+func visual_asset_scale_for_vehicle_type(type_id: String) -> Vector3:
+	if resource_catalog != null and resource_catalog.has_method("visual_asset_scale_for_vehicle_type"):
+		return resource_catalog.visual_asset_scale_for_vehicle_type(type_id)
+	return Vector3.ONE
+
+
+func visual_asset_offset_for_vehicle_type(type_id: String) -> Vector3:
+	if resource_catalog != null and resource_catalog.has_method("visual_asset_offset_for_vehicle_type"):
+		return resource_catalog.visual_asset_offset_for_vehicle_type(type_id)
+	return Vector3.ZERO
+
+
+func visual_asset_rotation_degrees_for_vehicle_type(type_id: String) -> Vector3:
+	if resource_catalog != null and resource_catalog.has_method("visual_asset_rotation_degrees_for_vehicle_type"):
+		return resource_catalog.visual_asset_rotation_degrees_for_vehicle_type(type_id)
+	return Vector3.ZERO
+
+
+func hide_base_body_for_vehicle_type(type_id: String) -> bool:
+	if resource_catalog != null and resource_catalog.has_method("hide_base_body_for_vehicle_type"):
+		return resource_catalog.hide_base_body_for_vehicle_type(type_id)
+	return false
+
+
 func registered_vehicle_type_count() -> int:
 	return max(vehicle_scene_paths.size(), vehicle_scenes.size())
 
@@ -145,6 +177,7 @@ func _load_resource_catalog(path: String) -> bool:
 	if resource == null:
 		errors.append("Vehicle asset catalog not found or unreadable: %s" % path)
 		return false
+	resource_catalog = resource
 
 	var schema_version := str(resource.get("schema_version"))
 	if not SchemaVersionsScript.supported_vehicle_asset_catalog_versions().has(schema_version):

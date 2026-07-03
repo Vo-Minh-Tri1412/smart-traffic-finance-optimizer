@@ -61,8 +61,8 @@ OSM/SUMO map
   -> Godot visual overlay and replay
 ```
 
-Manual Godot authoring is for tiny previews, visual tuning, and overrides. It is not the source of
-truth for large real road networks.
+Godot editing must happen on prepared real-map artifacts: SUMO geometry, semantic overlay, render
+manifest, and visual catalogs. Standalone toy authoring scenes are not part of the production path.
 
 ## Render bridge layers
 
@@ -93,7 +93,7 @@ visual integration is trustworthy.
 | Replay timing | `TracePlaybackClock`, `TraceInterpolator` |
 | Vehicle visuals | `VehicleAssetCatalog.tres`, registry, factory, pool |
 | Zone visuals | `semantic_overlay.json`, `ZoneAssetCatalog.tres`, `SemanticOverlayRenderer` |
-| Road visuals | width-aware SUMO lane mesh strips; road style catalog planned as first-class |
+| Road visuals | `RoadSceneBuilder`, `RoadVisualRoot.tscn`, `LaneVisualBase.tscn`, `RoadStyleCatalog.tres` |
 | Sensors | `DetectionCamera3D`, camera/label catalogs, smoke dataset writer |
 | Quality report | replay summary today; render bridge QA report is the canonical next layer |
 
@@ -122,7 +122,8 @@ The report matters because visual correctness must be testable, not only inspect
   preview.
 - Do not put traffic logic inside Godot. Events may be visualized in Godot, but their traffic effect
   belongs in SUMO/Python.
-- Do not treat tiny preview scenes as product maps. They are sandbox fixtures.
+- Do not create standalone toy map scenes as product maps. Any future editor preview must be backed
+  by real SUMO geometry, semantic overlay data, or a clearly named test fixture.
 
 ## Extension strategy
 

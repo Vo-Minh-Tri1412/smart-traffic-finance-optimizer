@@ -54,7 +54,12 @@ def test_godot_bridge_and_visual_style_files_exist() -> None:
         PROJECT_ROOT / "render" / "scripts" / "traffic" / "traffic_light_state_layer.gd",
         PROJECT_ROOT / "render" / "scripts" / "assets" / "road_style_catalog.gd",
         PROJECT_ROOT / "render" / "scripts" / "assets" / "road_style_entry.gd",
+        PROJECT_ROOT / "render" / "scripts" / "roads" / "road_scene_builder.gd",
+        PROJECT_ROOT / "render" / "scripts" / "roads" / "road_visual_root.gd",
+        PROJECT_ROOT / "render" / "scripts" / "roads" / "lane_visual_base.gd",
         PROJECT_ROOT / "render" / "resources" / "catalogs" / "RoadStyleCatalog.tres",
+        PROJECT_ROOT / "render" / "scenes" / "roads" / "RoadVisualRoot.tscn",
+        PROJECT_ROOT / "render" / "scenes" / "roads" / "LaneVisualBase.tscn",
     ]
     missing = [path for path in required_paths if not path.is_file()]
     assert not missing
@@ -64,6 +69,19 @@ def test_godot_bridge_and_visual_style_files_exist() -> None:
     )
     assert "SumoRenderBridge" in main_scene
     assert "TrafficLightStateLayer" in main_scene
+
+    world_script = (
+        PROJECT_ROOT / "render" / "scripts" / "world" / "district_replay_world.gd"
+    ).read_text(encoding="utf-8")
+    assert "RoadSceneBuilder" in world_script
+    assert "render_lane_as_scenes" in world_script
+    assert "SUMO lane scene builder" in world_script
+    assert "editor_preview_enabled" in world_script
+
+    overlay_script = (
+        PROJECT_ROOT / "render" / "scripts" / "zones" / "semantic_overlay_renderer.gd"
+    ).read_text(encoding="utf-8")
+    assert "editor_preview_enabled" in overlay_script
 
 
 def test_trace_replay_controller_keeps_vehicle_selection_out_of_replay_logic() -> None:

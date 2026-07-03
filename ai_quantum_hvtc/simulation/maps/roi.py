@@ -1,18 +1,25 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 import shutil
+import subprocess
 import xml.etree.ElementTree as ET
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+from ai_quantum_hvtc.simulation.engines.sumo.config import (
+    SumoRuntimeConfig,
+    resolve_sumo_binary,
+)
 from ai_quantum_hvtc.simulation.maps.source import SumoNetIndex, load_sumo_net_index
 
 ROI_OVERLAY_SCHEMA_VERSION = "roi_semantic_overlay.v1"
 
 ZONE_TYPES = {
+    "neutral",
     "residential",
     "commercial",
     "market_retail",
@@ -25,6 +32,20 @@ ZONE_TYPES = {
     "nightlife",
     "gateway",
     "mixed",
+}
+DEMAND_DISABLED_ZONE_TYPES = {"neutral"}
+POINT_ZONE_RADIUS_M_BY_TYPE = {
+    "healthcare": 110.0,
+    "education": 95.0,
+    "market_retail": 85.0,
+    "transport_hub": 100.0,
+    "nightlife": 70.0,
+    "public_service": 80.0,
+    "commercial": 85.0,
+    "industrial": 130.0,
+    "port_logistics": 160.0,
+    "gateway": 130.0,
+    "mixed": 70.0,
 }
 
 ROAD_KEEP_HIGHWAYS = {
@@ -59,21 +80,21 @@ class RoiPrepError(ValueError):
 
 
 @dataclass(frozen=True)
-class RoiBounds:
-    west: float
-    south: float
-    east: float
-    north: float
+class RoiPolygon:
+    points: tuple[OsmPoint, ...]
 
     def contains(self, lon: float, lat: float) -> bool:
-        return self.west <= lon <= self.east and self.south <= lat <= self.north
+        return _point_in_polygon(OsmPoint(lon=lon, lat=lat), self.points)
+
+    def netconvert_boundary(self) -> str:
+        return " ".join(f"{point.lon},{point.lat}" for point in self.points)
 
 
 @dataclass(frozen=True)
 class RoiConfig:
     roi_id: str
     name: str
-    bounds: RoiBounds
+    polygon: RoiPolygon
     osm_path: Path
     source_net_path: Path | None = None
     output_profile: str = "review_only_v1"
@@ -186,18 +207,12 @@ def load_roi_config(path: Path | str) -> RoiConfig:
     data = json.loads(config_path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
         raise RoiPrepError(f"{config_path}: ROI config must be a JSON object")
-    bounds_data = _object(data, "bounds")
     source_data = _object(data, "source")
     base_dir = config_path.parent
     return RoiConfig(
         roi_id=str(data["id"]),
         name=str(data["name"]),
-        bounds=RoiBounds(
-            west=float(bounds_data["west"]),
-            south=float(bounds_data["south"]),
-            east=float(bounds_data["east"]),
-            north=float(bounds_data["north"]),
-        ),
+        polygon=_roi_polygon(data.get("polygon")),
         osm_path=_resolve(base_dir, str(source_data["osm_path"])),
         source_net_path=_resolve_optional(base_dir, source_data.get("sumo_net_path")),
         output_profile=str(data.get("output_profile", "review_only_v1")),
@@ -212,8 +227,8 @@ def load_roi_config(path: Path | str) -> RoiConfig:
 def validate_roi_config_shape(config: RoiConfig, *, require_sources: bool = True) -> None:
     if not config.roi_id.strip():
         raise RoiPrepError("ROI config id must not be empty")
-    if config.bounds.east <= config.bounds.west or config.bounds.north <= config.bounds.south:
-        raise RoiPrepError(f"{config.roi_id}: invalid bbox bounds")
+    if len(config.polygon.points) < 3:
+        raise RoiPrepError(f"{config.roi_id}: ROI polygon must contain at least 3 points")
     if require_sources and not config.osm_path.is_file():
         raise RoiPrepError(f"{config.roi_id}: OSM source not found: {config.osm_path}")
     if (
@@ -225,10 +240,14 @@ def validate_roi_config_shape(config: RoiConfig, *, require_sources: bool = True
 
 
 def prepare_roi(
-    config: RoiConfig, *, copy_source_net: bool = False, output_root: Path | None = None
+    config: RoiConfig,
+    *,
+    copy_source_net: bool = False,
+    clip_sumo_net: bool = False,
+    output_root: Path | None = None,
 ) -> RoiPrepResult:
     validate_roi_config_shape(config)
-    nodes, ways = read_osm_roi(config.osm_path, config.bounds)
+    nodes, ways = read_osm_roi(config.osm_path, config.polygon)
     if not nodes and not ways:
         raise RoiPrepError(f"{config.roi_id}: ROI selected no OSM nodes or ways")
 
@@ -236,6 +255,8 @@ def prepare_roi(
     edge_ids_by_osm_id = _sumo_edges_by_osm_way_id(net_index) if net_index else {}
     zones_without_anchor: list[str] = []
     micro_zones = infer_micro_zones(
+        roi_id=config.roi_id,
+        roi_polygon=config.polygon,
         nodes=nodes,
         ways=ways,
         road_ways=[way for way in ways if "highway" in way.tags],
@@ -252,7 +273,9 @@ def prepare_roi(
         config=config, zones=micro_zones, roads=roads, zones_without_anchor=zones_without_anchor
     )
     prepared_net_path = None
-    if copy_source_net and config.source_net_path and output_root:
+    if clip_sumo_net:
+        prepared_net_path = _clip_sumo_net_to_roi(config=config, output_root=output_root)
+    elif copy_source_net and config.source_net_path and output_root:
         prepared_net_path = output_root / f"{config.roi_id}.prepared.net.xml"
         prepared_net_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(config.source_net_path, prepared_net_path)
@@ -269,7 +292,55 @@ def prepare_roi(
     )
 
 
-def read_osm_roi(path: Path, bounds: RoiBounds) -> tuple[dict[str, OsmNode], list[OsmWay]]:
+def _clip_sumo_net_to_roi(*, config: RoiConfig, output_root: Path | None) -> Path:
+    if output_root is None:
+        raise RoiPrepError(f"{config.roi_id}: output_root is required to clip SUMO net")
+    if config.source_net_path is None:
+        raise RoiPrepError(f"{config.roi_id}: source.sumo_net_path is required to clip SUMO net")
+    netconvert = resolve_sumo_binary(SumoRuntimeConfig().netconvert_binary)
+    if netconvert is None:
+        raise RoiPrepError(
+            f"{config.roi_id}: netconvert was not found. Install SUMO or set SUMO_HOME."
+        )
+    output_root.mkdir(parents=True, exist_ok=True)
+    prepared_net_path = output_root / f"{config.roi_id}.prepared.net.xml"
+    boundary = config.polygon.netconvert_boundary()
+    command = [
+        netconvert,
+        "-s",
+        str(config.source_net_path.resolve()),
+        "--keep-edges.in-geo-boundary",
+        boundary,
+        "--keep-edges.components",
+        "1",
+        "--output-file",
+        str(prepared_net_path.resolve()),
+        "--no-turnarounds",
+        "true",
+    ]
+    completed = subprocess.run(
+        command,
+        cwd=output_root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if completed.returncode != 0:
+        raise RoiPrepError(
+            f"{config.roi_id}: netconvert ROI clip failed\n"
+            f"command: {' '.join(command)}\n"
+            f"stdout: {completed.stdout}\n"
+            f"stderr: {completed.stderr}"
+        )
+    if not prepared_net_path.is_file() or prepared_net_path.stat().st_size <= 0:
+        raise RoiPrepError(
+            f"{config.roi_id}: netconvert did not produce a prepared ROI net at "
+            f"{prepared_net_path}"
+        )
+    return prepared_net_path
+
+
+def read_osm_roi(path: Path, polygon: RoiPolygon) -> tuple[dict[str, OsmNode], list[OsmWay]]:
     all_nodes: dict[str, OsmNode] = {}
     selected_node_ids: set[str] = set()
     for _event, element in ET.iterparse(path, events=("end",)):
@@ -281,7 +352,7 @@ def read_osm_roi(path: Path, bounds: RoiBounds) -> tuple[dict[str, OsmNode], lis
             tags = _tags(element)
             node = OsmNode(node_id=node_id, point=OsmPoint(lon=lon, lat=lat), tags=tags)
             all_nodes[node_id] = node
-            if bounds.contains(lon, lat):
+            if polygon.contains(lon, lat):
                 selected_node_ids.add(node_id)
             element.clear()
 
@@ -293,7 +364,7 @@ def read_osm_roi(path: Path, bounds: RoiBounds) -> tuple[dict[str, OsmNode], lis
             node_refs = tuple(str(nd.attrib.get("ref", "")) for nd in element.findall("nd"))
             geometry = tuple(all_nodes[ref].point for ref in node_refs if ref in all_nodes)
             tags = _tags(element)
-            if _way_intersects_roi(node_refs, geometry, selected_node_ids, bounds) and tags:
+            if _way_intersects_roi(node_refs, geometry, selected_node_ids, polygon) and tags:
                 selected_ways.append(
                     OsmWay(way_id=way_id, node_refs=node_refs, tags=tags, geometry=geometry)
                 )
@@ -301,13 +372,15 @@ def read_osm_roi(path: Path, bounds: RoiBounds) -> tuple[dict[str, OsmNode], lis
 
     selected_nodes = {node_id: all_nodes[node_id] for node_id in selected_node_ids}
     for node in all_nodes.values():
-        if node.tags and bounds.contains(node.point.lon, node.point.lat):
+        if node.tags and polygon.contains(node.point.lon, node.point.lat):
             selected_nodes[node.node_id] = node
     return selected_nodes, selected_ways
 
 
 def infer_micro_zones(
     *,
+    roi_id: str,
+    roi_polygon: RoiPolygon,
     nodes: dict[str, OsmNode],
     ways: list[OsmWay],
     road_ways: list[OsmWay],
@@ -376,19 +449,21 @@ def infer_micro_zones(
                 source_element_kind="node",
                 source_tags=_relevant_tags(node.tags),
                 confidence=confidence,
-                geometry={"type": "point", "coordinates": [center.lon, center.lat]},
+                geometry=_point_buffer_geometry(center, zone_type),
                 centroid=(center.lon, center.lat),
                 anchor_edges=anchor_edges,
                 manual_review_required=manual_review_required,
                 zone_group_id=f"ZG_{zone_type.upper()}",
             )
         )
+    zones.append(_neutral_fill_zone(roi_id=roi_id, roi_polygon=roi_polygon))
     return zones
 
 
 def classify_zone_tags(tags: dict[str, str]) -> tuple[str, str, float] | None:
     landuse = tags.get("landuse", "")
     amenity = tags.get("amenity", "")
+    building = tags.get("building", "")
     industrial = tags.get("industrial", "")
     public_transport = tags.get("public_transport", "")
     shop = tags.get("shop", "")
@@ -403,6 +478,18 @@ def classify_zone_tags(tags: dict[str, str]) -> tuple[str, str, float] | None:
         return "port_logistics", industrial or "port", 0.88
     if industrial:
         return "industrial", industrial, 0.84
+    if building in {"industrial", "warehouse", "factory"}:
+        return "industrial", building, 0.76
+    if building in {"apartments", "residential", "house", "detached", "dormitory"}:
+        return "residential", building, 0.72
+    if building in {"commercial", "retail", "office"}:
+        return "commercial", building, 0.70
+    if building in {"school", "university", "college", "kindergarten"}:
+        return "education", building, 0.76
+    if building in {"hospital", "clinic"}:
+        return "healthcare", building, 0.78
+    if building in {"civic", "government", "public"}:
+        return "public_service", building, 0.68
     if landuse == "industrial":
         return "industrial", landuse, 0.86
     if landuse == "residential":
@@ -411,17 +498,50 @@ def classify_zone_tags(tags: dict[str, str]) -> tuple[str, str, float] | None:
         return "commercial", landuse, 0.84
     if landuse == "retail":
         return "market_retail", landuse, 0.82
+    if landuse in {"port", "depot"}:
+        return "port_logistics", landuse, 0.82
+    if landuse in {"education", "school"}:
+        return "education", landuse, 0.78
+    if landuse in {"institutional", "public", "government", "military"}:
+        return "public_service", landuse, 0.70
+    if landuse in {"recreation_ground", "grass", "village_green", "cemetery"}:
+        return "mixed", landuse, 0.54
     if amenity in {"school", "university", "college", "language_school", "kindergarten"}:
         return "education", amenity, 0.90
     if amenity in {"hospital", "clinic"} or healthcare in {"hospital", "clinic"}:
         return "healthcare", amenity or healthcare, 0.90
-    if amenity in {"marketplace"} or shop in {"mall", "department_store", "supermarket"}:
+    if amenity in {"marketplace"} or shop in {
+        "mall",
+        "department_store",
+        "supermarket",
+        "convenience",
+        "bakery",
+        "butcher",
+        "clothes",
+        "electronics",
+        "hardware",
+    }:
         return "market_retail", amenity or shop, 0.86
-    if amenity in {"bus_station", "fuel"} or public_transport in {"station", "platform"}:
+    if amenity in {"bus_station", "fuel", "parking", "taxi"} or public_transport in {
+        "station",
+        "platform",
+        "stop_position",
+    }:
         return "transport_hub", amenity or public_transport, 0.78
     if railway in {"station", "subway_entrance"}:
         return "transport_hub", railway, 0.76
-    if amenity in {"police", "fire_station"} or emergency:
+    if amenity in {
+        "police",
+        "fire_station",
+        "townhall",
+        "courthouse",
+        "post_office",
+        "library",
+        "community_centre",
+        "place_of_worship",
+        "bank",
+        "atm",
+    } or emergency:
         return "public_service", amenity or emergency, 0.82
     if amenity in {"bar", "pub", "nightclub", "restaurant", "cafe", "fast_food"}:
         return "nightlife", amenity, 0.74
@@ -429,6 +549,8 @@ def classify_zone_tags(tags: dict[str, str]) -> tuple[str, str, float] | None:
         return "market_retail", shop, 0.70
     if office:
         return "commercial", office, 0.66
+    if tourism in {"hotel", "hostel", "guest_house"}:
+        return "commercial", tourism, 0.64
     if tourism or leisure:
         return "mixed", tourism or leisure, 0.58
     return None
@@ -441,7 +563,11 @@ def classify_roi_roads(
     edge_ids_by_osm_id: dict[str, tuple[str, ...]],
 ) -> list[RoadFeature]:
     roads: list[RoadFeature] = []
-    polygon_zones = [zone for zone in zones if zone.geometry.get("type") == "polygon"]
+    polygon_zones = [
+        zone
+        for zone in zones
+        if zone.zone_type != "neutral" and zone.geometry.get("type") == "polygon"
+    ]
     for way in road_ways:
         center = way.centroid
         inside_zone_ids = tuple(
@@ -564,6 +690,9 @@ def semantic_overlay_payload(result: RoiPrepResult) -> dict[str, Any]:
         "zone_groups": [asdict(group) for group in result.zone_groups],
         "caveats": [
             "Auto-generated from OSM tags and ROI config.",
+            "Neutral fill zones are visual/semantic background only and must not generate demand.",
+            "Point POI tags are expanded into approximate local polygon buffers for rendering, "
+            "flow anchoring, and public-finance interpretation.",
             "Manual review should confirm access roads, public-value interpretation, "
             "and zone boundaries.",
             "Building visuals should be symbolic zone assets, not imported real building geometry.",
@@ -661,6 +790,7 @@ def qa_markdown(result: RoiPrepResult, qa: dict[str, Any]) -> str:
 
 
 def _zone_payload(zone: MicroZone) -> dict[str, Any]:
+    demand_enabled = zone.zone_type not in DEMAND_DISABLED_ZONE_TYPES
     return {
         "id": zone.zone_id,
         "name": zone.name,
@@ -676,6 +806,9 @@ def _zone_payload(zone: MicroZone) -> dict[str, Any]:
         "anchor_junctions": list(zone.anchor_junctions),
         "manual_review_required": zone.manual_review_required,
         "zone_group_id": zone.zone_group_id,
+        "demand_enabled": demand_enabled,
+        "traffic_role": _traffic_role_for_zone(zone.zone_type),
+        "economic_role": _economic_role_for_zone(zone.zone_type),
     }
 
 
@@ -686,6 +819,42 @@ def _road_classification_counts(
     for road in roads:
         counts[road.classification] = counts.get(road.classification, 0) + 1
     return counts
+
+
+def _traffic_role_for_zone(zone_type: str) -> str:
+    return {
+        "neutral": "background_no_demand",
+        "residential": "origin_commute",
+        "commercial": "destination_service_jobs",
+        "market_retail": "destination_retail_delivery",
+        "education": "time_window_school_commute",
+        "healthcare": "emergency_priority_destination",
+        "industrial": "worker_and_truck_flow",
+        "port_logistics": "truck_and_logistics_flow",
+        "transport_hub": "bus_taxi_transfer_flow",
+        "public_service": "public_service_access",
+        "nightlife": "evening_demand_spike",
+        "gateway": "external_entry_exit",
+        "mixed": "mixed_low_confidence_flow",
+    }.get(zone_type, "mixed_low_confidence_flow")
+
+
+def _economic_role_for_zone(zone_type: str) -> str:
+    return {
+        "neutral": "visual_background_only",
+        "residential": "household_time_and_access",
+        "commercial": "service_economy_access",
+        "market_retail": "retail_delivery_and_local_trade",
+        "education": "student_family_time_access",
+        "healthcare": "emergency_delay_and_health_access",
+        "industrial": "labor_productivity_and_freight_delay",
+        "port_logistics": "freight_throughput_and_supply_chain_delay",
+        "transport_hub": "public_transport_reliability",
+        "public_service": "public_service_access",
+        "nightlife": "evening_local_economy_and_safety",
+        "gateway": "network_access_and_external_flow",
+        "mixed": "mixed_uncertain_public_value",
+    }.get(zone_type, "mixed_uncertain_public_value")
 
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
@@ -704,13 +873,13 @@ def _way_intersects_roi(
     node_refs: tuple[str, ...],
     geometry: tuple[OsmPoint, ...],
     selected_node_ids: set[str],
-    bounds: RoiBounds,
+    polygon: RoiPolygon,
 ) -> bool:
     if any(ref in selected_node_ids for ref in node_refs):
         return True
     if geometry:
         center = centroid(geometry)
-        return bounds.contains(center.lon, center.lat)
+        return polygon.contains(center.lon, center.lat)
     return False
 
 
@@ -729,9 +898,52 @@ def _geometry_for_points(points: tuple[OsmPoint, ...]) -> dict[str, Any]:
         return {"type": "polygon", "coordinates": coordinates}
     if len(points) >= 2:
         return {"type": "line", "coordinates": coordinates}
-    if len(points) == 1:
-        return {"type": "point", "coordinates": coordinates[0]}
-    return {"type": "unknown", "coordinates": []}
+    return {"type": "point", "coordinates": coordinates[0] if coordinates else []}
+
+
+def _neutral_fill_zone(*, roi_id: str, roi_polygon: RoiPolygon) -> MicroZone:
+    center = centroid(roi_polygon.points)
+    return MicroZone(
+        zone_id=f"Z_NEUTRAL_ROI_FILL_{_safe_id(roi_id).upper()}",
+        name="Neutral background zone",
+        zone_type="neutral",
+        subtype="roi_fill",
+        source_element_id=roi_id,
+        source_element_kind="roi_fill",
+        source_tags={
+            "synthetic": "neutral_fill",
+            "demand_enabled": "false",
+            "purpose": "visual_and_semantic_background",
+        },
+        confidence=0.25,
+        geometry=_geometry_for_points(roi_polygon.points),
+        centroid=(center.lon, center.lat),
+        manual_review_required=False,
+        zone_group_id="ZG_NEUTRAL",
+    )
+
+
+def _point_buffer_geometry(center: OsmPoint, zone_type: str) -> dict[str, Any]:
+    radius_m = POINT_ZONE_RADIUS_M_BY_TYPE.get(zone_type, 70.0)
+    coordinates: list[list[float]] = []
+    for index in range(12):
+        angle = math.tau * float(index) / 12.0
+        point = _offset_point_m(
+            center,
+            east_m=radius_m * math.cos(angle),
+            north_m=radius_m * math.sin(angle),
+        )
+        coordinates.append([point.lon, point.lat])
+    return {"type": "polygon", "coordinates": coordinates}
+
+
+def _offset_point_m(center: OsmPoint, *, east_m: float, north_m: float) -> OsmPoint:
+    lat_degree_m = 111_320.0
+    lon_degree_m = max(1.0, 111_320.0 * math.cos(math.radians(center.lat)))
+    return OsmPoint(
+        lon=center.lon + east_m / lon_degree_m,
+        lat=center.lat + north_m / lat_degree_m,
+    )
 
 
 def _coordinates_to_points(coordinates: object) -> tuple[OsmPoint, ...]:
@@ -847,6 +1059,21 @@ def _object(data: dict[str, Any], key: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise RoiPrepError(f"{key} must be an object")
     return value
+
+
+def _roi_polygon(value: object) -> RoiPolygon:
+    if not isinstance(value, list):
+        raise RoiPrepError("ROI config must define polygon as [[lon, lat], ...]")
+    points: list[OsmPoint] = []
+    for index, item in enumerate(value):
+        if not isinstance(item, list | tuple) or len(item) < 2:
+            raise RoiPrepError(f"ROI polygon point #{index + 1} must be [lon, lat]")
+        points.append(OsmPoint(lon=float(item[0]), lat=float(item[1])))
+    if len(points) >= 2 and points[0] == points[-1]:
+        points = points[:-1]
+    if len(points) < 3:
+        raise RoiPrepError("ROI polygon must contain at least 3 unique points")
+    return RoiPolygon(points=tuple(points))
 
 
 def _resolve(base_dir: Path, value: str) -> Path:

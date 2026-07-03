@@ -35,7 +35,8 @@ and configures child modules.
 - Existing modules must remain individually testable.
 - Godot-only visual choices stay in `.tres` catalogs.
 - Cross-system paths and scenario inputs should move into `render_run_manifest.v1`.
-- Tiny preview scenes stay as sandbox scenes and should not become the production bridge.
+- Standalone toy authoring/preview scenes are not part of the production bridge. Any future editor
+  tooling must operate on real SUMO geometry, semantic overlay data, and render run manifests.
 
 ## Why not rewrite everything now
 

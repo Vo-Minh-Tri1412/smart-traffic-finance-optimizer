@@ -1,9 +1,13 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/vehicles/VehicleBase.tscn" id="1_base"]
+[ext_resource type="PackedScene" path="res://imported_assets/vehicles/delivery.glb" id="2_asset"]
+[ext_resource type="Material" path="res://resources/materials/kenney_car_colormap.tres" id="3_vehicle_mat"]
 
 [node name="LightTruckVehicle" instance=ExtResource("1_base")]
 default_vehicle_type = "LIGHT_TRUCK"
 visual_scale = Vector3(0.85, 0.75, 1.6)
 visual_color = Color(0.7, 0.4, 0.18, 1)
 body_height = 0.3
+visual_asset_scene = ExtResource("2_asset")
+visual_asset_override_material = ExtResource("3_vehicle_mat")

@@ -1,0 +1,36 @@
+id = "076_godot_roi_editor_preview_flag"
+owner = "integrator"
+branch = "main"
+base_commit = "8f68e871d70db084a4fd4d1aa0554c8f5253f441"
+allowed_paths = [
+  "coordination/tasks/076_godot_roi_editor_preview_flag.toml",
+  "render/scripts/world/district_replay_world.gd",
+  "render/scripts/zones/semantic_overlay_renderer.gd",
+  "tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py",
+]
+dependencies = [
+  "074_lane_based_road_scene_builder",
+  "075_roi_sumo_net_clip_preview",
+]
+acceptance_commands = [
+  "uv run pytest tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py",
+  "uv run ruff check tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/076_godot_roi_editor_preview_flag.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added opt-in Godot editor preview flags for DistrictReplayWorld and SemanticOverlayRenderer. ROI preview scenes can now build SUMO roads/lanes and semantic zones in the editor viewport without making full production scenes auto-build massive maps by default."
+validation = [
+  "uv run pytest tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py -> 5 passed",
+  "uv run ruff check tests/integration/frontend_contracts/test_render_bridge_framework_contracts.py -> passed",
+  "Godot headless replay using res://outputs/roi_tiny_preview artifacts -> passed",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/076_godot_roi_editor_preview_flag.toml -> passed",
+]
+risks = [
+  "Existing open Godot editor tabs may need scene reload or manual Rebuild Editor Preview toggle before generated preview nodes appear.",
+  "Editor preview is opt-in to avoid accidentally instantiating full Quận 7 geometry when opening Main.tscn.",
+]
+follow_up = [
+  "If editor viewport still looks empty after reload, inspect Godot Output for path errors and confirm RoiTinyPreview.tscn has editor_preview_enabled=true on DistrictReplayWorld and SemanticOverlayRenderer.",
+]

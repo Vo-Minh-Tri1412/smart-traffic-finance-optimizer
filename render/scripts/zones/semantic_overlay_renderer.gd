@@ -1,3 +1,4 @@
+@tool
 class_name SemanticOverlayRenderer
 extends Node3D
 
@@ -7,6 +8,12 @@ const ZoneVisualFactoryScript := preload("res://scripts/assets/zone_visual_facto
 @export var zone_catalog_path := "res://resources/catalogs/ZoneAssetCatalog.tres"
 @export var geometry_world_path: NodePath = NodePath("../DistrictReplayWorld")
 @export var auto_render := true
+@export var editor_preview_enabled := false
+@export var rebuild_editor_preview := false:
+	set(value):
+		rebuild_editor_preview = false
+		if value and Engine.is_editor_hint() and editor_preview_enabled:
+			call_deferred("_auto_render")
 @export var fallback_ring_radius := 8.0
 
 var zone_factory = null
@@ -17,6 +24,10 @@ var errors: Array[String] = []
 
 
 func _ready() -> void:
+	if Engine.is_editor_hint():
+		if editor_preview_enabled and auto_render:
+			call_deferred("_auto_render")
+		return
 	if auto_render:
 		call_deferred("_auto_render")
 
@@ -59,7 +70,13 @@ func render_overlay(path: String) -> bool:
 		if zone_node == null:
 			overlay_parse_error_count += 1
 			continue
-		zone_node.position = _zone_world_position(zone_data, world, index, zones.size())
+		var world_polygon := _zone_world_polygon(zone_data, world)
+		var zone_position := _zone_world_position(zone_data, world, index, zones.size())
+		if not world_polygon.is_empty():
+			zone_position = _polygon_centroid(world_polygon)
+		zone_node.position = zone_position
+		if not world_polygon.is_empty() and zone_node.has_method("configure_zone_polygon"):
+			zone_node.configure_zone_polygon(_local_polygon(world_polygon, zone_position))
 		zone_node.add_to_group("generated_zone_visual")
 		add_child(zone_node)
 		spawned_zone_count += 1
@@ -107,6 +124,48 @@ func _zone_world_position(zone_data: Dictionary, world: Node, index: int, total:
 			return (anchor_position as Vector3) + Vector3(0.0, 0.15, 0.0)
 	var angle := TAU * float(index) / float(max(1, total))
 	return Vector3(cos(angle) * fallback_ring_radius, 0.15, sin(angle) * fallback_ring_radius)
+
+
+func _zone_world_polygon(zone_data: Dictionary, world: Node) -> Array:
+	if world == null or not world.has_method("world_polygon_for_geo_coordinates"):
+		return []
+	var geometry = zone_data.get("geometry", {})
+	if not (geometry is Dictionary):
+		return []
+	var geometry_data := geometry as Dictionary
+	if str(geometry_data.get("type", "")) != "polygon":
+		return []
+	var coordinates = geometry_data.get("coordinates", [])
+	var world_polygon = world.world_polygon_for_geo_coordinates(coordinates, 0.04)
+	if world_polygon is Array and (world_polygon as Array).size() >= 3:
+		return world_polygon as Array
+	return []
+
+
+func _polygon_centroid(points: Array) -> Vector3:
+	if points.is_empty():
+		return Vector3.ZERO
+	var total := Vector3.ZERO
+	var count := 0
+	for point in points:
+		if point is Vector3:
+			total += point as Vector3
+			count += 1
+	if count == 0:
+		return Vector3.ZERO
+	var center := total / float(count)
+	center.y = 0.04
+	return center
+
+
+func _local_polygon(points: Array, origin: Vector3) -> Array:
+	var output: Array[Vector3] = []
+	for point in points:
+		if not (point is Vector3):
+			continue
+		var value := point as Vector3
+		output.append(Vector3(value.x - origin.x, 0.0, value.z - origin.z))
+	return output
 
 
 func _clear_generated() -> void:

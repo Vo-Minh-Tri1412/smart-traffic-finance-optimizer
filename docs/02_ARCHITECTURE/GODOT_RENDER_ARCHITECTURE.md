@@ -6,7 +6,8 @@ renderer implements that framework.
 
 ## Role
 
-Godot is the visual authoring, replay, and synthetic sensor-render layer.
+Godot is the visual replay, real-map overlay editing, asset-preview, and synthetic sensor-render
+layer.
 
 It is not the traffic simulator. SUMO/SUMO-RL remains responsible for traffic dynamics, route
 movement, queues, traffic-light policies, RL training, and metrics.
@@ -17,11 +18,9 @@ simulation system.
 ## Current flow
 
 ```text
-Godot authored map scene
-  -> district_spec.generated.json
-  -> Python/SUMO validate and run
-  -> district.net.xml + simulation_trace.jsonl
-  -> Godot renders SUMO geometry and replays vehicle traces
+OSM/SUMO prepared map
+  -> SUMO district.net.xml + semantic_overlay.json + simulation_trace.jsonl
+  -> Godot renders SUMO geometry, semantic overlay visuals, and vehicle traces
   -> future cameras export frames/labels/video
 ```
 
@@ -56,8 +55,8 @@ visual bug where cars appear to drive through residential/background areas.
 
 ## Map source intake
 
-The team does not have to hand-author an entire city inside Godot from zero. A larger map may first
-arrive from OSM, SUMO, GeoJSON, a synthetic generator, or manual planning notes.
+The team should not hand-author an entire city inside a separate Godot toy scene. A larger map must
+arrive from OSM/SUMO, GeoJSON, a controlled generator, or explicit map-intake artifacts.
 
 Pre-Godot map sources belong in:
 
@@ -69,17 +68,17 @@ That folder is the staging area for:
 
 - raw map sources;
 - cleaned/prepared map sources;
-- seed specs before Godot editing;
+- semantic overlays and review notes before Godot visual editing;
 - review notes about connectivity, zones, traffic lights, and economic logic.
 
-After a map source is selected or generated, Godot is used to refine the semantic/visual layer:
+After a map source is selected or generated, Godot is used to inspect and refine the semantic/visual
+layer on top of the prepared real map:
 
 ```text
 map_intake source
-  -> Godot authoring scene
-  -> district_spec.generated.json
-  -> SUMO run
-  -> Godot replay/render
+  -> ROI/prepared SUMO net
+  -> semantic overlay
+  -> Godot replay/render/overlay inspection
 ```
 
 Large or license-sensitive map files stay out of Git and should be recorded through a map intake
@@ -91,8 +90,6 @@ manifest and Google Drive link.
 render/
 ├── scenes/
 │   ├── main/        # app entry scene
-│   ├── authoring/   # drag-and-drop map markers
-│   │   └── presets/ # reusable zone/intersection presets for no-code editing
 │   ├── world/       # replay world and future world objects
 │   ├── vehicles/    # editable vehicle scenes
 │   ├── zones/       # editable zone visual scenes
@@ -100,7 +97,6 @@ render/
 │   └── ui/          # future replay/demo UI
 ├── scripts/
 │   ├── assets/      # visual catalogs, factories, vehicle pool
-│   ├── authoring/   # Godot scene -> district_spec export
 │   ├── bridge/      # SumoRenderBridge orchestration layer
 │   ├── contracts/   # schema/version constants
 │   ├── replay/      # trace loading, clock, interpolation, replay controller
@@ -145,71 +141,31 @@ res://resources/catalogs/VehicleAssetCatalog.tres
 res://resources/catalogs/ZoneAssetCatalog.tres
 ```
 
-`VehicleAssetCatalog.tres` maps SUMO vehicle types to editable vehicle scenes.
+`VehicleAssetCatalog.tres` maps SUMO vehicle types to editable vehicle wrapper scenes and imported
+visual assets.
 `ZoneAssetCatalog.tres` maps semantic zone types to zone scenes, ground materials, and building
 cluster assets. The semantic overlay remains JSON because Python/SUMO and Godot both read it; the
 catalog only controls how those zones look in Godot.
-`RoadStyleCatalog.tres` maps SUMO road/lane rendering to Godot materials and road visual knobs.
+`RoadStyleCatalog.tres` maps SUMO road/lane rendering to Godot road/lane scenes, materials, and
+visual knobs.
 
 The current imported art uses Kenney CC0 low-poly assets. Credit Kenney / kenney.nl in public demo
 materials even though attribution is not required by the license.
 
-## Authoring layer
+## Real-map overlay editing policy
 
-The authoring scene is:
-
-```text
-res://scenes/authoring/DistrictAuthoringMap.tscn
-```
-
-This scene is a small sample/sandbox with hand-authored intersections. It is not Quận 7 and should
-not be presented as the main map. New manual authoring work should start from:
+There is no separate toy authoring scene in the production path. Real editing work should happen
+against the same data used by replay:
 
 ```text
-res://scenes/authoring/BlankAuthoringMap.tscn
+prepared SUMO net + semantic overlay + render run manifest
+  -> Main.tscn / SumoRenderBridge
+  -> visual inspection and overlay refinement
 ```
 
-For Quận 7 and other real maps, the main replay path is SUMO `.net.xml` + semantic overlay + trace
-inside `res://scenes/main/Main.tscn`.
-
-Authoring markers are component-style scene nodes:
-
-- `IntersectionMarker`;
-- `RoadSegment`;
-- `ZoneArea`;
-- `DemandFlow` (`SpawnPoint` remains only as a compatibility alias);
-- `DestinationPoint`;
-- `TrafficLightMarker`;
-- `InvestmentCandidateMarker`.
-
-Each marker owns its exported properties and serializes itself. The exporter should not become a
-large list of marker-specific special cases.
-
-Authoring UX v2 rules:
-
-- Road endpoints should be selected through `from_intersection_path` and `to_intersection_path`
-  NodePath fields, not by manually typing intersection IDs.
-- `RoadSegment` stores actual geometry knobs: `shape_points`, `lanes`, `lane_width_m`,
-  `sidewalk_width_m`, and `median_width_m`. It computes length from the scene geometry and exports
-  optional SUMO edge shape points.
-- Zones can connect to intersections through `intersection_paths`; text IDs are fallback only.
-- Traffic lights and investment candidates can point to an intersection node through
-  `intersection_path`. VND cost fields belong to `InvestmentCandidateMarker`, not to the traffic
-  light itself.
-- Demand is modeled as OD flow (`DemandFlow`) from origin zone to destination zone. It is not a
-  physical game-style spawn point.
-- The exporter validates duplicate IDs and broken references before writing `district_spec`.
-
-Current no-code authoring presets:
-
-- `res://scenes/authoring/presets/ResidentialZone.tscn`
-- `res://scenes/authoring/presets/HospitalZone.tscn`
-- `res://scenes/authoring/presets/SchoolZone.tscn`
-- `res://scenes/authoring/presets/IndustrialZone.tscn`
-- `res://scenes/authoring/presets/NightlifeZone.tscn`
-- `res://scenes/authoring/presets/GatewayZone.tscn`
-- `res://scenes/authoring/presets/SignalizedIntersection.tscn`
-- `res://scenes/authoring/presets/UnsignalizedIntersection.tscn`
+The road network is not redrawn by hand in Godot. Godot can provide editor tools later for selecting
+zones, investment candidates, camera rigs, and asset presets, but those tools must edit the real
+semantic overlay or render manifest associated with a prepared SUMO map.
 
 ## Replay layer
 
@@ -233,8 +189,8 @@ Main pieces:
 - `TraceInterpolator`: samples vehicle positions between neighboring trace frames.
 - `CoordinateMapper`: maps SUMO meters into Godot world coordinates.
 - `SumoNetGeometryData` / `SumoLaneGeometry` / `SumoJunctionGeometry`: typed SUMO net geometry.
-- `DistrictReplayWorld`: renders SUMO lane-width mesh strips/junction polygons or spec fallback
-  geometry.
+- `DistrictReplayWorld`: renders SUMO road edges through a lane-scene builder, plus junction
+  polygons or spec fallback geometry.
 - `TraceReplayController`: asks the clock/interpolator for a frame, then updates vehicles.
 - `TrafficLightStateLayer`: loads first-class traffic-light trace state for visual synchronization.
 
@@ -259,11 +215,17 @@ Vehicle selection must go through:
 VehicleAssetCatalog.tres -> VehicleAssetRegistry -> VehicleFactory -> VehiclePool
 ```
 
-- `VehicleAssetCatalog.tres` maps vehicle type to editable Godot scenes.
+- `VehicleAssetCatalog.tres` maps vehicle type to editable Godot wrapper scenes and optional
+  imported `.glb` visual assets.
 - `VehicleAssetRegistry` loads the `.tres` catalog first and keeps legacy JSON manifest support for
   compatibility.
-- `VehicleFactory` instantiates the right scene.
+- `VehicleFactory` instantiates the right wrapper scene and injects the catalog-selected visual
+  asset as a runtime `VisualAsset` child.
 - `VehiclePool` reuses hidden nodes rather than constantly instancing/freeing vehicles.
+- Concrete vehicle scenes should not hardcode imported `.glb` paths. They are lightweight
+  logic/fallback presets; designers replace visible art by editing `VehicleAssetCatalog.tres`.
+- The base `Body` cube is a script-compatible fallback. `VehicleFactory` hides it when a catalog
+  visual asset exists, so it should not be the visible demo vehicle in normal replay.
 
 `TraceReplayController` should not contain `if vehicle_type == "BUS"` style scene selection.
 
@@ -315,12 +277,22 @@ ROI is already tiny; the auto-zoning output should carry the repetitive work.
 Road geometry comes from SUMO `.net.xml`; road appearance comes from Godot style resources:
 
 ```text
-SUMO lane geometry -> DistrictReplayWorld -> RoadStyleCatalog.tres -> lane/junction materials
+SUMO lane geometry -> DistrictReplayWorld -> RoadSceneBuilder -> RoadVisualRoot/LaneVisualBase scenes
+  -> RoadStyleCatalog.tres materials/knobs
 ```
 
 The road style catalog is deliberately separate from `SumoNetGeometryData`. SUMO data says where a
-lane is and how wide it is; the catalog says how Godot should draw it. Later road roles can include
-arterial, collector, service, bus-priority, truck-priority, bridge, tunnel, and render-only detail.
+lane is and how wide it is; the catalog says which Godot scene/material/style should draw it.
+
+The default road model is scene-composed:
+
+- one SUMO edge becomes one `RoadVisualRoot.tscn`;
+- each SUMO lane under that edge becomes one `LaneVisualBase.tscn`;
+- road attachments such as traffic lights, signs, barriers, medians, bus-lane markings, or
+  road-work props should attach to `RoadVisualRoot/Attachments`, not to SUMO data.
+
+Later road roles can include arterial, collector, service, bus-priority, truck-priority, bridge,
+tunnel, and render-only detail.
 
 ## Config and schema rule
 

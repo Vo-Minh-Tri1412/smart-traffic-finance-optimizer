@@ -1,0 +1,41 @@
+id = "075_roi_sumo_net_clip_preview"
+owner = "integrator"
+branch = "main"
+base_commit = "8f68e871d70db084a4fd4d1aa0554c8f5253f441"
+allowed_paths = [
+  "coordination/tasks/075_roi_sumo_net_clip_preview.toml",
+  "ai_quantum_hvtc/simulation/maps/roi.py",
+  "scripts/maps/prepare_roi.py",
+  "tests/unit/simulation/test_roi_map_prep.py",
+]
+dependencies = [
+  "045_district7_sumo_net_source",
+  "046_district7_overlay_and_demand_v1",
+  "074_lane_based_road_scene_builder",
+]
+acceptance_commands = [
+  "uv run pytest tests/unit/simulation/test_roi_map_prep.py",
+  "uv run ruff check ai_quantum_hvtc/simulation/maps/roi.py scripts/maps/prepare_roi.py tests/unit/simulation/test_roi_map_prep.py",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/075_roi_sumo_net_clip_preview.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added real SUMO net clipping to the ROI map-prep pipeline via netconvert --keep-edges.in-geo-boundary. The ROI pipeline can now generate semantic overlay/review artifacts and a prepared ROI .net.xml instead of only copying the full source net."
+validation = [
+  "uv run pytest tests/unit/simulation/test_roi_map_prep.py -> 7 passed",
+  "uv run ruff check ai_quantum_hvtc/simulation/maps/roi.py scripts/maps/prepare_roi.py tests/unit/simulation/test_roi_map_prep.py -> passed",
+  "uv run python scripts/maps/prepare_roi.py --config <temp tiny District 7 ROI> --output-root <temp>/out --clip-sumo-net -> passed; 8 micro-zones, 156 reviewed roads, prepared ROI net written",
+  "SUMO randomTrips + uv run python -m ai_quantum_hvtc simulate run-sumo-net on the clipped ROI net -> passed; 40 vehicles, 98 intersection metrics, trace.jsonl written",
+  "Godot replay on clipped ROI net + generated overlay + SUMO trace -> passed; lane_render_model=SUMO lane scene builder; lane_count=272; road_count=264; spawned_zone_count=8; off_lane_vehicle_count=0",
+]
+risks = [
+  "The temporary ROI smoke uses randomTrips demand only to verify plumbing; it is not calibrated policy demand.",
+  "The temporary ROI bbox is not an approved demo ROI and should not be used for claims without review.",
+  "Godot smoke emitted a non-fatal dummy renderer warning about a null material; replay summary still passed.",
+]
+follow_up = [
+  "Promote a reviewed ROI config into the repo after the team chooses the real demo area.",
+  "Add deterministic ROI demand generation from semantic overlay instead of randomTrips for demo scenarios.",
+  "Add a one-command ROI roundtrip wrapper once the official ROI config exists.",
+]

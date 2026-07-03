@@ -78,7 +78,7 @@ def test_godot_sumo_trace_replay_generates_sumo_net_geometry_when_trace_is_omitt
     assert code == 0
     assert summary["lane_count"] > 0
     assert summary["off_lane_vehicle_count"] == 0
-    assert summary["lane_render_model"] == "SUMO lane-width mesh strips"
+    assert summary["lane_render_model"] == "SUMO lane scene builder"
     assert summary["rendered_lane_mesh_count"] > 0
     assert summary["rendered_lane_segment_count"] >= summary["rendered_lane_mesh_count"]
     assert summary["min_lane_width_m"] > 0

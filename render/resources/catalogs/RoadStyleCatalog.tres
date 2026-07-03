@@ -1,22 +1,18 @@
-[gd_resource type="Resource" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="RoadStyleCatalog" format=3 uid="uid://bk7t6sx2sm0ku"]
 
-[ext_resource type="Script" path="res://scripts/assets/road_style_catalog.gd" id="1_catalog"]
-[ext_resource type="Script" path="res://scripts/assets/road_style_entry.gd" id="2_entry"]
+[ext_resource type="Script" uid="uid://bsvebmyf4yru8" path="res://scripts/assets/road_style_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" uid="uid://bc3jvb1l0hcww" path="res://scripts/assets/road_style_entry.gd" id="2_entry"]
 [ext_resource type="Material" path="res://resources/materials/kenney_roads_colormap.tres" id="3_road_mat"]
+[ext_resource type="PackedScene" path="res://scenes/roads/RoadVisualRoot.tscn" id="4_road_root"]
+[ext_resource type="PackedScene" path="res://scenes/roads/LaneVisualBase.tscn" id="5_lane"]
 
 [sub_resource type="Resource" id="RoadStyle_default"]
 script = ExtResource("2_entry")
-road_role = "default"
+road_root_scene = ExtResource("4_road_root")
+lane_visual_scene = ExtResource("5_lane")
 lane_material = ExtResource("3_road_mat")
-lane_color = Color(0.07, 0.072, 0.075, 1)
-junction_color = Color(0.035, 0.036, 0.04, 1)
-width_multiplier = 2.4
-min_visual_lane_width = 0.14
-show_markings = true
 description = "Default SUMO lane style for replay previews."
 
 [resource]
 script = ExtResource("1_catalog")
-schema_version = "road_style_catalog.v1"
-default_road_role = "default"
 entries = [SubResource("RoadStyle_default")]

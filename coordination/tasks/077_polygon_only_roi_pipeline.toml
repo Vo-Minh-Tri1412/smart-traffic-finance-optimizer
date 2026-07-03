@@ -1,0 +1,37 @@
+id = "077_polygon_only_roi_pipeline"
+owner = "integrator"
+branch = "main"
+base_commit = "8f68e871d70db084a4fd4d1aa0554c8f5253f441"
+allowed_paths = [
+  "coordination/tasks/077_polygon_only_roi_pipeline.toml",
+  "ai_quantum_hvtc/simulation/maps/roi.py",
+  "scripts/maps/prepare_roi.py",
+  "tests/unit/simulation/test_roi_map_prep.py",
+  "simulation_projects/map_intake/templates/roi_config.template.json",
+  "docs/02_ARCHITECTURE/MAP_ROI_AUTO_ZONING_PIPELINE.md",
+]
+dependencies = [
+  "075_roi_sumo_net_clip_preview",
+]
+acceptance_commands = [
+  "uv run pytest tests/unit/simulation/test_roi_map_prep.py",
+  "uv run ruff check ai_quantum_hvtc/simulation/maps/roi.py scripts/maps/prepare_roi.py tests/unit/simulation/test_roi_map_prep.py",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/077_polygon_only_roi_pipeline.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Removed bbox/bounds ROI configuration from the map-prep path and switched ROI intake to polygon-only configs. The template, CLI dry-run output, ROI loader, OSM selection, SUMO net clipping command, tests, and architecture note now use polygon points."
+validation = [
+  "uv run pytest tests/unit/simulation/test_roi_map_prep.py",
+  "uv run ruff check ai_quantum_hvtc/simulation/maps/roi.py scripts/maps/prepare_roi.py tests/unit/simulation/test_roi_map_prep.py",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/077_polygon_only_roi_pipeline.toml",
+]
+risks = [
+  "Polygon selection currently uses point-in-polygon and way centroid heuristics for OSM ways; edge-crossing-only ways may need a stricter geometry pass in a later quality task.",
+  "SUMO net clipping uses netconvert geo-boundary polygon support; complex concave polygons should be QA-checked per ROI.",
+]
+follow_up = [
+  "Use polygon ROI configs only for future map intake tasks.",
+  "Keep generated ROI preview outputs ignored and out of Git.",
+]

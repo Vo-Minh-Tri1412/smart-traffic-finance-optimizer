@@ -16,6 +16,11 @@ var has_bounds := false
 var min_lane_width_m := 0.0
 var max_lane_width_m := 0.0
 var average_lane_width_m := 0.0
+var geo_boundary_min := Vector2.ZERO
+var geo_boundary_max := Vector2.ZERO
+var conv_boundary_min := Vector2.ZERO
+var conv_boundary_max := Vector2.ZERO
+var has_geo_transform := false
 var errors: Array[String] = []
 
 
@@ -33,6 +38,11 @@ func load_xml(path: String) -> bool:
 	min_lane_width_m = 0.0
 	max_lane_width_m = 0.0
 	average_lane_width_m = 0.0
+	geo_boundary_min = Vector2.ZERO
+	geo_boundary_max = Vector2.ZERO
+	conv_boundary_min = Vector2.ZERO
+	conv_boundary_max = Vector2.ZERO
+	has_geo_transform = false
 
 	var parser := XMLParser.new()
 	var open_error := parser.open(path)
@@ -61,6 +71,8 @@ func load_xml(path: String) -> bool:
 			_parse_lane(parser, current_edge_id, current_edge_is_internal, all_points)
 		elif node_name == "junction":
 			_parse_junction(parser, all_points)
+		elif node_name == "location":
+			_parse_location(parser)
 
 	if all_points.is_empty():
 		errors.append("SUMO net file has no lane or junction geometry: %s" % path)
@@ -115,6 +127,21 @@ func lane_width_summary() -> Dictionary:
 	}
 
 
+func sumo_point_for_lon_lat(lon: float, lat: float) -> Variant:
+	if not has_geo_transform:
+		return null
+	var lon_span := geo_boundary_max.x - geo_boundary_min.x
+	var lat_span := geo_boundary_max.y - geo_boundary_min.y
+	if abs(lon_span) <= 0.0000001 or abs(lat_span) <= 0.0000001:
+		return null
+	var x_ratio := (lon - geo_boundary_min.x) / lon_span
+	var y_ratio := (lat - geo_boundary_min.y) / lat_span
+	return Vector2(
+		lerp(conv_boundary_min.x, conv_boundary_max.x, x_ratio),
+		lerp(conv_boundary_min.y, conv_boundary_max.y, y_ratio)
+	)
+
+
 func _parse_lane(
 	parser: XMLParser,
 	current_edge_id: String,
@@ -166,6 +193,18 @@ func _parse_junction(parser: XMLParser, all_points: Array[Vector2]) -> void:
 		all_points.append(shape_point)
 
 
+func _parse_location(parser: XMLParser) -> void:
+	var orig_boundary := _parse_boundary(_attr(parser, "origBoundary"))
+	var conv_boundary := _parse_boundary(_attr(parser, "convBoundary"))
+	if orig_boundary.size() != 4 or conv_boundary.size() != 4:
+		return
+	geo_boundary_min = Vector2(float(orig_boundary[0]), float(orig_boundary[1]))
+	geo_boundary_max = Vector2(float(orig_boundary[2]), float(orig_boundary[3]))
+	conv_boundary_min = Vector2(float(conv_boundary[0]), float(conv_boundary[1]))
+	conv_boundary_max = Vector2(float(conv_boundary[2]), float(conv_boundary[3]))
+	has_geo_transform = true
+
+
 func _configure_bounds(points: Array[Vector2]) -> void:
 	var min_value: Vector2 = points[0]
 	var max_value: Vector2 = points[0]
@@ -207,6 +246,13 @@ func _parse_shape(shape: String) -> Array[Vector2]:
 			continue
 		output.append(Vector2(float(parts[0]), float(parts[1])))
 	return output
+
+
+func _parse_boundary(value: String) -> Array:
+	var parts := value.split(",", false)
+	if parts.size() != 4:
+		return []
+	return [float(parts[0]), float(parts[1]), float(parts[2]), float(parts[3])]
 
 
 func _attr(parser: XMLParser, name: String) -> String:

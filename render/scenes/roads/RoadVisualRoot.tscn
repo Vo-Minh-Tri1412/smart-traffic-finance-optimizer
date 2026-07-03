@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/roads/road_visual_root.gd" id="1_script"]
+
+[node name="RoadVisualRoot" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="LaneVisuals" type="Node3D" parent="."]
+
+[node name="Attachments" type="Node3D" parent="."]

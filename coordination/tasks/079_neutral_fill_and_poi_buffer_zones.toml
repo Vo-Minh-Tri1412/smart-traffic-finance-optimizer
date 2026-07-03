@@ -1,0 +1,40 @@
+id = "079_neutral_fill_and_poi_buffer_zones"
+owner = "integrator"
+branch = "main"
+base_commit = "8f68e871d70db084a4fd4d1aa0554c8f5253f441"
+allowed_paths = [
+  "coordination/tasks/079_neutral_fill_and_poi_buffer_zones.toml",
+  "ai_quantum_hvtc/simulation/maps/roi.py",
+  "tests/unit/simulation/test_roi_map_prep.py",
+  "render/resources/catalogs/ZoneAssetCatalog.tres",
+  "render/scenes/zones/NeutralZoneVisual.tscn",
+  "tests/integration/frontend_contracts/test_godot_visual_asset_catalogs.py",
+  "docs/02_ARCHITECTURE/MAP_ROI_AUTO_ZONING_PIPELINE.md",
+]
+dependencies = [
+  "077_polygon_only_roi_pipeline",
+  "078_polygon_zone_ground_rendering",
+]
+acceptance_commands = [
+  "uv run pytest tests/unit/simulation/test_roi_map_prep.py tests/integration/frontend_contracts/test_godot_visual_asset_catalogs.py",
+  "uv run ruff check ai_quantum_hvtc/simulation/maps/roi.py tests/unit/simulation/test_roi_map_prep.py tests/integration/frontend_contracts/test_godot_visual_asset_catalogs.py",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/079_neutral_fill_and_poi_buffer_zones.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added neutral ROI fill zones and point-POI buffer polygons. Neutral zones are render/semantic background only with demand disabled; point tags such as parking/school/market become small polygons instead of invisible points. Added neutral Godot zone scene/catalog entry."
+validation = [
+  "uv run pytest tests/unit/simulation/test_roi_map_prep.py tests/integration/frontend_contracts/test_godot_visual_asset_catalogs.py",
+  "uv run ruff check ai_quantum_hvtc/simulation/maps/roi.py tests/unit/simulation/test_roi_map_prep.py tests/integration/frontend_contracts/test_godot_visual_asset_catalogs.py",
+  "Godot headless trace replay smoke with refreshed roi_polygon_preview overlay",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/079_neutral_fill_and_poi_buffer_zones.toml",
+]
+risks = [
+  "Neutral fill is a background ROI polygon, not an exact geometric subtraction of active zones and roads.",
+  "Point-POI buffers use approximate radius-by-zone heuristics and need later economic-team review for final scenario semantics.",
+]
+follow_up = [
+  "Add an editable overlay review layer for real-map zone overrides instead of editing generated preview scene nodes directly.",
+  "Later parcel/block generation can replace neutral background with true road-bounded land parcels.",
+]

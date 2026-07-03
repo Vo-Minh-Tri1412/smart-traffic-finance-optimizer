@@ -1,0 +1,41 @@
+id = "073_scene_level_visual_asset_tools"
+owner = "integrator"
+branch = "main"
+base_commit = "8f68e871d70db084a4fd4d1aa0554c8f5253f441"
+allowed_paths = [
+  "coordination/tasks/073_scene_level_visual_asset_tools.toml",
+  "render/scripts/replay/vehicle_base.gd",
+  "render/scripts/zones/zone_visual_base.gd",
+  "render/scripts/assets/vehicle_factory.gd",
+  "render/resources/catalogs/VehicleAssetCatalog.tres",
+  "render/scenes/vehicles/**",
+  "render/scenes/zones/**",
+  "tests/integration/frontend_contracts/test_godot_visual_asset_catalogs.py",
+]
+dependencies = [
+  "071_vehicle_scene_glb_asset_binding",
+  "072_remove_toy_authoring_sandbox",
+]
+acceptance_commands = [
+  "uv run pytest tests/integration/frontend_contracts/test_godot_visual_asset_catalogs.py",
+  "uv run ruff check tests/integration/frontend_contracts/test_godot_visual_asset_catalogs.py",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/073_scene_level_visual_asset_tools.toml",
+]
+status = "done"
+
+[handoff]
+summary = "Added scene-level Godot tool asset fields to VehicleBase and ZoneVisualBase. Vehicle scenes now expose visual_asset_scene/scale/offset/rotation/material directly in the scene root. Zone visual scenes expose ground material, building scenes, density, scale, seed, building vertical offset/ground clearance, and editor preview controls directly in the scene root while still falling back to ZoneAssetCatalog defaults."
+validation = [
+  "uv run pytest tests/integration/frontend_contracts/test_godot_visual_asset_catalogs.py -> 9 passed",
+  "uv run ruff check tests/integration/frontend_contracts/test_godot_visual_asset_catalogs.py -> passed",
+  "uv run python scripts/render/godot_sumo_trace_replay_smoke.py --trace frontend/mock-data/sample_vehicle_simulation_trace.jsonl --spec tests/fixtures/specs/toy_public_district_v1.json --output-root artifacts/tmp/scene_level_asset_tool_smoke --max-frames 2 -> passed",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/073_scene_level_visual_asset_tools.toml -> passed",
+]
+risks = [
+  "Godot Inspector shows exported asset fields only when the root visual scene node is selected; selecting children such as ZoneGround only shows mesh/material child properties.",
+  "Some Kenney GLB meshes may still need per-scene scale/orientation/material tuning after visual inspection.",
+]
+follow_up = [
+  "Open concrete scenes like ResidentialZoneVisual.tscn or AmbulanceVehicle.tscn, select the root node, and tune scene-level exported visual fields.",
+  "Add real-map overlay editor tooling on Main.tscn after the real SUMO/overlay pipeline is stable.",
+]

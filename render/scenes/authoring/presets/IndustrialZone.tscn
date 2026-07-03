@@ -1,9 +1,0 @@
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="PackedScene" path="res://scenes/authoring/components/ZoneArea.tscn" id="1_zone"]
-
-[node name="IndustrialZone" instance=ExtResource("1_zone")]
-zone_type = "industrial"
-display_name = "Khu công nghiệp"
-economic_role = "worker commute, logistics delay, and local productivity"
-peak_windows = ["shift_in", "shift_out"]

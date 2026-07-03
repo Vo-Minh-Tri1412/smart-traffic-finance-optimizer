@@ -32,6 +32,41 @@ func scene_for_vehicle_type(type_id: String) -> PackedScene:
 	return fallback_vehicle_scene
 
 
+func visual_asset_scene_for_vehicle_type(type_id: String) -> PackedScene:
+	var entry: Object = entry_for_vehicle_type(type_id)
+	if entry != null and entry.get("visual_asset_scene") is PackedScene:
+		return entry.get("visual_asset_scene") as PackedScene
+	return null
+
+
+func visual_asset_scale_for_vehicle_type(type_id: String) -> Vector3:
+	var entry: Object = entry_for_vehicle_type(type_id)
+	if entry != null and entry.get("visual_asset_scale") is Vector3:
+		return entry.get("visual_asset_scale") as Vector3
+	return Vector3.ONE
+
+
+func visual_asset_offset_for_vehicle_type(type_id: String) -> Vector3:
+	var entry: Object = entry_for_vehicle_type(type_id)
+	if entry != null and entry.get("visual_asset_offset") is Vector3:
+		return entry.get("visual_asset_offset") as Vector3
+	return Vector3.ZERO
+
+
+func visual_asset_rotation_degrees_for_vehicle_type(type_id: String) -> Vector3:
+	var entry: Object = entry_for_vehicle_type(type_id)
+	if entry != null and entry.get("visual_asset_rotation_degrees") is Vector3:
+		return entry.get("visual_asset_rotation_degrees") as Vector3
+	return Vector3.ZERO
+
+
+func hide_base_body_for_vehicle_type(type_id: String) -> bool:
+	var entry: Object = entry_for_vehicle_type(type_id)
+	if entry != null:
+		return bool(entry.get("hide_base_body_when_visual_asset_exists"))
+	return true
+
+
 func registered_vehicle_type_count() -> int:
 	var total := 0
 	for raw_entry in entries:

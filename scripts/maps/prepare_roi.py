@@ -39,7 +39,17 @@ def main() -> int:
             "Use only for smoke/debug; real ROI clipping should be a later netconvert step."
         ),
     )
+    parser.add_argument(
+        "--clip-sumo-net",
+        action="store_true",
+        help=(
+            "Clip the source SUMO net to the ROI polygon with netconvert "
+            "--keep-edges.in-geo-boundary and write a prepared ROI net."
+        ),
+    )
     args = parser.parse_args()
+    if args.copy_source_net and args.clip_sumo_net:
+        parser.error("--copy-source-net and --clip-sumo-net are mutually exclusive")
 
     config = load_roi_config(args.config)
     output_root = Path(args.output_root)
@@ -50,15 +60,13 @@ def main() -> int:
             "status": "dry_run_ok",
             "roi_id": config.roi_id,
             "name": config.name,
-            "bounds": {
-                "west": config.bounds.west,
-                "south": config.bounds.south,
-                "east": config.bounds.east,
-                "north": config.bounds.north,
-            },
+            "polygon": [[point.lon, point.lat] for point in config.polygon.points],
             "osm_path": str(config.osm_path),
             "source_net_path": str(config.source_net_path or ""),
-            "note": "Dry-run validates config shape only; it does not read map source files.",
+            "note": (
+                "Dry-run validates polygon config shape only; "
+                "it does not read map source files."
+            ),
         }
         (output_root / "dry_run_summary.json").write_text(
             json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
@@ -67,7 +75,12 @@ def main() -> int:
         print(f"[OK] ROI config dry-run: {config.roi_id}")
         return 0
 
-    result = prepare_roi(config, copy_source_net=args.copy_source_net, output_root=output_root)
+    result = prepare_roi(
+        config,
+        copy_source_net=args.copy_source_net,
+        clip_sumo_net=args.clip_sumo_net,
+        output_root=output_root,
+    )
     paths = write_roi_artifacts(result, output_root)
     print(f"[OK] ROI prepared: {config.roi_id}")
     print(f"  semantic_overlay={paths.semantic_overlay}")
