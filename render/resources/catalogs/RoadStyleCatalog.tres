@@ -2,17 +2,102 @@
 
 [ext_resource type="Script" uid="uid://bsvebmyf4yru8" path="res://scripts/assets/road_style_catalog.gd" id="1_catalog"]
 [ext_resource type="Script" uid="uid://bc3jvb1l0hcww" path="res://scripts/assets/road_style_entry.gd" id="2_entry"]
-[ext_resource type="Material" path="res://resources/materials/kenney_roads_colormap.tres" id="3_road_mat"]
+[ext_resource type="Material" path="res://resources/materials/road_lane_asphalt.tres" id="3_road_mat"]
 [ext_resource type="PackedScene" path="res://scenes/roads/RoadVisualRoot.tscn" id="4_road_root"]
 [ext_resource type="PackedScene" path="res://scenes/roads/LaneVisualBase.tscn" id="5_lane"]
+[ext_resource type="PackedScene" path="res://imported_assets/traffic_lights/light-square.glb" id="6_light_square"]
+[ext_resource type="PackedScene" path="res://imported_assets/street_furniture/signs/sign-highway.glb" id="7_sign_highway"]
+[ext_resource type="Material" path="res://resources/materials/road_lane_marking_yellow.tres" id="8_marking_mat"]
+[ext_resource type="Material" path="res://resources/materials/road_junction_asphalt.tres" id="9_junction_mat"]
+[ext_resource type="Material" path="res://resources/materials/road_lane_service.tres" id="10_service_mat"]
+[ext_resource type="Material" path="res://resources/materials/road_lane_residential.tres" id="11_residential_mat"]
+[ext_resource type="Material" path="res://resources/materials/road_lane_arterial.tres" id="12_arterial_mat"]
+[ext_resource type="Material" path="res://resources/materials/road_lane_pedestrian.tres" id="13_pedestrian_mat"]
 
 [sub_resource type="Resource" id="RoadStyle_default"]
 script = ExtResource("2_entry")
 road_root_scene = ExtResource("4_road_root")
 lane_visual_scene = ExtResource("5_lane")
 lane_material = ExtResource("3_road_mat")
+lane_marking_material = ExtResource("8_marking_mat")
+junction_material = ExtResource("9_junction_mat")
+width_multiplier = 5.6
+min_visual_lane_width = 0.26
+show_roadside_props = false
+roadside_prop_scenes = []
+roadside_prop_spacing_m = 105.0
+roadside_prop_offset_m = 5.6
+roadside_prop_scale = 0.035
+roadside_prop_lane_stride = 9
+max_roadside_props_per_lane = 0
 description = "Default SUMO lane style for replay previews."
+
+[sub_resource type="Resource" id="RoadStyle_service"]
+script = ExtResource("2_entry")
+road_role = "service"
+road_root_scene = ExtResource("4_road_root")
+lane_visual_scene = ExtResource("5_lane")
+lane_material = ExtResource("10_service_mat")
+junction_material = ExtResource("9_junction_mat")
+width_multiplier = 2.6
+min_visual_lane_width = 0.065
+show_markings = false
+roadside_prop_scenes = []
+description = "Low-priority service/local lanes: rendered quietly to avoid visual noise."
+
+[sub_resource type="Resource" id="RoadStyle_residential"]
+script = ExtResource("2_entry")
+road_role = "residential"
+road_root_scene = ExtResource("4_road_root")
+lane_visual_scene = ExtResource("5_lane")
+lane_material = ExtResource("11_residential_mat")
+lane_marking_material = ExtResource("8_marking_mat")
+junction_material = ExtResource("9_junction_mat")
+width_multiplier = 5.0
+min_visual_lane_width = 0.18
+show_markings = true
+show_roadside_props = false
+roadside_prop_scenes = []
+roadside_prop_spacing_m = 135.0
+roadside_prop_offset_m = 4.8
+roadside_prop_scale = 0.032
+roadside_prop_lane_stride = 10
+max_roadside_props_per_lane = 0
+description = "Residential roads: visible, but less dominant than arterial roads."
+
+[sub_resource type="Resource" id="RoadStyle_arterial"]
+script = ExtResource("2_entry")
+road_role = "arterial"
+road_root_scene = ExtResource("4_road_root")
+lane_visual_scene = ExtResource("5_lane")
+lane_material = ExtResource("12_arterial_mat")
+lane_marking_material = ExtResource("8_marking_mat")
+junction_material = ExtResource("9_junction_mat")
+width_multiplier = 7.2
+min_visual_lane_width = 0.36
+show_markings = true
+show_roadside_props = false
+roadside_prop_scenes = []
+roadside_prop_spacing_m = 95.0
+roadside_prop_offset_m = 6.2
+roadside_prop_scale = 0.04
+roadside_prop_lane_stride = 5
+max_roadside_props_per_lane = 0
+description = "Main/collector roads: strongest visual emphasis for ROI previews."
+
+[sub_resource type="Resource" id="RoadStyle_pedestrian"]
+script = ExtResource("2_entry")
+road_role = "pedestrian"
+road_root_scene = ExtResource("4_road_root")
+lane_visual_scene = ExtResource("5_lane")
+lane_material = ExtResource("13_pedestrian_mat")
+junction_material = ExtResource("9_junction_mat")
+width_multiplier = 1.4
+min_visual_lane_width = 0.04
+show_markings = false
+roadside_prop_scenes = []
+description = "Pedestrian/bicycle-only geometry: faint context, not traffic simulation focus."
 
 [resource]
 script = ExtResource("1_catalog")
-entries = [SubResource("RoadStyle_default")]
+entries = [SubResource("RoadStyle_default"), SubResource("RoadStyle_service"), SubResource("RoadStyle_residential"), SubResource("RoadStyle_arterial"), SubResource("RoadStyle_pedestrian")]

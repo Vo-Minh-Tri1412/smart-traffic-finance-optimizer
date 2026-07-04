@@ -203,6 +203,8 @@ func _write_summary(success: bool) -> void:
 		"rendered_junction_count": _geometry_metric("rendered_junction_count"),
 		"rendered_lane_mesh_count": _geometry_metric("rendered_lane_mesh_count"),
 		"rendered_lane_segment_count": _geometry_metric("rendered_lane_segment_count"),
+		"rendered_roadside_prop_count": _geometry_metric("rendered_roadside_prop_count"),
+		"rendered_road_role_counts": _geometry_variant_metric("rendered_road_role_counts"),
 		"lane_render_model": _geometry_string_metric("lane_render_model"),
 		"min_lane_width_m": _geometry_float_metric("min_lane_width_m"),
 		"max_lane_width_m": _geometry_float_metric("max_lane_width_m"),
@@ -235,6 +237,7 @@ func _write_summary(success: bool) -> void:
 		"trace_schema_version": replay_data.schema_version if replay_data != null else "",
 		"sumo_geometry_data_model": _geometry_data_model(),
 		"zone_overlay": _zone_overlay_summary(),
+		"traffic_light_visuals": _traffic_light_visual_summary(),
 		"playback_data_model": "TracePlaybackClock/TraceInterpolator",
 		"playback_speed": playback_speed,
 		"loop_trace": loop_trace,
@@ -273,6 +276,13 @@ func _geometry_float_metric(field_name: String) -> float:
 	return float(geometry_node.get(field_name))
 
 
+func _geometry_variant_metric(field_name: String):
+	var geometry_node := _geometry_node()
+	if geometry_node == null:
+		return {}
+	return geometry_node.get(field_name)
+
+
 func _geometry_string_metric(method_name: String) -> String:
 	var geometry_node := _geometry_node()
 	if geometry_node == null or not geometry_node.has_method(method_name):
@@ -291,6 +301,13 @@ func _zone_overlay_summary() -> Dictionary:
 	var overlay_renderer = get_node_or_null("../SemanticOverlayRenderer")
 	if overlay_renderer != null and overlay_renderer.has_method("summary"):
 		return overlay_renderer.summary()
+	return {}
+
+
+func _traffic_light_visual_summary() -> Dictionary:
+	var visual_layer = get_node_or_null("../TrafficLightVisualLayer")
+	if visual_layer != null and visual_layer.has_method("summary"):
+		return visual_layer.summary()
 	return {}
 
 

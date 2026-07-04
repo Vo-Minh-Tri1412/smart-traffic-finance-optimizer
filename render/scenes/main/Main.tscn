@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://cxhs4wh57lw57"]
+[gd_scene load_steps=9 format=3 uid="uid://cxhs4wh57lw57"]
 
 [ext_resource type="PackedScene" path="res://scenes/world/DistrictReplayWorld.tscn" id="1_world"]
 [ext_resource type="Script" uid="uid://cucco7nbk3csx" path="res://scripts/replay/trace_replay_controller.gd" id="2_replay"]
@@ -6,6 +6,8 @@
 [ext_resource type="Script" path="res://scripts/world/preview_camera_controller.gd" id="4_camera"]
 [ext_resource type="Script" path="res://scripts/bridge/sumo_render_bridge.gd" id="5_bridge"]
 [ext_resource type="Script" path="res://scripts/traffic/traffic_light_state_layer.gd" id="6_tls"]
+[ext_resource type="Script" path="res://scripts/traffic/traffic_light_visual_layer.gd" id="7_tls_visual"]
+[ext_resource type="Script" path="res://scripts/ui/preview_layer_toggles.gd" id="8_toggles"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -43,6 +45,12 @@ overlay_path = "D:/Desktop/Atem/hcmus/Year1/AI-Challenge-HVTC/simulation_project
 [node name="TrafficLightStateLayer" type="Node3D" parent="." unique_id=518901947]
 script = ExtResource("6_tls")
 
+[node name="TrafficLightVisualLayer" type="Node3D" parent="." unique_id=118692841]
+script = ExtResource("7_tls_visual")
+
 [node name="TraceReplayController" type="Node3D" parent="." unique_id=260568818]
 script = ExtResource("2_replay")
 trace_path = "D:/Desktop/Atem/hcmus/Year1/AI-Challenge-HVTC/render/outputs/district7_catalog_smoke/trace.jsonl"
+
+[node name="PreviewLayerToggles" type="Node" parent="." unique_id=571229156]
+script = ExtResource("8_toggles")

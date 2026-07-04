@@ -40,6 +40,35 @@ extends Node3D
 	set(value):
 		center_marking_material = value
 		_apply_marking_material()
+@export_group("Roadside Assets")
+@export var show_roadside_props := true:
+	set(value):
+		show_roadside_props = value
+		_rebuild_preview_if_needed()
+@export var roadside_prop_scenes: Array[PackedScene] = []:
+	set(value):
+		roadside_prop_scenes = value
+		_rebuild_preview_if_needed()
+@export var roadside_prop_spacing_m := 120.0:
+	set(value):
+		roadside_prop_spacing_m = max(10.0, value)
+		_rebuild_preview_if_needed()
+@export var roadside_prop_offset_m := 5.2:
+	set(value):
+		roadside_prop_offset_m = value
+		_rebuild_preview_if_needed()
+@export var roadside_prop_scale := 0.035:
+	set(value):
+		roadside_prop_scale = max(0.001, value)
+		_rebuild_preview_if_needed()
+@export var roadside_prop_lane_stride := 8:
+	set(value):
+		roadside_prop_lane_stride = max(1, value)
+		_rebuild_preview_if_needed()
+@export var max_roadside_props_per_lane := 1:
+	set(value):
+		max_roadside_props_per_lane = max(0, value)
+		_rebuild_preview_if_needed()
 @export var preview_length_m := 24.0:
 	set(value):
 		preview_length_m = max(1.0, value)
@@ -52,6 +81,7 @@ extends Node3D
 
 var _points_m: Array = []
 var _mapper = null
+var _roadside_prop_count := 0
 
 
 func _ready() -> void:
@@ -96,6 +126,17 @@ func _apply_style_entry(style_entry, fallback_lane_material: Material) -> void:
 		width_multiplier = float(style_entry.get("width_multiplier"))
 		min_visual_lane_width = float(style_entry.get("min_visual_lane_width"))
 		show_center_marking = bool(style_entry.get("show_markings"))
+		show_roadside_props = bool(style_entry.get("show_roadside_props"))
+		if style_entry.get("roadside_prop_scenes") is Array:
+			roadside_prop_scenes.clear()
+			for raw_scene in style_entry.get("roadside_prop_scenes") as Array:
+				if raw_scene is PackedScene:
+					roadside_prop_scenes.append(raw_scene as PackedScene)
+		roadside_prop_spacing_m = float(style_entry.get("roadside_prop_spacing_m"))
+		roadside_prop_offset_m = float(style_entry.get("roadside_prop_offset_m"))
+		roadside_prop_scale = float(style_entry.get("roadside_prop_scale"))
+		roadside_prop_lane_stride = int(style_entry.get("roadside_prop_lane_stride"))
+		max_roadside_props_per_lane = int(style_entry.get("max_roadside_props_per_lane"))
 	if lane_material == null:
 		lane_material = fallback_lane_material
 	if lane_material == null:
@@ -123,6 +164,11 @@ func _ensure_children() -> void:
 		marking.name = "CenterMarking"
 		add_child(marking)
 		_set_editor_owner(marking)
+	if get_node_or_null("RoadsideProps") == null:
+		var props := Node3D.new()
+		props.name = "RoadsideProps"
+		add_child(props)
+		_set_editor_owner(props)
 
 
 func _set_editor_owner(node: Node) -> void:
@@ -147,6 +193,7 @@ func _rebuild_visuals() -> void:
 		_apply_marking_material()
 	else:
 		marking.visible = false
+	_build_roadside_props()
 
 
 func _visual_lane_width_world() -> float:
@@ -191,6 +238,107 @@ func _center_line_mesh() -> ArrayMesh:
 	return _polyline_strip_mesh(center_marking_width, lane_surface_height + 0.006)
 
 
+func _build_roadside_props() -> void:
+	var props_root := get_node_or_null("RoadsideProps") as Node3D
+	if props_root == null:
+		return
+	_roadside_prop_count = 0
+	for child in props_root.get_children():
+		props_root.remove_child(child)
+		child.queue_free()
+	if (
+		not show_roadside_props
+		or roadside_prop_scenes.is_empty()
+		or max_roadside_props_per_lane <= 0
+		or _points_m.size() < 2
+	):
+		return
+	if _stable_lane_bucket() % roadside_prop_lane_stride != 0:
+		return
+	var length_m := _polyline_length_m()
+	if length_m < roadside_prop_spacing_m * 0.45:
+		return
+	var prop_count: int = min(
+		max_roadside_props_per_lane,
+		max(1, int(floor(length_m / roadside_prop_spacing_m)))
+	)
+	for index in range(prop_count):
+		var fraction := float(index + 1) / float(prop_count + 1)
+		var sample := _sample_polyline_at(length_m * fraction)
+		var point := sample.get("point") as Vector2
+		var tangent := sample.get("tangent") as Vector2
+		if tangent.length_squared() <= 0.000001:
+			continue
+		var normal := Vector2(-tangent.y, tangent.x).normalized()
+		var side := 1.0 if (_stable_lane_bucket() + index) % 2 == 0 else -1.0
+		var prop_scene := roadside_prop_scenes[index % roadside_prop_scenes.size()]
+		if prop_scene == null:
+			continue
+		var prop = prop_scene.instantiate()
+		if not (prop is Node3D):
+			if prop != null:
+				prop.queue_free()
+			continue
+		var prop_node := prop as Node3D
+		var wrapper := Node3D.new()
+		wrapper.name = "RoadsideProp_%d" % index
+		wrapper.position = _point_to_world(
+			point + normal * roadside_prop_offset_m * side,
+			lane_surface_height + 0.015
+		)
+		wrapper.rotation.y = atan2(tangent.x, tangent.y)
+		wrapper.scale = Vector3.ONE * roadside_prop_scale
+		wrapper.add_child(prop_node)
+		wrapper.add_to_group("generated_roadside_prop")
+		props_root.add_child(wrapper)
+		_set_editor_owner(wrapper)
+		_roadside_prop_count += 1
+
+
+func roadside_prop_count() -> int:
+	return _roadside_prop_count
+
+
+func _polyline_length_m() -> float:
+	var total := 0.0
+	for index in range(_points_m.size() - 1):
+		total += (_points_m[index + 1] as Vector2).distance_to(_points_m[index] as Vector2)
+	return total
+
+
+func _sample_polyline_at(distance_m: float) -> Dictionary:
+	var remaining: float = max(0.0, distance_m)
+	for index in range(_points_m.size() - 1):
+		var start := _points_m[index] as Vector2
+		var end := _points_m[index + 1] as Vector2
+		var segment := end - start
+		var segment_length: float = segment.length()
+		if segment_length <= 0.000001:
+			continue
+		if remaining <= segment_length:
+			var ratio: float = remaining / segment_length
+			return {
+				"point": start.lerp(end, ratio),
+				"tangent": segment.normalized(),
+			}
+		remaining -= segment_length
+	var last_start := _points_m[_points_m.size() - 2] as Vector2
+	var last_end := _points_m[_points_m.size() - 1] as Vector2
+	var last_segment := last_end - last_start
+	return {
+		"point": last_end,
+		"tangent": last_segment.normalized() if last_segment.length_squared() > 0.000001 else Vector2.UP,
+	}
+
+
+func _stable_lane_bucket() -> int:
+	var hash_value := 0
+	var source := lane_id if not lane_id.is_empty() else edge_id
+	for index in range(source.length()):
+		hash_value = int((hash_value * 31 + source.unicode_at(index)) % 1000003)
+	return abs(hash_value)
+
+
 func _point_to_world(point: Vector2, height: float) -> Vector3:
 	if _mapper != null and _mapper.has_method("sumo_to_world"):
 		return _mapper.sumo_to_world(point.x, point.y, height)
@@ -219,6 +367,8 @@ func _apply_surface_material() -> void:
 	var surface := get_node_or_null("LaneSurface") as MeshInstance3D
 	if surface == null:
 		return
+	if surface.mesh == null:
+		return
 	surface.set_surface_override_material(
 		0,
 		lane_material if lane_material != null else _fallback_material(Color(0.07, 0.072, 0.075))
@@ -228,6 +378,8 @@ func _apply_surface_material() -> void:
 func _apply_marking_material() -> void:
 	var marking := get_node_or_null("CenterMarking") as MeshInstance3D
 	if marking == null:
+		return
+	if marking.mesh == null:
 		return
 	marking.set_surface_override_material(
 		0,

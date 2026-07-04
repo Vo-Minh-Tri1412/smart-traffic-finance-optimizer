@@ -43,10 +43,21 @@ def test_godot_visual_asset_catalog_files_exist() -> None:
     required_paths = [
         render_root / "resources" / "catalogs" / "VehicleAssetCatalog.tres",
         render_root / "resources" / "catalogs" / "ZoneAssetCatalog.tres",
+        render_root / "resources" / "catalogs" / "RoadStyleCatalog.tres",
+        render_root / "resources" / "catalogs" / "TrafficLightAssetCatalog.tres",
         render_root / "scripts" / "assets" / "vehicle_asset_catalog.gd",
         render_root / "scripts" / "assets" / "zone_asset_catalog.gd",
+        render_root / "scripts" / "assets" / "building_placement_profile.gd",
+        render_root / "scripts" / "assets" / "road_style_catalog.gd",
+        render_root / "scripts" / "assets" / "traffic_light_asset_catalog.gd",
         render_root / "scripts" / "zones" / "semantic_overlay_renderer.gd",
         render_root / "scenes" / "zones" / "ZoneVisualBase.tscn",
+        render_root / "scenes" / "traffic" / "TrafficLightVisualBase.tscn",
+        render_root
+        / "resources"
+        / "profiles"
+        / "building_placement"
+        / "residential_building_profile.tres",
     ]
 
     missing = [path for path in required_paths if not path.is_file()]
@@ -66,6 +77,35 @@ def test_zone_catalog_references_imported_zone_assets() -> None:
         "res://scenes/zones/IndustrialZoneVisual.tscn",
     ]:
         assert expected in body
+
+
+def test_zone_catalog_uses_building_placement_profiles() -> None:
+    render_root = PROJECT_ROOT / "render"
+    catalog = render_root / "resources" / "catalogs" / "ZoneAssetCatalog.tres"
+    zone_base = render_root / "scripts" / "zones" / "zone_visual_base.gd"
+    profile_script = render_root / "scripts" / "assets" / "building_placement_profile.gd"
+    heatmap_script = PROJECT_ROOT / "scripts" / "maps" / "render_buildable_zone_heatmap.py"
+
+    catalog_body = catalog.read_text(encoding="utf-8")
+    zone_body = zone_base.read_text(encoding="utf-8")
+    profile_body = profile_script.read_text(encoding="utf-8")
+    heatmap_body = heatmap_script.read_text(encoding="utf-8")
+
+    for expected in [
+        "residential_building_profile.tres",
+        "commercial_building_profile.tres",
+        "education_building_profile.tres",
+        "healthcare_building_profile.tres",
+        "industrial_building_profile.tres",
+        "neutral_building_profile.tres",
+    ]:
+        assert expected in catalog_body
+
+    assert "@export var placement_profile" in zone_body
+    assert "func _desired_building_count" in zone_body
+    assert "Geometry2D.is_point_in_polygon" in zone_body
+    assert "target_coverage_ratio" in profile_body
+    assert "buildable_semantic_overlay.generated.json" in heatmap_body
 
 
 def test_zone_visual_taxonomy_has_scene_and_catalog_entry() -> None:
@@ -166,12 +206,14 @@ def test_zone_overlay_uses_polygon_geometry_when_available() -> None:
     world_body = world.read_text(encoding="utf-8")
     geometry_body = geometry.read_text(encoding="utf-8")
 
-    assert "func _zone_world_polygon" in renderer_body
+    assert "func _zone_world_polygons" in renderer_body
+    assert "world_polygon_for_sumo_coordinates" in renderer_body
     assert "configure_zone_polygon" in renderer_body
     assert "func configure_zone_polygon" in zone_body
     assert "func _ground_polygon_mesh" in zone_body
     assert "Geometry2D.triangulate_polygon" in zone_body
     assert "func world_polygon_for_geo_coordinates" in world_body
+    assert "func world_polygon_for_sumo_coordinates" in world_body
     assert "func sumo_point_for_lon_lat" in geometry_body
     assert "_parse_location" in geometry_body
 
@@ -184,3 +226,48 @@ def test_vehicle_factory_prefers_scene_assets_and_keeps_catalog_fallback() -> No
     assert "has_scene_visual_asset_configured" in factory_body
     assert "apply_external_visual_asset" in factory_body
     assert "_attach_catalog_visual_asset" in factory_body
+
+
+def test_road_style_catalog_exposes_roadside_asset_slots() -> None:
+	render_root = PROJECT_ROOT / "render"
+	catalog = render_root / "resources" / "catalogs" / "RoadStyleCatalog.tres"
+	entry_script = render_root / "scripts" / "assets" / "road_style_entry.gd"
+	lane_visual = render_root / "scripts" / "roads" / "lane_visual_base.gd"
+	world = render_root / "scripts" / "world" / "district_replay_world.gd"
+
+	catalog_body = catalog.read_text(encoding="utf-8")
+	entry_body = entry_script.read_text(encoding="utf-8")
+	lane_body = lane_visual.read_text(encoding="utf-8")
+	world_body = world.read_text(encoding="utf-8")
+
+	assert '@export_group("Roadside Assets")' in entry_body
+	assert "@export var roadside_prop_scenes" in entry_body
+	assert "res://imported_assets/traffic_lights/light-square.glb" in catalog_body
+	assert "res://imported_assets/street_furniture/signs/sign-highway.glb" in catalog_body
+	for role in ["service", "residential", "arterial", "pedestrian"]:
+		assert f'road_role = "{role}"' in catalog_body
+	assert "RoadsideProps" in lane_body
+	assert "func _build_roadside_props" in lane_body
+	assert "func roadside_prop_count" in lane_body
+	assert "func _road_role_for_lane" in world_body
+	assert "rendered_road_role_counts" in world_body
+
+
+def test_traffic_light_visual_catalog_is_wired_into_main_scene() -> None:
+    render_root = PROJECT_ROOT / "render"
+    catalog = render_root / "resources" / "catalogs" / "TrafficLightAssetCatalog.tres"
+    visual_layer = render_root / "scripts" / "traffic" / "traffic_light_visual_layer.gd"
+    world = render_root / "scripts" / "world" / "district_replay_world.gd"
+    main_scene = render_root / "scenes" / "main" / "Main.tscn"
+
+    catalog_body = catalog.read_text(encoding="utf-8")
+    visual_layer_body = visual_layer.read_text(encoding="utf-8")
+    world_body = world.read_text(encoding="utf-8")
+    main_body = main_scene.read_text(encoding="utf-8")
+
+    assert "TrafficLightAssetCatalog" in catalog_body
+    assert "res://imported_assets/traffic_lights/light-square.glb" in catalog_body
+    assert "TrafficLightVisualBase.tscn" in visual_layer_body
+    assert "func traffic_light_junction_world_points" in world_body
+    assert "rendered_roadside_prop_count" in world_body
+    assert "TrafficLightVisualLayer" in main_body

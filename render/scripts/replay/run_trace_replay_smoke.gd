@@ -34,6 +34,9 @@ func _run() -> void:
 	if overlay_renderer != null:
 		overlay_renderer.auto_render = false
 		overlay_renderer.overlay_path = ""
+	var traffic_light_visual_layer = main.get_node_or_null("TrafficLightVisualLayer")
+	if traffic_light_visual_layer != null:
+		traffic_light_visual_layer.auto_render = false
 	var controller = main.get_node_or_null("TraceReplayController")
 	if controller != null:
 		controller.trace_path = ""
@@ -47,6 +50,9 @@ func _run() -> void:
 
 	if overlay_renderer != null and not overlay_path.is_empty():
 		overlay_renderer.render_overlay(overlay_path)
+
+	if traffic_light_visual_layer != null and traffic_light_visual_layer.has_method("render_traffic_lights"):
+		traffic_light_visual_layer.render_traffic_lights()
 
 	if controller == null:
 		push_error("TraceReplayController node not found in Main scene.")

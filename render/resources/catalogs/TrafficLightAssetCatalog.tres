@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="TrafficLightAssetCatalog" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/assets/traffic_light_asset_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" path="res://scripts/assets/traffic_light_asset_entry.gd" id="2_entry"]
+[ext_resource type="PackedScene" path="res://imported_assets/traffic_lights/light-square.glb" id="3_light_square"]
+[ext_resource type="Material" path="res://resources/materials/traffic_light_red.tres" id="4_red"]
+[ext_resource type="Material" path="res://resources/materials/traffic_light_yellow.tres" id="5_yellow"]
+[ext_resource type="Material" path="res://resources/materials/traffic_light_green.tres" id="6_green"]
+[ext_resource type="Material" path="res://resources/materials/traffic_light_inactive.tres" id="7_inactive"]
+
+[sub_resource type="Resource" id="TrafficLight_default"]
+script = ExtResource("2_entry")
+role = "default"
+pole_asset_scene = ExtResource("3_light_square")
+asset_scale = 0.04
+pole_height = 1.65
+lamp_radius = 0.11
+red_material = ExtResource("4_red")
+yellow_material = ExtResource("5_yellow")
+green_material = ExtResource("6_green")
+inactive_material = ExtResource("7_inactive")
+description = "Default traffic-light visual for SUMO junctions tagged as traffic_light."
+
+[resource]
+script = ExtResource("1_catalog")
+entries = [SubResource("TrafficLight_default")]

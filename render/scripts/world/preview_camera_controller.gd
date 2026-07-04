@@ -4,12 +4,12 @@ extends Camera3D
 @export var target_world_path: NodePath = NodePath("../DistrictReplayWorld")
 @export var auto_fit_on_ready := true
 @export var orthographic_margin := 1.15
-@export var min_orthographic_size := 80.0
+@export var min_orthographic_size := 32.0
 @export var max_orthographic_size := 340.0
 @export var preview_height := 220.0
 @export var use_top_down_preview := true
 @export var enable_runtime_controls := true
-@export var min_zoom_size := 18.0
+@export var min_zoom_size := 8.0
 @export var max_zoom_size := 340.0
 @export var zoom_factor := 0.82
 @export var keyboard_pan_units_per_second := 95.0

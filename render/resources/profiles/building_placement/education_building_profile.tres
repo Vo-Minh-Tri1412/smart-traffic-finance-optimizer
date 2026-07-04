@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="BuildingPlacementProfile" format=3]
+
+[ext_resource type="Script" path="res://scripts/assets/building_placement_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+profile_name = "Education"
+description = "Campus/school blocks: fewer buildings and visible open-yard space."
+min_building_footprint_m2 = 250.0
+max_building_footprint_m2 = 1600.0
+target_coverage_ratio = 0.18
+min_buildings = 1
+max_buildings = 30
+road_setback_m = 8.0
+building_spacing_m = 12.0
+boundary_setback_m = 5.0
+grid_jitter_m = 2.0
+min_floors = 2
+max_floors = 6
+nominal_asset_footprint_m2 = 600.0
+max_asset_scale_multiplier = 2.0

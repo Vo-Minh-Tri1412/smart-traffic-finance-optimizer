@@ -10,6 +10,7 @@ var junctions: Array = []
 var lane_by_id: Dictionary = {}
 var lane_to_edge: Dictionary = {}
 var edge_to_lanes: Dictionary = {}
+var edge_metadata_by_id: Dictionary = {}
 var bounds_min := Vector2.ZERO
 var bounds_max := Vector2.ZERO
 var has_bounds := false
@@ -31,6 +32,7 @@ func load_xml(path: String) -> bool:
 	lane_by_id.clear()
 	lane_to_edge.clear()
 	edge_to_lanes.clear()
+	edge_metadata_by_id.clear()
 	errors.clear()
 	has_bounds = false
 	bounds_min = Vector2.ZERO
@@ -67,6 +69,14 @@ func load_xml(path: String) -> bool:
 			current_edge_is_internal = current_edge_id.begins_with(":") or _attr(parser, "function") == "internal"
 			if not current_edge_is_internal and not current_edge_id.is_empty():
 				edge_to_lanes[current_edge_id] = []
+				edge_metadata_by_id[current_edge_id] = {
+					"id": current_edge_id,
+					"from": _attr(parser, "from"),
+					"to": _attr(parser, "to"),
+					"priority": int(_attr(parser, "priority")) if not _attr(parser, "priority").is_empty() else 0,
+					"type": _attr(parser, "type"),
+					"function": _attr(parser, "function"),
+				}
 		elif node_name == "lane":
 			_parse_lane(parser, current_edge_id, current_edge_is_internal, all_points)
 		elif node_name == "junction":
@@ -127,6 +137,12 @@ func lane_width_summary() -> Dictionary:
 	}
 
 
+func metadata_for_edge(edge_id: String) -> Dictionary:
+	if edge_metadata_by_id.has(edge_id):
+		return edge_metadata_by_id[edge_id] as Dictionary
+	return {}
+
+
 func sumo_point_for_lon_lat(lon: float, lat: float) -> Variant:
 	if not has_geo_transform:
 		return null
@@ -159,7 +175,18 @@ func _parse_lane(
 		return
 	var lane = SumoLaneGeometryScript.new()
 	var width := float(_attr(parser, "width")) if not _attr(parser, "width").is_empty() else 3.2
-	lane.configure(lane_id, current_edge_id, points, width)
+	var speed := float(_attr(parser, "speed")) if not _attr(parser, "speed").is_empty() else 0.0
+	var length := float(_attr(parser, "length")) if not _attr(parser, "length").is_empty() else 0.0
+	lane.configure(
+		lane_id,
+		current_edge_id,
+		points,
+		width,
+		speed,
+		length,
+		_attr(parser, "allow"),
+		_attr(parser, "disallow")
+	)
 	if not lane.is_valid():
 		return
 	lane_by_id[lane_id] = lane
@@ -183,8 +210,9 @@ func _parse_junction(parser: XMLParser, all_points: Array[Vector2]) -> void:
 		return
 	var point := Vector2(float(_attr(parser, "x")), float(_attr(parser, "y")))
 	var shape := _parse_shape(_attr(parser, "shape"))
+	var junction_type := _attr(parser, "type")
 	var junction = SumoJunctionGeometryScript.new()
-	junction.configure(junction_id, point, shape)
+	junction.configure(junction_id, point, shape, junction_type)
 	if not junction.is_valid():
 		return
 	junctions.append(junction)

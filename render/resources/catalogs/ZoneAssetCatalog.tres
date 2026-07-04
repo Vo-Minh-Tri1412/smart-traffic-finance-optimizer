@@ -2,6 +2,15 @@
 
 [ext_resource type="Script" uid="uid://c52mxrss8gjxe" path="res://scripts/assets/zone_asset_catalog.gd" id="1_catalog"]
 [ext_resource type="Script" uid="uid://clu73to5vwcrj" path="res://scripts/assets/zone_asset_entry.gd" id="2_entry"]
+[ext_resource type="Script" path="res://scripts/assets/building_placement_profile.gd" id="2_profile"]
+[ext_resource type="Resource" path="res://resources/profiles/building_placement/neutral_building_profile.tres" id="2_neutral_profile"]
+[ext_resource type="Resource" path="res://resources/profiles/building_placement/residential_building_profile.tres" id="2_res_profile"]
+[ext_resource type="Resource" path="res://resources/profiles/building_placement/commercial_building_profile.tres" id="2_com_profile"]
+[ext_resource type="Resource" path="res://resources/profiles/building_placement/education_building_profile.tres" id="2_edu_profile"]
+[ext_resource type="Resource" path="res://resources/profiles/building_placement/healthcare_building_profile.tres" id="2_health_profile"]
+[ext_resource type="Resource" path="res://resources/profiles/building_placement/industrial_building_profile.tres" id="2_ind_profile"]
+[ext_resource type="Resource" path="res://resources/profiles/building_placement/port_logistics_building_profile.tres" id="2_port_profile"]
+[ext_resource type="Resource" path="res://resources/profiles/building_placement/mixed_building_profile.tres" id="2_mixed_profile"]
 [ext_resource type="PackedScene" uid="uid://d3qoysfnojde1" path="res://imported_assets/buildings/residential/building-type-a.glb" id="2_wr1i2"]
 [ext_resource type="PackedScene" path="res://scenes/zones/ZoneVisualBase.tscn" id="3_fallback"]
 [ext_resource type="PackedScene" uid="uid://crtmevws41gc6" path="res://imported_assets/buildings/residential/building-type-b.glb" id="3_ykstx"]
@@ -12,14 +21,19 @@
 [ext_resource type="PackedScene" path="res://scenes/zones/SchoolZoneVisual.tscn" id="7_school_scene"]
 [ext_resource type="PackedScene" path="res://scenes/zones/IndustrialZoneVisual.tscn" id="8_industrial_scene"]
 [ext_resource type="PackedScene" path="res://scenes/zones/GatewayZoneVisual.tscn" id="9_gateway_scene"]
+[ext_resource type="PackedScene" uid="uid://c0mwmhm1b2wis" path="res://imported_assets/buildings/commercial/building-a.glb" id="10_nieg5"]
 [ext_resource type="PackedScene" path="res://scenes/zones/NightlifeZoneVisual.tscn" id="10_night_scene"]
+[ext_resource type="PackedScene" uid="uid://bs00xe5baqrmi" path="res://imported_assets/buildings/commercial/building-b.glb" id="11_6boqc"]
 [ext_resource type="Material" path="res://resources/materials/zone_residential_ground.tres" id="11_res_mat"]
+[ext_resource type="PackedScene" uid="uid://bvnpf7esupcjv" path="res://imported_assets/buildings/commercial/building-skyscraper-a.glb" id="12_74s3e"]
 [ext_resource type="Material" path="res://resources/materials/zone_commercial_ground.tres" id="12_com_mat"]
 [ext_resource type="Material" path="res://resources/materials/zone_hospital_ground.tres" id="13_hospital_mat"]
 [ext_resource type="PackedScene" uid="uid://q5ds46p48k8t" path="res://imported_assets/buildings/commercial/low-detail-building-a.glb" id="13_lugcg"]
 [ext_resource type="Material" path="res://resources/materials/zone_school_ground.tres" id="14_school_mat"]
 [ext_resource type="PackedScene" uid="uid://ceky2pse0jqmo" path="res://imported_assets/buildings/commercial/low-detail-building-b.glb" id="14_v1gor"]
+[ext_resource type="PackedScene" uid="uid://dfk4x7vtt8cui" path="res://imported_assets/buildings/commercial/building-e.glb" id="15_6p8qw"]
 [ext_resource type="Material" path="res://resources/materials/zone_industrial_ground.tres" id="15_industrial_mat"]
+[ext_resource type="PackedScene" uid="uid://danlhnka3p7xb" path="res://imported_assets/buildings/commercial/building-f.glb" id="16_fmcdn"]
 [ext_resource type="Material" path="res://resources/materials/zone_gateway_ground.tres" id="16_gateway_mat"]
 [ext_resource type="Material" path="res://resources/materials/zone_nightlife_ground.tres" id="17_night_mat"]
 [ext_resource type="PackedScene" uid="uid://mstby8pnp8a1" path="res://imported_assets/buildings/industrial/building-a.glb" id="18_5smap"]
@@ -39,17 +53,37 @@
 [ext_resource type="PackedScene" path="res://scenes/zones/NeutralZoneVisual.tscn" id="28_neutral_scene"]
 [ext_resource type="PackedScene" uid="uid://bvwu1c2b0sl5m" path="res://imported_assets/buildings/industrial/building-c.glb" id="31_rxwkd"]
 [ext_resource type="PackedScene" uid="uid://d0tj7csfuioqm" path="res://imported_assets/buildings/industrial/chimney-basic.glb" id="32_nivqd"]
+[ext_resource type="PackedScene" uid="uid://dxx5v4biah4qh" path="res://imported_assets/buildings/commercial/detail-awning.glb" id="33_itfef"]
+[ext_resource type="PackedScene" uid="uid://yx5w3omjutgk" path="res://imported_assets/buildings/commercial/detail-parasol-a.glb" id="34_3m0t7"]
+[ext_resource type="PackedScene" uid="uid://uyf5ix2se32m" path="res://imported_assets/buildings/commercial/building-c.glb" id="35_0epn2"]
+[ext_resource type="PackedScene" uid="uid://c5rvcmmfve5o4" path="res://imported_assets/street_furniture/signs/sign-highway.glb" id="43_klqav"]
+[ext_resource type="PackedScene" uid="uid://dadchry0orhsh" path="res://imported_assets/traffic_lights/light-square.glb" id="44_qbowf"]
+[ext_resource type="PackedScene" uid="uid://bi53n2srbbf7u" path="res://imported_assets/buildings/commercial/building-h.glb" id="46_p7i35"]
+[ext_resource type="PackedScene" uid="uid://bhwwc88ei6tx1" path="res://imported_assets/buildings/commercial/building-i.glb" id="47_fro3x"]
+[ext_resource type="PackedScene" uid="uid://dht06p47m8rwu" path="res://imported_assets/buildings/residential/building-type-d.glb" id="49_qsw3i"]
+
+[sub_resource type="Resource" id="ZoneEntry_neutral"]
+script = ExtResource("2_entry")
+zone_type = "neutral"
+zone_scene = ExtResource("28_neutral_scene")
+building_scene_paths = PackedStringArray()
+building_density = 0
+building_asset_scale = 0.04
+placement_profile = ExtResource("2_neutral_profile")
+seed = 1506
+description = "Neutral background zone. Visual/semantic coverage only; never generates traffic demand."
 
 [sub_resource type="Resource" id="ZoneEntry_residential"]
 script = ExtResource("2_entry")
 zone_type = "residential"
 zone_scene = ExtResource("4_res_scene")
 ground_material = ExtResource("11_res_mat")
-building_scenes = [ExtResource("2_wr1i2"), ExtResource("3_ykstx"), ExtResource("4_jayr8"), ExtResource("2_wr1i2"), ExtResource("3_ykstx"), ExtResource("4_jayr8"), ExtResource("2_wr1i2"), ExtResource("3_ykstx"), ExtResource("4_jayr8")]
+building_scenes = [ExtResource("2_wr1i2"), ExtResource("3_ykstx"), ExtResource("4_jayr8"), ExtResource("2_wr1i2"), ExtResource("3_ykstx"), ExtResource("4_jayr8"), ExtResource("2_wr1i2"), ExtResource("3_ykstx"), ExtResource("4_jayr8"), ExtResource("2_wr1i2"), ExtResource("3_ykstx"), ExtResource("4_jayr8"), ExtResource("2_wr1i2"), ExtResource("3_ykstx"), ExtResource("4_jayr8"), ExtResource("2_wr1i2"), ExtResource("3_ykstx"), ExtResource("4_jayr8")]
 building_scene_paths = PackedStringArray("res://imported_assets/buildings/residential/building-type-a.glb", "res://imported_assets/buildings/residential/building-type-b.glb", "res://imported_assets/buildings/residential/building-type-c.glb")
 building_density = 6
 building_asset_scale = 0.04
 building_override_material = ExtResource("18_suburban_building_mat")
+placement_profile = ExtResource("2_res_profile")
 seed = 101
 label_prefix = "RES "
 description = "Residential zone visual with suburban blocks."
@@ -59,10 +93,12 @@ script = ExtResource("2_entry")
 zone_type = "commercial"
 zone_scene = ExtResource("5_com_scene")
 ground_material = ExtResource("12_com_mat")
+building_scenes = [ExtResource("10_nieg5"), ExtResource("11_6boqc"), ExtResource("12_74s3e")]
 building_scene_paths = PackedStringArray("res://imported_assets/buildings/commercial/building-a.glb", "res://imported_assets/buildings/commercial/building-b.glb", "res://imported_assets/buildings/commercial/building-skyscraper-a.glb")
 building_density = 5
 building_asset_scale = 0.035
 building_override_material = ExtResource("19_commercial_building_mat")
+placement_profile = ExtResource("2_com_profile")
 seed = 202
 label_prefix = "COM "
 description = "Commercial/service zone visual."
@@ -72,10 +108,12 @@ script = ExtResource("2_entry")
 zone_type = "hospital"
 zone_scene = ExtResource("6_hospital_scene")
 ground_material = ExtResource("13_hospital_mat")
+building_scenes = [ExtResource("15_6p8qw"), ExtResource("16_fmcdn"), ExtResource("15_6p8qw"), ExtResource("16_fmcdn")]
 building_scene_paths = PackedStringArray("res://imported_assets/buildings/commercial/building-e.glb", "res://imported_assets/buildings/commercial/building-f.glb")
 building_density = 3
 building_asset_scale = 0.04
 building_override_material = ExtResource("19_commercial_building_mat")
+placement_profile = ExtResource("2_health_profile")
 seed = 303
 label_prefix = "HOSP "
 description = "Hospital/service access zone visual."
@@ -85,11 +123,12 @@ script = ExtResource("2_entry")
 zone_type = "school"
 zone_scene = ExtResource("7_school_scene")
 ground_material = ExtResource("14_school_mat")
-building_scenes = [ExtResource("13_lugcg"), ExtResource("14_v1gor")]
+building_scenes = [ExtResource("13_lugcg"), ExtResource("14_v1gor"), ExtResource("13_lugcg"), ExtResource("14_v1gor"), ExtResource("13_lugcg"), ExtResource("14_v1gor"), ExtResource("13_lugcg"), ExtResource("14_v1gor"), ExtResource("13_lugcg"), ExtResource("14_v1gor"), ExtResource("13_lugcg"), ExtResource("14_v1gor"), ExtResource("13_lugcg"), ExtResource("14_v1gor"), ExtResource("13_lugcg"), ExtResource("14_v1gor"), ExtResource("13_lugcg"), ExtResource("14_v1gor")]
 building_scene_paths = PackedStringArray("res://imported_assets/buildings/commercial/low-detail-building-a.glb", "res://imported_assets/buildings/commercial/low-detail-building-b.glb")
 building_density = 3
 building_asset_scale = 0.045
 building_override_material = ExtResource("19_commercial_building_mat")
+placement_profile = ExtResource("2_edu_profile")
 seed = 404
 label_prefix = "SCH "
 description = "School zone visual."
@@ -99,11 +138,12 @@ script = ExtResource("2_entry")
 zone_type = "industrial"
 zone_scene = ExtResource("8_industrial_scene")
 ground_material = ExtResource("15_industrial_mat")
-building_scenes = [ExtResource("18_5smap"), ExtResource("19_7v4be"), ExtResource("20_ok2in"), ExtResource("21_m2hd1"), ExtResource("18_5smap"), ExtResource("19_7v4be"), ExtResource("20_ok2in"), ExtResource("21_m2hd1")]
+building_scenes = [ExtResource("18_5smap"), ExtResource("19_7v4be"), ExtResource("20_ok2in"), ExtResource("21_m2hd1"), ExtResource("18_5smap"), ExtResource("19_7v4be"), ExtResource("20_ok2in"), ExtResource("21_m2hd1"), ExtResource("18_5smap"), ExtResource("19_7v4be"), ExtResource("20_ok2in"), ExtResource("21_m2hd1"), ExtResource("18_5smap"), ExtResource("19_7v4be"), ExtResource("20_ok2in"), ExtResource("21_m2hd1"), ExtResource("18_5smap"), ExtResource("19_7v4be"), ExtResource("20_ok2in"), ExtResource("21_m2hd1"), ExtResource("18_5smap"), ExtResource("19_7v4be"), ExtResource("20_ok2in"), ExtResource("21_m2hd1"), ExtResource("18_5smap"), ExtResource("19_7v4be"), ExtResource("20_ok2in"), ExtResource("21_m2hd1"), ExtResource("18_5smap"), ExtResource("19_7v4be"), ExtResource("20_ok2in"), ExtResource("21_m2hd1"), ExtResource("18_5smap"), ExtResource("19_7v4be"), ExtResource("20_ok2in"), ExtResource("21_m2hd1"), ExtResource("18_5smap"), ExtResource("19_7v4be"), ExtResource("20_ok2in"), ExtResource("21_m2hd1"), ExtResource("18_5smap"), ExtResource("19_7v4be"), ExtResource("20_ok2in"), ExtResource("21_m2hd1"), ExtResource("18_5smap"), ExtResource("19_7v4be"), ExtResource("20_ok2in"), ExtResource("21_m2hd1"), ExtResource("18_5smap"), ExtResource("19_7v4be"), ExtResource("20_ok2in"), ExtResource("21_m2hd1"), ExtResource("18_5smap"), ExtResource("19_7v4be"), ExtResource("20_ok2in"), ExtResource("21_m2hd1"), ExtResource("18_5smap"), ExtResource("19_7v4be"), ExtResource("20_ok2in"), ExtResource("21_m2hd1")]
 building_scene_paths = PackedStringArray("res://imported_assets/buildings/industrial/building-a.glb", "res://imported_assets/buildings/industrial/building-b.glb", "res://imported_assets/buildings/industrial/chimney-large.glb", "res://imported_assets/buildings/industrial/detail-tank.glb")
 building_density = 5
 building_asset_scale = 0.04
 building_override_material = ExtResource("20_industrial_building_mat")
+placement_profile = ExtResource("2_ind_profile")
 seed = 505
 label_prefix = "IND "
 description = "Industrial/logistics productivity zone visual."
@@ -113,10 +153,12 @@ script = ExtResource("2_entry")
 zone_type = "gateway"
 zone_scene = ExtResource("9_gateway_scene")
 ground_material = ExtResource("16_gateway_mat")
+building_scenes = [ExtResource("31_rxwkd"), ExtResource("21_m2hd1")]
 building_scene_paths = PackedStringArray("res://imported_assets/buildings/industrial/building-c.glb", "res://imported_assets/buildings/industrial/detail-tank.glb")
 building_density = 2
 building_asset_scale = 0.04
 building_override_material = ExtResource("20_industrial_building_mat")
+placement_profile = ExtResource("2_port_profile")
 seed = 606
 label_prefix = "GW "
 description = "Gateway or logistics access zone visual."
@@ -126,9 +168,11 @@ script = ExtResource("2_entry")
 zone_type = "nightlife"
 zone_scene = ExtResource("10_night_scene")
 ground_material = ExtResource("17_night_mat")
+building_scenes = [ExtResource("33_itfef"), ExtResource("34_3m0t7"), ExtResource("35_0epn2")]
 building_scene_paths = PackedStringArray("res://imported_assets/buildings/commercial/detail-awning.glb", "res://imported_assets/buildings/commercial/detail-parasol-a.glb", "res://imported_assets/buildings/commercial/building-c.glb")
 building_asset_scale = 0.04
 building_override_material = ExtResource("19_commercial_building_mat")
+placement_profile = ExtResource("2_com_profile")
 seed = 707
 label_prefix = "NIGHT "
 description = "Evening entertainment zone visual."
@@ -138,10 +182,12 @@ script = ExtResource("2_entry")
 zone_type = "market_retail"
 zone_scene = ExtResource("21_market_scene")
 ground_material = ExtResource("12_com_mat")
+building_scenes = [ExtResource("35_0epn2"), ExtResource("33_itfef"), ExtResource("34_3m0t7"), ExtResource("35_0epn2"), ExtResource("33_itfef"), ExtResource("34_3m0t7"), ExtResource("35_0epn2"), ExtResource("33_itfef"), ExtResource("34_3m0t7"), ExtResource("35_0epn2"), ExtResource("33_itfef"), ExtResource("34_3m0t7"), ExtResource("35_0epn2"), ExtResource("33_itfef"), ExtResource("34_3m0t7"), ExtResource("35_0epn2"), ExtResource("33_itfef"), ExtResource("34_3m0t7"), ExtResource("35_0epn2"), ExtResource("33_itfef"), ExtResource("34_3m0t7"), ExtResource("35_0epn2"), ExtResource("33_itfef"), ExtResource("34_3m0t7"), ExtResource("35_0epn2"), ExtResource("33_itfef"), ExtResource("34_3m0t7"), ExtResource("35_0epn2"), ExtResource("33_itfef"), ExtResource("34_3m0t7"), ExtResource("35_0epn2"), ExtResource("33_itfef"), ExtResource("34_3m0t7"), ExtResource("35_0epn2"), ExtResource("33_itfef"), ExtResource("34_3m0t7"), ExtResource("35_0epn2"), ExtResource("33_itfef"), ExtResource("34_3m0t7"), ExtResource("35_0epn2"), ExtResource("33_itfef"), ExtResource("34_3m0t7"), ExtResource("35_0epn2"), ExtResource("33_itfef"), ExtResource("34_3m0t7")]
 building_scene_paths = PackedStringArray("res://imported_assets/buildings/commercial/building-c.glb", "res://imported_assets/buildings/commercial/detail-awning.glb", "res://imported_assets/buildings/commercial/detail-parasol-a.glb")
 building_density = 6
 building_asset_scale = 0.04
 building_override_material = ExtResource("19_commercial_building_mat")
+placement_profile = ExtResource("2_com_profile")
 seed = 808
 label_prefix = "MKT "
 description = "Retail or market zone visual; useful for delivery, parking, and local congestion stories."
@@ -154,6 +200,7 @@ ground_material = ExtResource("14_school_mat")
 building_scene_paths = PackedStringArray("res://imported_assets/buildings/commercial/low-detail-building-a.glb", "res://imported_assets/buildings/commercial/low-detail-building-b.glb", "res://imported_assets/buildings/commercial/building-d.glb")
 building_asset_scale = 0.04
 building_override_material = ExtResource("19_commercial_building_mat")
+placement_profile = ExtResource("2_edu_profile")
 seed = 909
 label_prefix = "EDU "
 description = "Education zone visual; school and university tags map here because their traffic behavior is similar."
@@ -167,6 +214,7 @@ building_scene_paths = PackedStringArray("res://imported_assets/buildings/commer
 building_density = 3
 building_asset_scale = 0.04
 building_override_material = ExtResource("19_commercial_building_mat")
+placement_profile = ExtResource("2_health_profile")
 seed = 1001
 label_prefix = "HLTH "
 description = "Healthcare zone visual; highlights emergency access and low-delay ambulance stories."
@@ -176,11 +224,12 @@ script = ExtResource("2_entry")
 zone_type = "port_logistics"
 zone_scene = ExtResource("24_port_scene")
 ground_material = ExtResource("16_gateway_mat")
-building_scenes = [ExtResource("31_rxwkd"), ExtResource("21_m2hd1"), ExtResource("32_nivqd"), ExtResource("31_rxwkd"), ExtResource("21_m2hd1"), ExtResource("32_nivqd")]
+building_scenes = [ExtResource("31_rxwkd"), ExtResource("21_m2hd1"), ExtResource("32_nivqd"), ExtResource("31_rxwkd"), ExtResource("21_m2hd1"), ExtResource("32_nivqd"), ExtResource("31_rxwkd"), ExtResource("21_m2hd1"), ExtResource("32_nivqd"), ExtResource("31_rxwkd"), ExtResource("21_m2hd1"), ExtResource("32_nivqd"), ExtResource("31_rxwkd"), ExtResource("21_m2hd1"), ExtResource("32_nivqd"), ExtResource("31_rxwkd"), ExtResource("21_m2hd1"), ExtResource("32_nivqd"), ExtResource("31_rxwkd"), ExtResource("21_m2hd1"), ExtResource("32_nivqd"), ExtResource("31_rxwkd"), ExtResource("21_m2hd1"), ExtResource("32_nivqd"), ExtResource("31_rxwkd"), ExtResource("21_m2hd1"), ExtResource("32_nivqd"), ExtResource("31_rxwkd"), ExtResource("21_m2hd1"), ExtResource("32_nivqd"), ExtResource("31_rxwkd"), ExtResource("21_m2hd1"), ExtResource("32_nivqd"), ExtResource("31_rxwkd"), ExtResource("21_m2hd1"), ExtResource("32_nivqd"), ExtResource("31_rxwkd"), ExtResource("21_m2hd1"), ExtResource("32_nivqd"), ExtResource("31_rxwkd"), ExtResource("21_m2hd1"), ExtResource("32_nivqd"), ExtResource("31_rxwkd"), ExtResource("21_m2hd1"), ExtResource("32_nivqd")]
 building_scene_paths = PackedStringArray("res://imported_assets/buildings/industrial/building-c.glb", "res://imported_assets/buildings/industrial/detail-tank.glb", "res://imported_assets/buildings/industrial/chimney-basic.glb")
 building_density = 5
 building_asset_scale = 0.045
 building_override_material = ExtResource("20_industrial_building_mat")
+placement_profile = ExtResource("2_port_profile")
 seed = 1102
 label_prefix = "PORT "
 description = "Port/logistics zone visual; emphasizes truck, depot, and freight traffic."
@@ -190,9 +239,11 @@ script = ExtResource("2_entry")
 zone_type = "transport_hub"
 zone_scene = ExtResource("25_transport_scene")
 ground_material = ExtResource("16_gateway_mat")
+building_scenes = [ExtResource("14_v1gor"), ExtResource("43_klqav"), ExtResource("44_qbowf"), ExtResource("14_v1gor"), ExtResource("43_klqav"), ExtResource("44_qbowf"), ExtResource("14_v1gor"), ExtResource("43_klqav"), ExtResource("44_qbowf"), ExtResource("14_v1gor"), ExtResource("43_klqav"), ExtResource("44_qbowf"), ExtResource("14_v1gor"), ExtResource("43_klqav"), ExtResource("44_qbowf"), ExtResource("14_v1gor"), ExtResource("43_klqav"), ExtResource("44_qbowf")]
 building_scene_paths = PackedStringArray("res://imported_assets/buildings/commercial/low-detail-building-b.glb", "res://imported_assets/street_furniture/signs/sign-highway.glb", "res://imported_assets/traffic_lights/light-square.glb")
 building_asset_scale = 0.045
 building_override_material = ExtResource("19_commercial_building_mat")
+placement_profile = ExtResource("2_com_profile")
 seed = 1203
 label_prefix = "HUB "
 description = "Transport hub visual; bus, taxi, and transfer traffic concentration."
@@ -202,10 +253,12 @@ script = ExtResource("2_entry")
 zone_type = "public_service"
 zone_scene = ExtResource("26_public_scene")
 ground_material = ExtResource("12_com_mat")
+building_scenes = [ExtResource("46_p7i35"), ExtResource("47_fro3x"), ExtResource("13_lugcg")]
 building_scene_paths = PackedStringArray("res://imported_assets/buildings/commercial/building-h.glb", "res://imported_assets/buildings/commercial/building-i.glb", "res://imported_assets/buildings/commercial/low-detail-building-a.glb")
 building_density = 3
 building_asset_scale = 0.04
 building_override_material = ExtResource("19_commercial_building_mat")
+placement_profile = ExtResource("2_com_profile")
 seed = 1304
 label_prefix = "PUB "
 description = "Public service zone visual; government and public-service office traffic."
@@ -215,23 +268,15 @@ script = ExtResource("2_entry")
 zone_type = "mixed"
 zone_scene = ExtResource("27_mixed_scene")
 ground_material = ExtResource("11_res_mat")
+building_scenes = [ExtResource("49_qsw3i"), ExtResource("11_6boqc"), ExtResource("18_5smap")]
 building_scene_paths = PackedStringArray("res://imported_assets/buildings/residential/building-type-d.glb", "res://imported_assets/buildings/commercial/building-b.glb", "res://imported_assets/buildings/industrial/building-a.glb")
 building_density = 5
 building_asset_scale = 0.04
 building_override_material = ExtResource("18_suburban_building_mat")
+placement_profile = ExtResource("2_mixed_profile")
 seed = 1405
 label_prefix = "MIX "
 description = "Mixed-use zone visual; fallback for uncertain or blended OSM land use."
-
-[sub_resource type="Resource" id="ZoneEntry_neutral"]
-script = ExtResource("2_entry")
-zone_type = "neutral"
-zone_scene = ExtResource("28_neutral_scene")
-building_density = 0
-building_asset_scale = 0.04
-seed = 1506
-label_prefix = ""
-description = "Neutral background zone. Visual/semantic coverage only; never generates traffic demand."
 
 [resource]
 script = ExtResource("1_catalog")

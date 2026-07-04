@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="BuildingPlacementProfile" format=3]
+
+[ext_resource type="Script" path="res://scripts/assets/building_placement_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+profile_name = "Healthcare"
+description = "Hospital/clinic blocks: large footprints, clear road setback, medium-high height."
+min_building_footprint_m2 = 600.0
+max_building_footprint_m2 = 4500.0
+target_coverage_ratio = 0.24
+min_buildings = 1
+max_buildings = 24
+road_setback_m = 10.0
+building_spacing_m = 14.0
+boundary_setback_m = 6.0
+grid_jitter_m = 1.5
+min_floors = 4
+max_floors = 16
+nominal_asset_footprint_m2 = 1200.0
+max_asset_scale_multiplier = 2.4

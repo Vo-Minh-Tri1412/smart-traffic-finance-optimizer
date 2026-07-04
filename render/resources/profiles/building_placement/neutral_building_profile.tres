@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="BuildingPlacementProfile" format=3]
+
+[ext_resource type="Script" path="res://scripts/assets/building_placement_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+profile_name = "Neutral Background"
+description = "Generic background city fill. Visual only; should not generate traffic demand."
+min_building_footprint_m2 = 70.0
+max_building_footprint_m2 = 240.0
+target_coverage_ratio = 0.16
+min_buildings = 0
+max_buildings = 45
+road_setback_m = 6.0
+building_spacing_m = 6.0
+boundary_setback_m = 3.0
+grid_jitter_m = 1.5
+min_floors = 1
+max_floors = 7
+nominal_asset_footprint_m2 = 120.0

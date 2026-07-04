@@ -14,6 +14,7 @@ extends Resource
 @export var building_asset_offset := Vector3.ZERO
 @export var building_ground_clearance := 0.02
 @export var building_override_material: Material
+@export var placement_profile: Resource
 @export var seed := 17
 @export var label_prefix := ""
 @export var description := ""

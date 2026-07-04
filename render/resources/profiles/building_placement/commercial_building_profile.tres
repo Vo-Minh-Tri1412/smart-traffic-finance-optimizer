@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="BuildingPlacementProfile" format=3]
+
+[ext_resource type="Script" path="res://scripts/assets/building_placement_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+profile_name = "Commercial"
+description = "Service/commercial blocks: larger footprints and taller buildings near roads."
+min_building_footprint_m2 = 90.0
+max_building_footprint_m2 = 420.0
+target_coverage_ratio = 0.38
+min_buildings = 1
+max_buildings = 70
+road_setback_m = 4.0
+building_spacing_m = 5.0
+boundary_setback_m = 2.0
+grid_jitter_m = 1.0
+min_floors = 3
+max_floors = 14
+nominal_asset_footprint_m2 = 180.0
+max_asset_scale_multiplier = 1.7

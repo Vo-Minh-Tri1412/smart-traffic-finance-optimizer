@@ -22,6 +22,7 @@ const RoadSceneBuilderScript := preload("res://scripts/roads/road_scene_builder.
 @export var max_visual_junction_radius := 2.4
 @export var lane_surface_height := 0.022
 @export var junction_surface_height := 0.018
+@export var render_point_junction_markers := false
 @export var editor_preview_enabled := false
 @export var rebuild_editor_preview := false:
 	set(value):
@@ -41,6 +42,8 @@ var rendered_lane_count := 0
 var rendered_junction_count := 0
 var rendered_lane_mesh_count := 0
 var rendered_lane_segment_count := 0
+var rendered_roadside_prop_count := 0
+var rendered_road_role_counts: Dictionary = {}
 var min_lane_width_m := 0.0
 var max_lane_width_m := 0.0
 var average_lane_width_m := 0.0
@@ -111,6 +114,8 @@ func build_from_sumo_net(path: String) -> bool:
 	rendered_junction_count = 0
 	rendered_lane_mesh_count = 0
 	rendered_lane_segment_count = 0
+	rendered_roadside_prop_count = 0
+	rendered_road_role_counts = {}
 	min_lane_width_m = 0.0
 	max_lane_width_m = 0.0
 	average_lane_width_m = 0.0
@@ -144,6 +149,8 @@ func _clear_generated() -> void:
 	rendered_junction_count = 0
 	rendered_lane_mesh_count = 0
 	rendered_lane_segment_count = 0
+	rendered_roadside_prop_count = 0
+	rendered_road_role_counts = {}
 	min_lane_width_m = 0.0
 	max_lane_width_m = 0.0
 	average_lane_width_m = 0.0
@@ -302,6 +309,9 @@ func _build_sumo_lane_scene(lane_geometry) -> bool:
 	rendered_lane_count += 1
 	rendered_lane_mesh_count += 1
 	rendered_lane_segment_count += max(0, (lane_geometry.points as Array).size() - 1)
+	if lane_node.has_method("roadside_prop_count"):
+		rendered_roadside_prop_count += int(lane_node.roadside_prop_count())
+	_count_rendered_road_role(_road_role_for_lane(lane_geometry))
 	return true
 
 
@@ -312,10 +322,64 @@ func _road_builder() -> Object:
 	return _road_scene_builder
 
 
-func _style_entry_for_lane(_lane_geometry):
+func _style_entry_for_lane(lane_geometry):
+	if _road_style_catalog != null and _road_style_catalog.has_method("entry_for_road_role"):
+		var role := _road_role_for_lane(lane_geometry)
+		var role_entry = _road_style_catalog.entry_for_road_role(role)
+		if role_entry != null:
+			return role_entry
 	if _road_style_catalog != null and _road_style_catalog.has_method("default_entry"):
 		return _road_style_catalog.default_entry()
 	return null
+
+
+func _road_role_for_lane(lane_geometry) -> String:
+	var edge_id := String(lane_geometry.edge_id)
+	var metadata := {}
+	if _sumo_geometry != null and _sumo_geometry.has_method("metadata_for_edge"):
+		metadata = _sumo_geometry.metadata_for_edge(edge_id)
+	var road_type := str(metadata.get("type", "")).to_lower()
+	var priority := int(metadata.get("priority", 0))
+	var allow := str(lane_geometry.allow).to_lower()
+	var disallow := str(lane_geometry.disallow).to_lower()
+	var speed := float(lane_geometry.speed_mps)
+	if (
+		road_type.contains("footway")
+		or road_type.contains("path")
+		or road_type.contains("cycleway")
+		or road_type.contains("pedestrian")
+	):
+		return "pedestrian"
+	if (
+		road_type.contains("motorway")
+		or road_type.contains("trunk")
+		or road_type.contains("primary")
+		or road_type.contains("secondary")
+		or road_type.contains("tertiary")
+		or priority >= 8
+		or speed >= 13.5
+	):
+		return "arterial"
+	if road_type.contains("residential") or road_type.contains("living_street") or priority >= 3:
+		return "residential"
+	if road_type.contains("service") or road_type.contains("track"):
+		return "service"
+	if (
+		not allow.is_empty()
+		and allow.contains("pedestrian")
+		and not allow.contains("passenger")
+		and speed <= 7.0
+	):
+		return "pedestrian"
+	if disallow.contains("passenger") and allow.contains("pedestrian"):
+		return "pedestrian"
+	return "service"
+
+
+func _count_rendered_road_role(role: String) -> void:
+	if role.is_empty():
+		role = "unknown"
+	rendered_road_role_counts[role] = int(rendered_road_role_counts.get(role, 0)) + 1
 
 
 func _road_root_for_lane(lane_geometry, style_entry) -> Node3D:
@@ -454,6 +518,8 @@ func _build_sumo_junction(junction) -> void:
 			add_child(polygon)
 			rendered_junction_count += 1
 			return
+	if not render_point_junction_markers:
+		return
 	var marker := MeshInstance3D.new()
 	marker.name = "Junction_%s" % String(junction.junction_id)
 	marker.mesh = _cylinder_mesh(_junction_radius(junction), 0.08)
@@ -605,6 +671,51 @@ func world_polygon_for_geo_coordinates(coordinates, height := 0.04) -> Array:
 		)
 		if world_position is Vector3:
 			output.append(world_position as Vector3)
+	return output
+
+
+func world_polygon_for_sumo_coordinates(coordinates, height := 0.04) -> Array:
+	var output: Array[Vector3] = []
+	if _mapper == null or not (coordinates is Array):
+		return output
+	for raw_point in coordinates as Array:
+		if not (raw_point is Array):
+			continue
+		var values := raw_point as Array
+		if values.size() < 2:
+			continue
+		output.append(_mapper.sumo_to_world(float(values[0]), float(values[1]), height))
+	return output
+
+
+func traffic_light_junction_world_points(max_count := 400, height := 0.08) -> Array:
+	var output: Array = []
+	if _sumo_geometry == null or _mapper == null:
+		return output
+	var traffic_junctions: Array = []
+	for junction in _sumo_geometry.junctions:
+		if junction == null:
+			continue
+		var is_tls := false
+		if junction.has_method("is_traffic_light"):
+			is_tls = bool(junction.is_traffic_light())
+		else:
+			is_tls = str(junction.get("junction_type")) == "traffic_light"
+		if is_tls:
+			traffic_junctions.append(junction)
+	var stride := _render_stride(traffic_junctions.size(), max_count)
+	for index in range(traffic_junctions.size()):
+		if not _should_render_index(index, stride):
+			continue
+		var junction = traffic_junctions[index]
+		var point := junction.point as Vector2
+		output.append({
+			"id": String(junction.junction_id),
+			"position": _mapper.sumo_to_world(point.x, point.y, height),
+			"angle": 0.0,
+			"world_scale": world_scale,
+			"junction_type": String(junction.junction_type),
+		})
 	return output
 
 

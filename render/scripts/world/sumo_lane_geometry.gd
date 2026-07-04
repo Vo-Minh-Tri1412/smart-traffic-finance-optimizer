@@ -4,13 +4,30 @@ extends RefCounted
 var lane_id := ""
 var edge_id := ""
 var width_m := 3.2
+var speed_mps := 0.0
+var length_m := 0.0
+var allow := ""
+var disallow := ""
 var points: Array[Vector2] = []
 
 
-func configure(id: String, parent_edge_id: String, shape_points: Array[Vector2], lane_width_m: float) -> void:
+func configure(
+	id: String,
+	parent_edge_id: String,
+	shape_points: Array[Vector2],
+	lane_width_m: float,
+	lane_speed_mps := 0.0,
+	lane_length_m := 0.0,
+	lane_allow := "",
+	lane_disallow := ""
+) -> void:
 	lane_id = id
 	edge_id = parent_edge_id
 	width_m = lane_width_m
+	speed_mps = lane_speed_mps
+	length_m = lane_length_m if lane_length_m > 0.0 else _polyline_length(shape_points)
+	allow = lane_allow
+	disallow = lane_disallow
 	points = shape_points.duplicate()
 
 
@@ -34,3 +51,10 @@ func _distance_point_to_segment(point: Vector2, start: Vector2, end: Vector2) ->
 		return point.distance_to(start)
 	var t: float = clamp((point - start).dot(segment) / length_squared, 0.0, 1.0)
 	return point.distance_to(start + segment * t)
+
+
+func _polyline_length(shape_points: Array[Vector2]) -> float:
+	var total := 0.0
+	for index in range(shape_points.size() - 1):
+		total += shape_points[index].distance_to(shape_points[index + 1])
+	return total
