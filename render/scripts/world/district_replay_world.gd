@@ -9,20 +9,29 @@ const RoadSceneBuilderScript := preload("res://scripts/roads/road_scene_builder.
 @export var spec_path := ""
 @export var net_path := ""
 @export var road_style_catalog_path := "res://resources/catalogs/RoadStyleCatalog.tres"
-@export var world_scale := 0.02
+@export var world_scale := 1.0
 @export var sumo_meters_per_spec_unit := 1000.0
 @export var road_width := 1.6
 @export var lane_width_m := 3.2
 @export var enable_large_map_lod := true
 @export var max_visual_lanes := 3200
 @export var max_visual_junctions := 1200
-@export var visual_lane_width_multiplier := 2.4
-@export var min_visual_lane_width := 0.14
+@export var visual_lane_width_multiplier := 1.0
+@export var min_visual_lane_width := 1.2
 @export var min_visual_junction_radius := 0.32
 @export var max_visual_junction_radius := 2.4
 @export var lane_surface_height := 0.022
 @export var junction_surface_height := 0.018
 @export var render_point_junction_markers := false
+@export_group("Road LOD")
+@export var use_camera_road_lod := true
+@export_node_path("Node3D") var road_lod_target_path: NodePath = NodePath("../Camera3D")
+@export var road_lod_radius_m := 650.0
+@export var road_lod_context_radius_m := 1800.0
+@export var road_lod_rebuild_distance_m := 140.0
+@export var road_lod_update_interval_seconds := 0.35
+@export var road_lod_max_lanes := 4200
+@export var road_lod_always_include_roles: PackedStringArray = ["arterial"]
 @export var editor_preview_enabled := false
 @export var rebuild_editor_preview := false:
 	set(value):
@@ -31,6 +40,7 @@ const RoadSceneBuilderScript := preload("res://scripts/roads/road_scene_builder.
 			call_deferred("_build_editor_preview")
 @export var render_lane_as_scenes := true
 @export var render_lane_mesh_strips := true
+@export var render_internal_lanes_for_visual_continuity := true
 @export var road_visual_root_scene: PackedScene = preload("res://scenes/roads/RoadVisualRoot.tscn")
 @export var lane_visual_scene: PackedScene = preload("res://scenes/roads/LaneVisualBase.tscn")
 
@@ -58,6 +68,14 @@ var _junction_material: StandardMaterial3D = null
 var _road_style_catalog = null
 var _road_scene_builder: Object = null
 var _road_visual_roots: Dictionary = {}
+var road_lod_active := false
+var road_lod_center_sumo := Vector2.ZERO
+var road_lod_rendered_radius_m := 0.0
+var road_lod_candidate_lane_count := 0
+var road_lod_skipped_lane_count := 0
+var _last_lod_focus_sumo := Vector2.ZERO
+var _has_lod_focus := false
+var _road_lod_timer := 0.0
 
 
 func _ready() -> void:
@@ -65,10 +83,25 @@ func _ready() -> void:
 		if editor_preview_enabled:
 			call_deferred("_build_editor_preview")
 		return
+	set_process(use_camera_road_lod)
 	if not net_path.is_empty():
 		build_from_sumo_net(net_path)
 	elif not spec_path.is_empty():
 		build_from_spec(spec_path)
+
+
+func _process(delta: float) -> void:
+	if Engine.is_editor_hint() or not use_camera_road_lod:
+		return
+	if _sumo_geometry == null or _mapper == null:
+		return
+	_road_lod_timer += delta
+	if _road_lod_timer < road_lod_update_interval_seconds:
+		return
+	_road_lod_timer = 0.0
+	var focus_sumo := _road_lod_focus_sumo()
+	if not _has_lod_focus or focus_sumo.distance_to(_last_lod_focus_sumo) >= road_lod_rebuild_distance_m:
+		_build_sumo_lod_region(focus_sumo)
 
 
 func _build_editor_preview() -> void:
@@ -126,31 +159,20 @@ func build_from_sumo_net(path: String) -> bool:
 	_load_road_style_catalog()
 	_apply_default_road_style()
 
-	var lane_stride := _render_stride(_sumo_geometry.lanes.size(), max_visual_lanes)
-	for index in range(_sumo_geometry.lanes.size()):
-		if _should_render_index(index, lane_stride):
-			_build_sumo_lane(_sumo_geometry.lanes[index])
-	var junction_stride := _render_stride(_sumo_geometry.junctions.size(), max_visual_junctions)
-	for index in range(_sumo_geometry.junctions.size()):
-		if _should_render_index(index, junction_stride):
-			_build_sumo_junction(_sumo_geometry.junctions[index])
+	if use_camera_road_lod:
+		_build_sumo_lod_region(_road_lod_focus_sumo())
+	else:
+		_build_sumo_static_geometry()
 	return true
 
 
 func _clear_generated() -> void:
-	for child in get_children():
-		if child.is_in_group("generated_world_object"):
-			child.queue_free()
+	_clear_rendered_sumo_visuals()
 	intersection_positions.clear()
 	road_count = 0
 	intersection_count = 0
 	lane_count = 0
-	rendered_lane_count = 0
-	rendered_junction_count = 0
-	rendered_lane_mesh_count = 0
-	rendered_lane_segment_count = 0
-	rendered_roadside_prop_count = 0
-	rendered_road_role_counts = {}
+	_reset_render_stats()
 	min_lane_width_m = 0.0
 	max_lane_width_m = 0.0
 	average_lane_width_m = 0.0
@@ -164,6 +186,31 @@ func _clear_generated() -> void:
 	_road_style_catalog = null
 	_road_scene_builder = null
 	_road_visual_roots.clear()
+	road_lod_active = false
+	road_lod_center_sumo = Vector2.ZERO
+	road_lod_rendered_radius_m = 0.0
+	road_lod_candidate_lane_count = 0
+	road_lod_skipped_lane_count = 0
+	_last_lod_focus_sumo = Vector2.ZERO
+	_has_lod_focus = false
+	_road_lod_timer = 0.0
+
+
+func _clear_rendered_sumo_visuals() -> void:
+	for child in get_children():
+		if child.is_in_group("generated_world_object"):
+			child.queue_free()
+	_road_visual_roots.clear()
+	_reset_render_stats()
+
+
+func _reset_render_stats() -> void:
+	rendered_lane_count = 0
+	rendered_junction_count = 0
+	rendered_lane_mesh_count = 0
+	rendered_lane_segment_count = 0
+	rendered_roadside_prop_count = 0
+	rendered_road_role_counts = {}
 
 
 func _build_intersections(intersections: Array) -> void:
@@ -286,6 +333,104 @@ func _build_sumo_lane(lane_geometry) -> void:
 		_build_sumo_lane_strip(lane_geometry)
 		return
 	_build_sumo_lane_segment_boxes(lane_geometry)
+
+
+func _build_sumo_static_geometry() -> void:
+	var render_lanes := _sumo_render_lanes()
+	var lane_stride := _render_stride(render_lanes.size(), max_visual_lanes)
+	for index in range(render_lanes.size()):
+		if _should_render_index(index, lane_stride):
+			_build_sumo_lane(render_lanes[index])
+	var junction_stride := _render_stride(_sumo_geometry.junctions.size(), max_visual_junctions)
+	for index in range(_sumo_geometry.junctions.size()):
+		if _should_render_index(index, junction_stride):
+			_build_sumo_junction(_sumo_geometry.junctions[index])
+	road_lod_active = false
+	road_lod_candidate_lane_count = render_lanes.size()
+	road_lod_skipped_lane_count = max(0, render_lanes.size() - rendered_lane_count)
+
+
+func _build_sumo_lod_region(focus_sumo: Vector2) -> void:
+	if _sumo_geometry == null:
+		return
+	_clear_rendered_sumo_visuals()
+	road_lod_active = true
+	road_lod_center_sumo = focus_sumo
+	road_lod_rendered_radius_m = road_lod_radius_m
+	_last_lod_focus_sumo = focus_sumo
+	_has_lod_focus = true
+
+	var lane_candidates := _road_lod_lane_candidates(focus_sumo)
+	road_lod_candidate_lane_count = lane_candidates.size()
+	var lane_limit: int = road_lod_max_lanes if road_lod_max_lanes > 0 else lane_candidates.size()
+	for index in range(min(lane_candidates.size(), lane_limit)):
+		var row := lane_candidates[index] as Dictionary
+		_build_sumo_lane(row.get("lane"))
+	road_lod_skipped_lane_count = max(0, lane_candidates.size() - lane_limit)
+
+	var junction_candidates := _road_lod_junction_candidates(focus_sumo)
+	var junction_limit: int = max_visual_junctions if max_visual_junctions > 0 else junction_candidates.size()
+	for index in range(min(junction_candidates.size(), junction_limit)):
+		var row := junction_candidates[index] as Dictionary
+		_build_sumo_junction(row.get("junction"))
+
+
+func _road_lod_focus_sumo() -> Vector2:
+	if _mapper != null:
+		var target := get_node_or_null(road_lod_target_path)
+		if target is Node3D:
+			return _mapper.world_to_sumo((target as Node3D).global_position)
+	return (_sumo_bounds_min + _sumo_bounds_max) / 2.0
+
+
+func _road_lod_lane_candidates(focus_sumo: Vector2) -> Array:
+	var output: Array = []
+	for lane in _sumo_render_lanes():
+		if lane == null:
+			continue
+		var role := _road_role_for_lane(lane)
+		var distance_m := float(lane.distance_to_point_m(focus_sumo))
+		var include := distance_m <= road_lod_radius_m
+		if not include and _road_lod_role_has_context(role):
+			include = distance_m <= road_lod_context_radius_m
+		if not include:
+			continue
+		var score := distance_m
+		if _road_lod_role_has_context(role):
+			score -= road_lod_radius_m * 0.35
+		output.append({"lane": lane, "distance_m": distance_m, "role": role, "score": score})
+	output.sort_custom(func(a, b): return float((a as Dictionary).get("score", 0.0)) < float((b as Dictionary).get("score", 0.0)))
+	return output
+
+
+func _sumo_render_lanes() -> Array:
+	if (
+		render_internal_lanes_for_visual_continuity
+		and _sumo_geometry != null
+		and _sumo_geometry.distance_lanes is Array
+		and not (_sumo_geometry.distance_lanes as Array).is_empty()
+	):
+		return _sumo_geometry.distance_lanes as Array
+	return _sumo_geometry.lanes if _sumo_geometry != null else []
+
+
+func _road_lod_junction_candidates(focus_sumo: Vector2) -> Array:
+	var output: Array = []
+	var radius: float = max(road_lod_radius_m + 90.0, road_lod_radius_m * 1.18)
+	for junction in _sumo_geometry.junctions:
+		if junction == null:
+			continue
+		var point := junction.point as Vector2
+		var distance_m := point.distance_to(focus_sumo)
+		if distance_m > radius:
+			continue
+		output.append({"junction": junction, "distance_m": distance_m})
+	output.sort_custom(func(a, b): return float((a as Dictionary).get("distance_m", 0.0)) < float((b as Dictionary).get("distance_m", 0.0)))
+	return output
+
+
+func _road_lod_role_has_context(role: String) -> bool:
+	return road_lod_always_include_roles.has(role)
 
 
 func _build_sumo_lane_scene(lane_geometry) -> bool:
@@ -731,6 +876,20 @@ func lane_render_model() -> String:
 
 func road_style_model() -> String:
 	return "RoadStyleCatalog" if _road_style_catalog != null else "hard-coded fallback"
+
+
+func road_lod_summary() -> Dictionary:
+	return {
+		"active": road_lod_active,
+		"center_sumo": {"x": road_lod_center_sumo.x, "y": road_lod_center_sumo.y},
+		"radius_m": road_lod_rendered_radius_m,
+		"context_radius_m": road_lod_context_radius_m,
+		"lane_limit": road_lod_max_lanes,
+		"candidate_lane_count": road_lod_candidate_lane_count,
+		"rendered_lane_count": rendered_lane_count,
+		"skipped_lane_count": road_lod_skipped_lane_count,
+		"world_scale": world_scale,
+	}
 
 
 func _render_stride(total_count: int, max_count: int) -> int:

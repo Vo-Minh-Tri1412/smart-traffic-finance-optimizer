@@ -58,7 +58,10 @@ def find_godot_executable(explicit: str | None = None) -> Path | None:
     candidates.extend(
         [
             "D:/GoDot/Godot_v4.6.2-stable_win64_console.exe",
+            "D:/Godot/Godot_v4.6.2-stable_win64_console.exe",
+            "D:/Godot/Godot_v4.6.2-stable_win64.exe",
             "D:/GoDot/Godot_v4.6.2-stable_mono_win64/Godot_v4.6.2-stable_mono_win64_console.exe",
+            "D:/Godot/Godot_v4.6.2-stable_mono_win64/Godot_v4.6.2-stable_mono_win64_console.exe",
         ]
     )
     for candidate in candidates:

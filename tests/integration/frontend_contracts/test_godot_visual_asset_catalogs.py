@@ -51,8 +51,10 @@ def test_godot_visual_asset_catalog_files_exist() -> None:
         render_root / "scripts" / "assets" / "road_style_catalog.gd",
         render_root / "scripts" / "assets" / "traffic_light_asset_catalog.gd",
         render_root / "scripts" / "zones" / "semantic_overlay_renderer.gd",
+        render_root / "scripts" / "zones" / "semantic_heatmap_renderer.gd",
         render_root / "scenes" / "zones" / "ZoneVisualBase.tscn",
         render_root / "scenes" / "traffic" / "TrafficLightVisualBase.tscn",
+        PROJECT_ROOT / "scripts" / "render" / "godot_zone_heatmap_preview.py",
         render_root
         / "resources"
         / "profiles"
@@ -197,14 +199,20 @@ def test_vehicle_and_zone_bases_expose_scene_level_tool_asset_fields() -> None:
 def test_zone_overlay_uses_polygon_geometry_when_available() -> None:
     render_root = PROJECT_ROOT / "render"
     renderer = render_root / "scripts" / "zones" / "semantic_overlay_renderer.gd"
+    heatmap_renderer = render_root / "scripts" / "zones" / "semantic_heatmap_renderer.gd"
     zone_base = render_root / "scripts" / "zones" / "zone_visual_base.gd"
     world = render_root / "scripts" / "world" / "district_replay_world.gd"
     geometry = render_root / "scripts" / "world" / "sumo_net_geometry_data.gd"
+    capture = render_root / "scripts" / "replay" / "capture_render_preview.gd"
+    heatmap_preview = PROJECT_ROOT / "scripts" / "render" / "godot_zone_heatmap_preview.py"
 
     renderer_body = renderer.read_text(encoding="utf-8")
+    heatmap_body = heatmap_renderer.read_text(encoding="utf-8")
     zone_body = zone_base.read_text(encoding="utf-8")
     world_body = world.read_text(encoding="utf-8")
     geometry_body = geometry.read_text(encoding="utf-8")
+    capture_body = capture.read_text(encoding="utf-8")
+    heatmap_preview_body = heatmap_preview.read_text(encoding="utf-8")
 
     assert "func _zone_world_polygons" in renderer_body
     assert "world_polygon_for_sumo_coordinates" in renderer_body
@@ -216,6 +224,13 @@ def test_zone_overlay_uses_polygon_geometry_when_available() -> None:
     assert "func world_polygon_for_sumo_coordinates" in world_body
     assert "func sumo_point_for_lon_lat" in geometry_body
     assert "_parse_location" in geometry_body
+    assert "class_name SemanticHeatmapRenderer" in heatmap_body
+    assert "func render_heatmap" in heatmap_body
+    assert "render_neutral_zones := false" in heatmap_body
+    assert "_build_zone_type_mesh" in heatmap_body
+    assert "zone_render_mode" in capture_body
+    assert "godot_zone_heatmap" in heatmap_preview_body
+    assert "--zone-render-mode" in heatmap_preview_body
 
 
 def test_vehicle_factory_prefers_scene_assets_and_keeps_catalog_fallback() -> None:
@@ -251,6 +266,26 @@ def test_road_style_catalog_exposes_roadside_asset_slots() -> None:
 	assert "func roadside_prop_count" in lane_body
 	assert "func _road_role_for_lane" in world_body
 	assert "rendered_road_role_counts" in world_body
+
+
+def test_main_renderer_uses_camera_lod_and_fly_preview() -> None:
+    render_root = PROJECT_ROOT / "render"
+    world = render_root / "scripts" / "world" / "district_replay_world.gd"
+    camera = render_root / "scripts" / "world" / "preview_camera_controller.gd"
+    main_scene = render_root / "scenes" / "main" / "Main.tscn"
+
+    world_body = world.read_text(encoding="utf-8")
+    camera_body = camera.read_text(encoding="utf-8")
+    main_body = main_scene.read_text(encoding="utf-8")
+
+    assert "@export var use_camera_road_lod := true" in world_body
+    assert "func _build_sumo_lod_region" in world_body
+    assert "func road_lod_summary" in world_body
+    assert "@export var use_fly_preview := true" in camera_body
+    assert "func _handle_fly_keyboard" in camera_body
+    assert "auto_fit_on_ready = false" in main_body
+    assert "world_scale = 1.0" in main_body
+    assert "use_camera_road_lod = true" in main_body
 
 
 def test_traffic_light_visual_catalog_is_wired_into_main_scene() -> None:

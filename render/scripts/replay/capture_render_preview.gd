@@ -23,6 +23,11 @@ func _run() -> void:
 	var show_zones := _truthy(String(options.get("show_zones", "true")))
 	var show_vehicles := _truthy(String(options.get("show_vehicles", "true")))
 	var show_traffic_lights := _truthy(String(options.get("show_traffic_lights", "true")))
+	var zone_render_mode := String(options.get("zone_render_mode", "visual")).strip_edges().to_lower()
+	if zone_render_mode not in ["visual", "heatmap", "both"]:
+		zone_render_mode = "visual"
+	var show_zone_heatmap := show_zones and zone_render_mode in ["heatmap", "both"]
+	var show_zone_assets := show_zones and zone_render_mode in ["visual", "both"]
 
 	if output_path.is_empty():
 		push_error("--out is required")
@@ -41,7 +46,12 @@ func _run() -> void:
 	if overlay_renderer != null:
 		overlay_renderer.auto_render = false
 		overlay_renderer.overlay_path = ""
-		overlay_renderer.visible = show_zones
+		overlay_renderer.visible = show_zone_assets
+	var heatmap_renderer = main.get_node_or_null("SemanticHeatmapRenderer")
+	if heatmap_renderer != null:
+		heatmap_renderer.auto_render = false
+		heatmap_renderer.overlay_path = ""
+		heatmap_renderer.visible = show_zone_heatmap
 	var traffic_light_visual_layer = main.get_node_or_null("TrafficLightVisualLayer")
 	if traffic_light_visual_layer != null:
 		traffic_light_visual_layer.auto_render = false
@@ -59,6 +69,8 @@ func _run() -> void:
 	if layer_toggles != null:
 		layer_toggles.set("show_roads", show_roads)
 		layer_toggles.set("show_zones", show_zones)
+		layer_toggles.set("show_zone_heatmap", show_zone_heatmap)
+		layer_toggles.set("show_zone_assets", show_zone_assets)
 		layer_toggles.set("show_vehicles", show_vehicles)
 		layer_toggles.set("show_traffic_lights", show_traffic_lights)
 
@@ -69,7 +81,13 @@ func _run() -> void:
 	elif world != null and not spec_path.is_empty():
 		world.build_from_spec(spec_path)
 
-	if overlay_renderer != null and not overlay_path.is_empty() and show_zones:
+	if (
+		heatmap_renderer != null
+		and not overlay_path.is_empty()
+		and show_zone_heatmap
+	):
+		heatmap_renderer.render_heatmap(overlay_path)
+	if overlay_renderer != null and not overlay_path.is_empty() and show_zone_assets:
 		overlay_renderer.render_overlay(overlay_path)
 
 	if (
@@ -108,7 +126,7 @@ func _run() -> void:
 		quit(4)
 		return
 
-	_write_summary(output_path, main, image.get_width(), image.get_height())
+	_write_summary(output_path, main, image.get_width(), image.get_height(), zone_render_mode)
 	print("[OK] Render preview screenshot wrote %s" % output_path)
 	quit(0)
 
@@ -136,9 +154,16 @@ func _configure_camera(camera: Camera3D, world, camera_mode: String, override_si
 	camera.current = true
 
 
-func _write_summary(output_path: String, main: Node, width: int, height: int) -> void:
+func _write_summary(
+	output_path: String,
+	main: Node,
+	width: int,
+	height: int,
+	zone_render_mode: String
+) -> void:
 	var world = main.get_node_or_null("DistrictReplayWorld")
 	var overlay = main.get_node_or_null("SemanticOverlayRenderer")
+	var heatmap = main.get_node_or_null("SemanticHeatmapRenderer")
 	var tls_visuals = main.get_node_or_null("TrafficLightVisualLayer")
 	var payload := {
 		"image": output_path,
@@ -149,12 +174,17 @@ func _write_summary(output_path: String, main: Node, width: int, height: int) ->
 		"rendered_junction_count": int(world.get("rendered_junction_count")) if world != null else 0,
 		"rendered_roadside_prop_count": int(world.get("rendered_roadside_prop_count")) if world != null else 0,
 		"rendered_road_role_counts": world.get("rendered_road_role_counts") if world != null else {},
+		"road_lod": world.road_lod_summary() if world != null and world.has_method("road_lod_summary") else {},
 		"visible_layers": {
 			"roads": bool(world.visible) if world != null else false,
-			"zones": bool(overlay.visible) if overlay != null else false,
+			"zones": (bool(heatmap.visible) if heatmap != null else false) or (bool(overlay.visible) if overlay != null else false),
+			"zone_heatmap": bool(heatmap.visible) if heatmap != null else false,
+			"zone_assets": bool(overlay.visible) if overlay != null else false,
+			"zone_render_mode": zone_render_mode,
 			"vehicles": bool(main.get_node_or_null("TraceReplayController").visible) if main.get_node_or_null("TraceReplayController") != null else false,
 			"traffic_lights": bool(tls_visuals.visible) if tls_visuals != null else false,
 		},
+		"zone_heatmap": heatmap.summary() if heatmap != null and heatmap.has_method("summary") else {},
 		"zone_overlay": overlay.summary() if overlay != null and overlay.has_method("summary") else {},
 		"traffic_light_visuals": tls_visuals.summary() if tls_visuals != null and tls_visuals.has_method("summary") else {},
 	}

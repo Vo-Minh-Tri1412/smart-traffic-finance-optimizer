@@ -26,9 +26,22 @@ res://scenes/main/Main.tscn
 ```
 
 For large OSM/SUMO maps such as Quận 7, `DistrictReplayWorld` keeps full SUMO geometry for
-alignment checks but renders a capped LOD subset by default. If the game window looks empty, wait
-for the first load, then use the editor camera/game camera controls; do not disable LOD unless you
-really want Godot to instantiate tens of thousands of lane/junction meshes.
+alignment checks but renders a camera-window LOD subset by default. The default `Main.tscn` renders
+all lane candidates inside the active road LOD radius, including small/service roads, while keeping
+far-away roads out of the scene tree.
+
+Runtime camera controls in `Main.tscn`:
+
+- Hold right mouse button and drag to look around.
+- `W/A/S/D` or arrow keys move horizontally relative to the camera yaw.
+- `Q` moves down; `E` or `Space` moves up.
+- `Shift` moves faster.
+- Mouse wheel dollies the camera forward/backward.
+- `R` resets to the configured start view.
+- `F` frames the current SUMO map from a fly-camera angle.
+
+Do not disable road LOD unless you really want Godot to instantiate tens of thousands of
+lane/junction meshes.
 
 Road rendering now reads lane shape and width from the SUMO `.net.xml`, then builds road visuals as
 scene composition:
@@ -87,6 +100,19 @@ Real-map editing rule:
 - zones, investment candidates, demand anchors, and public-finance labels come from semantic
   overlay data;
 - Godot visual scenes/catalogs control how those real entities look, not where roads physically are.
+
+For full-map zone review, use the Godot semantic heatmap path before enabling buildings. This uses
+`Main.tscn`, the real SUMO net, and buildable semantic overlay polygons; it does not spawn building
+assets, vehicles, or traffic lights:
+
+```powershell
+uv run python scripts/render/godot_zone_heatmap_preview.py `
+  --output-root render/outputs/godot_zone_heatmap `
+  --prefix full_map
+```
+
+The heatmap layer batches polygons by zone type, so a full-map review creates a few large meshes
+instead of thousands of zone/building scene instances.
 
 Useful smoke commands:
 

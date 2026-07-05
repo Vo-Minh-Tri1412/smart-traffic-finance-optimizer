@@ -1,13 +1,14 @@
-[gd_scene load_steps=9 format=3 uid="uid://cxhs4wh57lw57"]
+[gd_scene format=3 uid="uid://cxhs4wh57lw57"]
 
 [ext_resource type="PackedScene" path="res://scenes/world/DistrictReplayWorld.tscn" id="1_world"]
 [ext_resource type="Script" uid="uid://cucco7nbk3csx" path="res://scripts/replay/trace_replay_controller.gd" id="2_replay"]
 [ext_resource type="Script" uid="uid://qij8pijkpy86" path="res://scripts/zones/semantic_overlay_renderer.gd" id="3_overlay"]
-[ext_resource type="Script" path="res://scripts/world/preview_camera_controller.gd" id="4_camera"]
-[ext_resource type="Script" path="res://scripts/bridge/sumo_render_bridge.gd" id="5_bridge"]
-[ext_resource type="Script" path="res://scripts/traffic/traffic_light_state_layer.gd" id="6_tls"]
-[ext_resource type="Script" path="res://scripts/traffic/traffic_light_visual_layer.gd" id="7_tls_visual"]
-[ext_resource type="Script" path="res://scripts/ui/preview_layer_toggles.gd" id="8_toggles"]
+[ext_resource type="Script" uid="uid://7idsf3rptw0" path="res://scripts/world/preview_camera_controller.gd" id="4_camera"]
+[ext_resource type="Script" uid="uid://c837e583xyjux" path="res://scripts/bridge/sumo_render_bridge.gd" id="5_bridge"]
+[ext_resource type="Script" uid="uid://bqjyu3yqngoxb" path="res://scripts/traffic/traffic_light_state_layer.gd" id="6_tls"]
+[ext_resource type="Script" uid="uid://boa5nxknuem1l" path="res://scripts/traffic/traffic_light_visual_layer.gd" id="7_tls_visual"]
+[ext_resource type="Script" uid="uid://dx6bolwvrnbov" path="res://scripts/ui/preview_layer_toggles.gd" id="8_toggles"]
+[ext_resource type="Script" uid="uid://cp3pg17d0yu1t" path="res://scripts/zones/semantic_heatmap_renderer.gd" id="9_heatmap"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -26,31 +27,68 @@ transform = Transform3D(0.707107, -0.353553, 0.612372, 0, 0.866025, 0.5, -0.7071
 light_energy = 1.5
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=299839342]
-transform = Transform3D(1, 0, 0, 0, 0.573576, 0.819152, 0, -0.819152, 0.573576, 0, 210, 220)
+transform = Transform3D(1, 0, 0, 0, 0.882948, 0.469471, 0, -0.469471, 0.882948, 0, 85, 145)
 current = true
 fov = 70.0
 script = ExtResource("4_camera")
+auto_fit_on_ready = false
+use_top_down_preview = false
+use_fly_preview = true
+manual_start_position = Vector3(0, 85, 145)
+manual_start_rotation_degrees = Vector3(-28, 0, 0)
 
 [node name="SumoRenderBridge" type="Node3D" parent="." unique_id=739184226]
 script = ExtResource("5_bridge")
-auto_configure = false
 
 [node name="DistrictReplayWorld" parent="." unique_id=942558472 instance=ExtResource("1_world")]
 net_path = "D:/Desktop/Atem/hcmus/Year1/AI-Challenge-HVTC/simulation_projects/map_intake/02_prepared_sources/district7_osm_seed_20260702/district7_seed.net.xml"
+world_scale = 1.0
+enable_large_map_lod = true
+max_visual_lanes = 3200
+max_visual_junctions = 0
+visual_lane_width_multiplier = 1.0
+min_visual_lane_width = 1.2
+use_camera_road_lod = true
+road_lod_radius_m = 650.0
+road_lod_context_radius_m = 1800.0
+road_lod_max_lanes = 0
+editor_preview_enabled = true
 
 [node name="SemanticOverlayRenderer" type="Node3D" parent="." unique_id=362413856]
 script = ExtResource("3_overlay")
-overlay_path = "D:/Desktop/Atem/hcmus/Year1/AI-Challenge-HVTC/simulation_projects/map_intake/05_semantic_overlays/district7_overlay.v1.json"
+overlay_path = "D:/Desktop/Atem/hcmus/Year1/AI-Challenge-HVTC/render/outputs/godot_zone_heatmap/full_map_buildable_semantic_overlay.generated.json"
+auto_render = false
+render_neutral_zones = true
+max_visual_zones = 140
+max_neutral_visual_zones = 160
+use_camera_zone_lod = true
+zone_lod_radius_m = 950.0
+neutral_zone_lod_radius_m = 850.0
+
+[node name="SemanticHeatmapRenderer" type="Node3D" parent="." unique_id=1016986221]
+script = ExtResource("9_heatmap")
+overlay_path = "D:/Desktop/Atem/hcmus/Year1/AI-Challenge-HVTC/render/outputs/godot_zone_heatmap/full_map_buildable_semantic_overlay.generated.json"
+auto_render = true
+editor_preview_enabled = true
 
 [node name="TrafficLightStateLayer" type="Node3D" parent="." unique_id=518901947]
+visible = false
 script = ExtResource("6_tls")
 
 [node name="TrafficLightVisualLayer" type="Node3D" parent="." unique_id=118692841]
+visible = false
 script = ExtResource("7_tls_visual")
 
 [node name="TraceReplayController" type="Node3D" parent="." unique_id=260568818]
+visible = false
 script = ExtResource("2_replay")
-trace_path = "D:/Desktop/Atem/hcmus/Year1/AI-Challenge-HVTC/render/outputs/district7_catalog_smoke/trace.jsonl"
+auto_play = false
 
 [node name="PreviewLayerToggles" type="Node" parent="." unique_id=571229156]
 script = ExtResource("8_toggles")
+show_zone_assets = true
+show_vehicles = false
+show_traffic_lights = false
+zone_render_mode = "both"
+shared_overlay_path = "D:/Desktop/Atem/hcmus/Year1/AI-Challenge-HVTC/render/outputs/godot_zone_heatmap/full_map_buildable_semantic_overlay.generated.json"
+auto_rebuild_visible_layers = true

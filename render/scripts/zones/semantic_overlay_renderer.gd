@@ -10,6 +10,14 @@ const ZoneVisualFactoryScript := preload("res://scripts/assets/zone_visual_facto
 @export var auto_render := true
 @export var editor_preview_enabled := false
 @export var show_zone_labels := false
+@export var render_neutral_zones := false
+@export var max_visual_zones := 350
+@export var max_neutral_visual_zones := 45
+@export_group("Zone LOD")
+@export var use_camera_zone_lod := true
+@export_node_path("Node3D") var zone_lod_target_path: NodePath = NodePath("../Camera3D")
+@export var zone_lod_radius_m := 950.0
+@export var neutral_zone_lod_radius_m := 520.0
 @export var rebuild_editor_preview := false:
 	set(value):
 		rebuild_editor_preview = false
@@ -21,6 +29,10 @@ var zone_factory = null
 var spawned_zone_count := 0
 var fallback_zone_count := 0
 var overlay_parse_error_count := 0
+var skipped_neutral_count := 0
+var skipped_zone_count := 0
+var skipped_zone_lod_count := 0
+var spawned_neutral_zone_count := 0
 var errors: Array[String] = []
 
 
@@ -44,6 +56,11 @@ func render_overlay(path: String) -> bool:
 	overlay_parse_error_count = 0
 	spawned_zone_count = 0
 	fallback_zone_count = 0
+	skipped_neutral_count = 0
+	skipped_zone_count = 0
+	skipped_zone_lod_count = 0
+	spawned_neutral_zone_count = 0
+	overlay_path = path
 
 	var overlay := _load_overlay(path)
 	if overlay.is_empty():
@@ -54,12 +71,13 @@ func render_overlay(path: String) -> bool:
 		for error in zone_factory.errors:
 			push_warning(error)
 
-	var raw_zones = overlay.get("zones", [])
+	var raw_zones: Variant = overlay.get("zones", [])
 	if not (raw_zones is Array):
 		errors.append("Semantic overlay zones must be an array: %s" % path)
 		return false
 
 	var world := get_node_or_null(geometry_world_path)
+	var zone_lod_focus: Variant = _zone_lod_focus_world()
 	var zones := raw_zones as Array
 	var index := 0
 	for raw_zone in zones:
@@ -67,8 +85,19 @@ func render_overlay(path: String) -> bool:
 			overlay_parse_error_count += 1
 			continue
 		var zone_data := raw_zone as Dictionary
+		var zone_type := str(zone_data.get("type", zone_data.get("zone_type", ""))).strip_edges().to_lower()
+		if zone_type == "neutral" and not render_neutral_zones:
+			skipped_neutral_count += 1
+			continue
+		if max_visual_zones > 0 and spawned_zone_count >= max_visual_zones:
+			skipped_zone_count += 1
+			continue
 		var world_polygons := _zone_world_polygons(zone_data, world)
 		if world_polygons.is_empty():
+			var fallback_position := _zone_world_position(zone_data, world, index, zones.size())
+			if not _should_spawn_zone_visual(zone_type, fallback_position, zone_lod_focus, world):
+				index += 1
+				continue
 			if not _spawn_zone_visual(zone_data, [], world, index, zones.size()):
 				overlay_parse_error_count += 1
 		else:
@@ -78,6 +107,9 @@ func render_overlay(path: String) -> bool:
 					continue
 				var world_polygon := raw_polygon as Array
 				if world_polygon.size() < 3:
+					continue
+				var zone_position := _polygon_centroid(world_polygon)
+				if not _should_spawn_zone_visual(zone_type, zone_position, zone_lod_focus, world):
 					continue
 				var part_data := zone_data.duplicate(true)
 				part_data["id"] = "%s_part_%d" % [str(zone_data.get("id", "zone")), part_index + 1]
@@ -129,6 +161,11 @@ func summary() -> Dictionary:
 		"spawned_zone_count": spawned_zone_count,
 		"fallback_zone_count": fallback_zone_count,
 		"overlay_parse_error_count": overlay_parse_error_count,
+		"skipped_neutral_count": skipped_neutral_count,
+		"skipped_zone_count": skipped_zone_count,
+		"skipped_zone_lod_count": skipped_zone_lod_count,
+		"spawned_neutral_zone_count": spawned_neutral_zone_count,
+		"overlay_path": overlay_path,
 		"zone_catalog_path": zone_catalog_path,
 		"zone_asset_catalog_loaded": (
 			zone_factory.catalog_loaded() if zone_factory != null else false
@@ -161,6 +198,40 @@ func _zone_world_position(zone_data: Dictionary, world: Node, index: int, total:
 			return (anchor_position as Vector3) + Vector3(0.0, 0.15, 0.0)
 	var angle := TAU * float(index) / float(max(1, total))
 	return Vector3(cos(angle) * fallback_ring_radius, 0.15, sin(angle) * fallback_ring_radius)
+
+
+func _should_spawn_zone_visual(
+	zone_type: String,
+	zone_position: Vector3,
+	zone_lod_focus: Variant,
+	world: Node
+) -> bool:
+	var is_neutral := zone_type == "neutral"
+	if is_neutral and spawned_neutral_zone_count >= max_neutral_visual_zones:
+		skipped_neutral_count += 1
+		return false
+	if use_camera_zone_lod and zone_lod_focus is Vector3:
+		var focus := zone_lod_focus as Vector3
+		var world_scale := 1.0
+		if world != null and world.get("world_scale") != null:
+			world_scale = max(0.0001, float(world.get("world_scale")))
+		var radius_m := neutral_zone_lod_radius_m if is_neutral else zone_lod_radius_m
+		var radius_world := radius_m * world_scale
+		var flat_zone := Vector3(zone_position.x, 0.0, zone_position.z)
+		var flat_focus := Vector3(focus.x, 0.0, focus.z)
+		if flat_zone.distance_to(flat_focus) > radius_world:
+			skipped_zone_lod_count += 1
+			return false
+	if is_neutral:
+		spawned_neutral_zone_count += 1
+	return true
+
+
+func _zone_lod_focus_world() -> Variant:
+	var target := get_node_or_null(zone_lod_target_path)
+	if target is Node3D:
+		return (target as Node3D).global_position
+	return null
 
 
 func _zone_world_polygons(zone_data: Dictionary, world: Node) -> Array:

@@ -222,6 +222,7 @@ func _build_building_cluster(zone_entry) -> void:
 	if positions.is_empty():
 		return
 
+	var base_rotation_y := _dominant_polygon_rotation_y(ground_polygon)
 	var count: int = min(desired_count, positions.size())
 	for index in range(count):
 		var target_footprint_m2 := _random_profile_footprint_m2(active_profile, rng)
@@ -239,10 +240,12 @@ func _build_building_cluster(zone_entry) -> void:
 		)
 		if building == null:
 			continue
+		building.scale *= _asset_scale_multiplier(active_profile, target_footprint_m2, rng, building)
+		building.rotation.y = _building_rotation_y(active_profile, base_rotation_y, rng, index)
 		var position := positions[index] as Vector3
-		building.position += position
-		building.scale *= _asset_scale_multiplier(active_profile, target_footprint_m2, rng)
-		building.rotation.y = rng.randf_range(-PI, PI)
+		building.position.x += position.x
+		building.position.z += position.z
+		_align_node_bottom_to_ground(building, active_building_ground_clearance)
 		cluster_root.add_child(building)
 
 
@@ -258,13 +261,7 @@ func _resolve_building_config(zone_entry) -> Dictionary:
 	var active_seed := seed + zone_id.length() * 97
 	var active_profile: Resource = placement_profile
 	var scene_has_building_assets := not building_scenes.is_empty() or not building_scene_paths.is_empty()
-	if scene_has_building_assets:
-		active_building_scenes.append_array(building_scenes)
-		for scene_path in building_scene_paths:
-			var loaded_scene: Resource = load(str(scene_path))
-			if loaded_scene is PackedScene:
-				active_building_scenes.append(loaded_scene)
-	elif zone_entry != null:
+	if zone_entry != null:
 		var raw_building_scenes = zone_entry.get("building_scenes")
 		if raw_building_scenes is Array:
 			active_building_scenes = raw_building_scenes as Array
@@ -288,6 +285,17 @@ func _resolve_building_config(zone_entry) -> Dictionary:
 		if raw_profile is Resource:
 			active_profile = raw_profile as Resource
 		active_seed += int(zone_entry.get("seed"))
+	if building_override_material != null:
+		active_building_override_material = building_override_material
+	if placement_profile != null:
+		active_profile = placement_profile
+	if scene_has_building_assets:
+		active_building_scenes.clear()
+		active_building_scenes.append_array(building_scenes)
+		for scene_path in building_scene_paths:
+			var loaded_scene: Resource = load(str(scene_path))
+			if loaded_scene is PackedScene:
+				active_building_scenes.append(loaded_scene)
 	return {
 		"building_scenes": active_building_scenes,
 		"density": density,
@@ -324,7 +332,7 @@ func _instantiate_building(
 				wrapper.add_child(instance as Node3D)
 				if building_override_material != null:
 					_apply_material_recursive(wrapper, building_override_material)
-				var local_min_y := _node_local_min_y(wrapper)
+				var local_min_y: float = _node_local_min_y(wrapper)
 				wrapper.position = building_asset_offset
 				wrapper.position.y += -local_min_y + building_ground_clearance
 				return wrapper
@@ -336,7 +344,10 @@ func _instantiate_building(
 	var floor_height_m := 3.2
 	if profile != null:
 		floor_height_m = max(1.5, float(profile.get("floor_height_m")))
-	var height_world := max(0.2, float(max(1, floor_count)) * floor_height_m * world_units_per_meter)
+	var height_world: float = max(
+		0.2,
+		float(max(1, floor_count)) * floor_height_m * world_units_per_meter
+	)
 	mesh.size = Vector3(side_world, height_world, side_world)
 	placeholder.mesh = mesh
 	placeholder.position = Vector3(0.0, mesh.size.y / 2.0 + building_ground_clearance, 0.0) + building_asset_offset
@@ -352,8 +363,8 @@ func _active_ground_polygon_2d() -> PackedVector2Array:
 		for point in _configured_ground_polygon:
 			polygon.append(Vector2(point.x, point.z))
 		return polygon
-	var half_x := max(0.1, default_ground_size.x * 0.5)
-	var half_z := max(0.1, default_ground_size.z * 0.5)
+	var half_x: float = max(0.1, default_ground_size.x * 0.5)
+	var half_z: float = max(0.1, default_ground_size.z * 0.5)
 	polygon.append(Vector2(-half_x, -half_z))
 	polygon.append(Vector2(half_x, -half_z))
 	polygon.append(Vector2(half_x, half_z))
@@ -364,15 +375,18 @@ func _active_ground_polygon_2d() -> PackedVector2Array:
 func _desired_building_count(profile, legacy_density: int, polygon: PackedVector2Array) -> int:
 	if profile == null:
 		return max(0, legacy_density)
-	var area_world2 := _polygon_area_abs(polygon)
-	var area_m2 := area_world2 / max(0.000001, world_units_per_meter * world_units_per_meter)
+	var area_world2: float = _polygon_area_abs(polygon)
+	var area_m2: float = area_world2 / max(
+		0.000001,
+		world_units_per_meter * world_units_per_meter
+	)
 	var coverage := clampf(float(profile.get("target_coverage_ratio")), 0.0, 0.9)
-	var avg_footprint := max(1.0, _profile_average_footprint_m2(profile))
+	var avg_footprint: float = max(1.0, _profile_average_footprint_m2(profile))
 	var suggested := int(round((area_m2 * coverage) / avg_footprint))
 	if profile.has_method("clamp_building_count"):
 		return int(profile.clamp_building_count(suggested))
-	var lower := max(0, int(profile.get("min_buildings")))
-	var upper := max(lower, int(profile.get("max_buildings")))
+	var lower: int = max(0, int(profile.get("min_buildings")))
+	var upper: int = max(lower, int(profile.get("max_buildings")))
 	return clampi(suggested, lower, upper)
 
 
@@ -382,15 +396,18 @@ func _building_positions(
 	desired_count: int,
 	rng: RandomNumberGenerator
 ) -> Array[Vector3]:
-	var output: Array[Vector3] = []
 	if desired_count <= 0 or polygon.size() < 3:
-		return output
+		return []
 	var bounds := _polygon_bounds(polygon)
-	var avg_footprint_m2 := _profile_average_footprint_m2(profile)
-	var spacing_m := building_spacing / max(0.0001, world_units_per_meter)
+	var avg_footprint_m2: float = _profile_average_footprint_m2(profile)
+	var spacing_m: float = building_spacing / max(0.0001, world_units_per_meter)
 	var setback_m := 0.0
-	var jitter_m := 0.5 / max(0.0001, world_units_per_meter)
+	var jitter_m: float = 0.5 / max(0.0001, world_units_per_meter)
+	var fill_ratio := 0.72
+	var pattern := "grid_jittered"
 	if profile != null:
+		pattern = str(profile.get("placement_pattern"))
+		fill_ratio = clampf(float(profile.get("min_fill_ratio")), 0.1, 1.0)
 		spacing_m = max(
 			1.0,
 			sqrt(avg_footprint_m2)
@@ -400,28 +417,221 @@ func _building_positions(
 		var road_setback_m := float(profile.get("road_setback_m"))
 		setback_m = max(0.0, max(boundary_setback_m, road_setback_m))
 		jitter_m = max(0.0, float(profile.get("grid_jitter_m")))
-	var spacing_world := max(0.2, spacing_m * world_units_per_meter)
-	var setback_world := max(0.0, setback_m * world_units_per_meter)
-	var jitter_world := min(spacing_world * 0.35, jitter_m * world_units_per_meter)
+	var spacing_world: float = max(0.2, spacing_m * world_units_per_meter)
+	var setback_world: float = max(0.0, setback_m * world_units_per_meter)
+	var jitter_world: float = min(spacing_world * 0.35, jitter_m * world_units_per_meter)
+	var min_separation_world: float = max(0.01, spacing_world * 0.42)
+	match pattern:
+		"organic_random":
+			return _random_building_positions(
+				polygon,
+				bounds,
+				desired_count,
+				rng,
+				setback_world,
+				min_separation_world,
+				fill_ratio
+			)
+		"campus_cluster":
+			return _clustered_building_positions(
+				polygon,
+				bounds,
+				desired_count,
+				rng,
+				setback_world,
+				min_separation_world,
+				fill_ratio,
+				2
+			)
+		"yard_cluster":
+			return _clustered_building_positions(
+				polygon,
+				bounds,
+				desired_count,
+				rng,
+				setback_world,
+				min_separation_world,
+				fill_ratio,
+				3
+			)
+		_:
+			return _jittered_grid_building_positions(
+				polygon,
+				bounds,
+				desired_count,
+				rng,
+				spacing_world,
+				setback_world,
+				jitter_world,
+				min_separation_world,
+				fill_ratio
+			)
+
+
+func _jittered_grid_building_positions(
+	polygon: PackedVector2Array,
+	bounds: Rect2,
+	desired_count: int,
+	rng: RandomNumberGenerator,
+	spacing_world: float,
+	setback_world: float,
+	jitter_world: float,
+	min_separation_world: float,
+	fill_ratio: float
+) -> Array[Vector3]:
+	var output: Array[Vector3] = []
+	var candidates: Array[Vector2] = []
 	var row_index := 0
-	var y := bounds.position.y + spacing_world * 0.5
-	while y <= bounds.end.y and output.size() < desired_count * 3:
-		var offset := 0.0 if row_index % 2 == 0 else spacing_world * 0.5
-		var x := bounds.position.x + spacing_world * 0.5 + offset
-		while x <= bounds.end.x and output.size() < desired_count * 3:
+	var y: float = bounds.position.y + spacing_world * 0.5
+	var scanned_cells := 0
+	var max_scan_cells: int = max(2500, desired_count * 160)
+	while y <= bounds.end.y and scanned_cells < max_scan_cells:
+		var offset: float = 0.0 if row_index % 2 == 0 else spacing_world * 0.5
+		var x: float = bounds.position.x + spacing_world * 0.5 + offset
+		while x <= bounds.end.x and scanned_cells < max_scan_cells:
+			scanned_cells += 1
 			var candidate := Vector2(
 				x + rng.randf_range(-jitter_world, jitter_world),
 				y + rng.randf_range(-jitter_world, jitter_world)
 			)
 			if _point_is_buildable(candidate, polygon, setback_world):
-				output.append(Vector3(candidate.x, 0.0, candidate.y))
+				candidates.append(candidate)
 			x += spacing_world
 		row_index += 1
 		y += spacing_world
+	candidates.shuffle()
+	for candidate in candidates:
+		if output.size() >= desired_count:
+			break
+		if _is_far_enough_from_existing(candidate, output, min_separation_world):
+			output.append(Vector3(candidate.x, 0.0, candidate.y))
+	output = _ensure_minimum_fill_positions(
+		output,
+		polygon,
+		bounds,
+		desired_count,
+		rng,
+		setback_world,
+		min_separation_world,
+		fill_ratio
+	)
+	return output
+
+
+func _random_building_positions(
+	polygon: PackedVector2Array,
+	bounds: Rect2,
+	desired_count: int,
+	rng: RandomNumberGenerator,
+	setback_world: float,
+	min_separation_world: float,
+	fill_ratio: float
+) -> Array[Vector3]:
+	var output: Array[Vector3] = []
+	return _ensure_minimum_fill_positions(
+		output,
+		polygon,
+		bounds,
+		desired_count,
+		rng,
+		setback_world,
+		min_separation_world,
+		fill_ratio
+	)
+
+
+func _clustered_building_positions(
+	polygon: PackedVector2Array,
+	bounds: Rect2,
+	desired_count: int,
+	rng: RandomNumberGenerator,
+	setback_world: float,
+	min_separation_world: float,
+	fill_ratio: float,
+	cluster_count: int
+) -> Array[Vector3]:
+	var output: Array[Vector3] = []
+	var centers: Array[Vector2] = []
+	var center_attempts: int = max(40, cluster_count * 30)
+	while centers.size() < cluster_count and center_attempts > 0:
+		center_attempts -= 1
+		var candidate := _random_point_in_bounds(bounds, rng)
+		if _point_is_buildable(candidate, polygon, setback_world):
+			centers.append(candidate)
+	var radius: float = max(bounds.size.x, bounds.size.y) * 0.23
+	var attempts: int = max(300, desired_count * 90)
+	while output.size() < desired_count and attempts > 0 and not centers.is_empty():
+		attempts -= 1
+		var center := centers[rng.randi_range(0, centers.size() - 1)]
+		var candidate := center + Vector2(
+			rng.randfn(0.0, radius * 0.35),
+			rng.randfn(0.0, radius * 0.35)
+		)
+		if _point_is_buildable(candidate, polygon, setback_world):
+			if _is_far_enough_from_existing(candidate, output, min_separation_world):
+				output.append(Vector3(candidate.x, 0.0, candidate.y))
+	return _ensure_minimum_fill_positions(
+		output,
+		polygon,
+		bounds,
+		desired_count,
+		rng,
+		setback_world,
+		min_separation_world * 0.82,
+		fill_ratio
+	)
+
+
+func _ensure_minimum_fill_positions(
+	output: Array[Vector3],
+	polygon: PackedVector2Array,
+	bounds: Rect2,
+	desired_count: int,
+	rng: RandomNumberGenerator,
+	setback_world: float,
+	min_separation_world: float,
+	fill_ratio: float
+) -> Array[Vector3]:
+	var minimum_count: int = min(desired_count, max(1, int(ceil(float(desired_count) * fill_ratio))))
+	var relaxed_separation := min_separation_world
+	var passes := 0
+	while output.size() < minimum_count and passes < 4:
+		var attempts: int = max(250, desired_count * 80)
+		while output.size() < desired_count and attempts > 0:
+			attempts -= 1
+			var candidate := _random_point_in_bounds(bounds, rng)
+			if not _point_is_buildable(candidate, polygon, setback_world):
+				continue
+			if _is_far_enough_from_existing(candidate, output, relaxed_separation):
+				output.append(Vector3(candidate.x, 0.0, candidate.y))
+		relaxed_separation *= 0.68
+		setback_world *= 0.72
+		passes += 1
 	if output.size() > desired_count:
-		output.shuffle()
 		output = output.slice(0, desired_count)
 	return output
+
+
+func _random_point_in_bounds(bounds: Rect2, rng: RandomNumberGenerator) -> Vector2:
+	return Vector2(
+		rng.randf_range(bounds.position.x, bounds.end.x),
+		rng.randf_range(bounds.position.y, bounds.end.y)
+	)
+
+
+func _is_far_enough_from_existing(
+	candidate: Vector2,
+	existing: Array[Vector3],
+	min_distance: float
+) -> bool:
+	if min_distance <= 0.0001:
+		return true
+	var min_distance_sq := min_distance * min_distance
+	for point in existing:
+		var flat := Vector2(point.x, point.z)
+		if flat.distance_squared_to(candidate) < min_distance_sq:
+			return false
+	return true
 
 
 func _point_is_buildable(point: Vector2, polygon: PackedVector2Array, setback_world: float) -> bool:
@@ -447,8 +657,8 @@ func _random_profile_footprint_m2(profile, rng: RandomNumberGenerator) -> float:
 	if profile != null and profile.has_method("random_footprint_m2"):
 		return float(profile.random_footprint_m2(rng))
 	if profile != null:
-		var lower := max(1.0, float(profile.get("min_building_footprint_m2")))
-		var upper := max(lower, float(profile.get("max_building_footprint_m2")))
+		var lower: float = max(1.0, float(profile.get("min_building_footprint_m2")))
+		var upper: float = max(lower, float(profile.get("max_building_footprint_m2")))
 		return rng.randf_range(lower, upper)
 	return 80.0
 
@@ -457,24 +667,84 @@ func _random_profile_floor_count(profile, rng: RandomNumberGenerator) -> int:
 	if profile != null and profile.has_method("random_floor_count"):
 		return int(profile.random_floor_count(rng))
 	if profile != null:
-		var lower := max(1, int(profile.get("min_floors")))
-		var upper := max(lower, int(profile.get("max_floors")))
+		var lower: int = max(1, int(profile.get("min_floors")))
+		var upper: int = max(lower, int(profile.get("max_floors")))
 		return rng.randi_range(lower, upper)
 	return rng.randi_range(1, 4)
+
+
+func _building_rotation_y(
+	profile,
+	base_rotation_y: float,
+	rng: RandomNumberGenerator,
+	index: int
+) -> float:
+	if profile == null:
+		return _snap_right_angle(base_rotation_y) + rng.randf_range(-0.04, 0.04)
+	var strategy := str(profile.get("rotation_strategy"))
+	var jitter := deg_to_rad(max(0.0, float(profile.get("rotation_jitter_degrees"))))
+	if strategy == "random":
+		return rng.randf_range(-PI, PI)
+	var rotation := _snap_right_angle(base_rotation_y)
+	var perpendicular_probability := clampf(
+		float(profile.get("perpendicular_rotation_probability")),
+		0.0,
+		1.0
+	)
+	if strategy == "perpendicular_mix":
+		var rotate_perpendicular := rng.randf() < perpendicular_probability
+		if rotate_perpendicular:
+			rotation += PI * 0.5
+		elif index % 7 == 0:
+			rotation += PI
+	rotation += rng.randf_range(-jitter, jitter)
+	return rotation
+
+
+func _dominant_polygon_rotation_y(polygon: PackedVector2Array) -> float:
+	if polygon.size() < 2:
+		return 0.0
+	var best_direction := Vector2.RIGHT
+	var best_length_sq := 0.0
+	for index in range(polygon.size()):
+		var start := polygon[index]
+		var end := polygon[(index + 1) % polygon.size()]
+		var direction := end - start
+		var length_sq := direction.length_squared()
+		if length_sq > best_length_sq:
+			best_length_sq = length_sq
+			best_direction = direction
+	if best_length_sq <= 0.000001:
+		return 0.0
+	return atan2(best_direction.x, best_direction.y)
+
+
+func _snap_right_angle(angle: float) -> float:
+	var quarter_turn := PI * 0.5
+	return round(angle / quarter_turn) * quarter_turn
 
 
 func _asset_scale_multiplier(
 	profile,
 	target_footprint_m2: float,
-	rng: RandomNumberGenerator
+	rng: RandomNumberGenerator,
+	building: Node3D = null
 ) -> float:
 	var legacy_scale := rng.randf_range(min_building_scale, max_building_scale)
+	var lower := 0.01
+	var upper := 8.0
+	if profile != null:
+		lower = max(0.01, float(profile.get("min_asset_scale_multiplier")))
+		upper = max(lower, float(profile.get("max_asset_scale_multiplier")))
+	if building != null:
+		var current_side_world := _node_local_footprint_side(building)
+		if current_side_world > 0.0001:
+			var target_side_world := sqrt(max(1.0, target_footprint_m2)) * world_units_per_meter
+			return clampf((target_side_world / current_side_world) * legacy_scale, lower, upper)
 	if profile == null:
 		return legacy_scale
-	var nominal := max(1.0, float(profile.get("nominal_asset_footprint_m2")))
-	var footprint_scale := sqrt(max(1.0, target_footprint_m2) / nominal)
-	var lower := max(0.01, float(profile.get("min_asset_scale_multiplier")))
-	var upper := max(lower, float(profile.get("max_asset_scale_multiplier")))
+	var nominal: float = max(1.0, float(profile.get("nominal_asset_footprint_m2")))
+	var footprint_scale: float = sqrt(max(1.0, target_footprint_m2) / nominal)
 	return clampf(footprint_scale * legacy_scale, lower, upper)
 
 
@@ -524,6 +794,12 @@ func _node_local_min_y(node: Node3D) -> float:
 	return _node_local_min_y_with_transform(node, Transform3D.IDENTITY)
 
 
+func _align_node_bottom_to_ground(node: Node3D, ground_clearance: float) -> void:
+	var current_min_y := _node_local_min_y(node)
+	var target_min_y: float = max(0.0, ground_clearance)
+	node.position.y += target_min_y - current_min_y
+
+
 func _node_local_min_y_with_transform(node: Node3D, parent_transform: Transform3D) -> float:
 	var min_y := INF
 	var current_transform := parent_transform * node.transform
@@ -540,6 +816,46 @@ func _node_local_min_y_with_transform(node: Node3D, parent_transform: Transform3
 			if child_min < INF:
 				min_y = min(min_y, child_min)
 	return 0.0 if min_y == INF else min_y
+
+
+func _node_local_footprint_side(node: Node3D) -> float:
+	var bounds := _node_local_xz_bounds_with_transform(node, Transform3D.IDENTITY)
+	if not bool(bounds.get("has_bounds", false)):
+		return 0.0
+	var width: float = float(bounds.get("max_x")) - float(bounds.get("min_x"))
+	var depth: float = float(bounds.get("max_z")) - float(bounds.get("min_z"))
+	return max(width, depth)
+
+
+func _node_local_xz_bounds_with_transform(node: Node3D, parent_transform: Transform3D) -> Dictionary:
+	var result := {
+		"has_bounds": false,
+		"min_x": INF,
+		"max_x": -INF,
+		"min_z": INF,
+		"max_z": -INF,
+	}
+	var current_transform := parent_transform * node.transform
+	if node is MeshInstance3D:
+		var mesh_instance := node as MeshInstance3D
+		if mesh_instance.mesh != null:
+			for corner in _aabb_corners(mesh_instance.mesh.get_aabb()):
+				var transformed := current_transform * corner
+				result["has_bounds"] = true
+				result["min_x"] = min(float(result["min_x"]), transformed.x)
+				result["max_x"] = max(float(result["max_x"]), transformed.x)
+				result["min_z"] = min(float(result["min_z"]), transformed.z)
+				result["max_z"] = max(float(result["max_z"]), transformed.z)
+	for child in node.get_children():
+		if child is Node3D:
+			var child_bounds := _node_local_xz_bounds_with_transform(child as Node3D, current_transform)
+			if bool(child_bounds.get("has_bounds", false)):
+				result["has_bounds"] = true
+				result["min_x"] = min(float(result["min_x"]), float(child_bounds.get("min_x")))
+				result["max_x"] = max(float(result["max_x"]), float(child_bounds.get("max_x")))
+				result["min_z"] = min(float(result["min_z"]), float(child_bounds.get("min_z")))
+				result["max_z"] = max(float(result["max_z"]), float(child_bounds.get("max_z")))
+	return result
 
 
 func _aabb_corners(aabb: AABB) -> Array[Vector3]:

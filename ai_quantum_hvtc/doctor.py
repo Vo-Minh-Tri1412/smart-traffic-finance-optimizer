@@ -92,7 +92,10 @@ def check_git_root(root: Path) -> CheckResult:
 def check_codex_config(root: Path) -> CheckResult:
     path = root / ".codex" / "config.toml"
     if not path.exists():
-        return fail("codex-config", "missing .codex/config.toml")
+        return warn(
+            "codex-config",
+            ".codex/config.toml not present; legacy Codex governance disabled",
+        )
 
     try:
         config = _read_toml(path)
@@ -112,6 +115,10 @@ def check_codex_config(root: Path) -> CheckResult:
 
 
 def check_agent_files(root: Path) -> CheckResult:
+    agents_dir = root / ".codex" / "agents"
+    if not agents_dir.exists():
+        return warn("agent-files", ".codex/agents not present; legacy custom agents disabled")
+
     failures: list[str] = []
     for name, expected_sandbox in EXPECTED_AGENTS.items():
         path = root / ".codex" / "agents" / f"{name}.toml"
@@ -134,6 +141,10 @@ def check_agent_files(root: Path) -> CheckResult:
 
 
 def check_skill_files(root: Path) -> CheckResult:
+    skills_dir = root / ".codex" / "skills"
+    if not skills_dir.exists():
+        return warn("skill-files", ".codex/skills not present; legacy repo skills disabled")
+
     failures: list[str] = []
     for name in sorted(EXPECTED_SKILLS):
         path = root / ".codex" / "skills" / name / "SKILL.md"

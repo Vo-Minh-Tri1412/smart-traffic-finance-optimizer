@@ -18,6 +18,10 @@ func sumo_to_world(x: float, y: float, height: float = 0.25) -> Vector3:
 	return Vector3((x - center.x) * scale, height, (y - center.y) * scale)
 
 
+func world_to_sumo(position: Vector3) -> Vector2:
+	return Vector2(position.x / max(0.000001, scale) + center.x, position.z / max(0.000001, scale) + center.y)
+
+
 func sumo_angle_to_yaw(angle_degrees: float) -> float:
 	return deg_to_rad(90.0 - angle_degrees)
 
