@@ -375,6 +375,12 @@ func _build_sumo_lod_region(focus_sumo: Vector2) -> void:
 		_build_sumo_junction(row.get("junction"))
 
 
+func refresh_camera_lod() -> void:
+	if not use_camera_road_lod or _sumo_geometry == null or _mapper == null:
+		return
+	_build_sumo_lod_region(_road_lod_focus_sumo())
+
+
 func _road_lod_focus_sumo() -> Vector2:
 	if _mapper != null:
 		var target := get_node_or_null(road_lod_target_path)
@@ -797,6 +803,12 @@ func world_position_for_lon_lat(lon: float, lat: float, height := 0.04) -> Varia
 		return null
 	var point := sumo_point as Vector2
 	return _mapper.sumo_to_world(point.x, point.y, height)
+
+
+func world_position_for_sumo_coordinate(x: float, y: float, height := 0.04) -> Variant:
+	if _mapper == null:
+		return null
+	return _mapper.sumo_to_world(x, y, height)
 
 
 func world_polygon_for_geo_coordinates(coordinates, height := 0.04) -> Array:

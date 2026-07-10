@@ -48,9 +48,12 @@ func _process(delta: float) -> void:
 		return
 	var current_time := float(playback_clock.advance(delta))
 	_apply_frame(interpolator.frame_at_time(current_time))
+	current_frame_index = _next_frame_index_after_time(current_time)
+	_apply_traffic_lights_time(current_time)
 
 
 func load_trace(path: String, frame_limit: int = 0) -> bool:
+	clear_trace()
 	replay_data = TraceReplayDataScript.new()
 	var ok: bool = replay_data.load_jsonl(path, frame_limit)
 	parse_error_count = replay_data.errors.size()
@@ -76,6 +79,8 @@ func load_trace(path: String, frame_limit: int = 0) -> bool:
 	mapper = CoordinateMapperScript.new()
 	var geometry_node := _geometry_node()
 	if geometry_node != null and geometry_node.has_method("has_geometry_bounds") and geometry_node.has_geometry_bounds():
+		if geometry_node.get("world_scale") != null:
+			world_scale = max(0.0001, float(geometry_node.get("world_scale")))
 		mapper.configure(
 			geometry_node.get_geometry_bounds_min(),
 			geometry_node.get_geometry_bounds_max(),
@@ -88,6 +93,7 @@ func load_trace(path: String, frame_limit: int = 0) -> bool:
 	off_lane_vehicle_count = 0
 	max_off_lane_distance_m = 0.0
 	_apply_frame(interpolator.frame_at_time(playback_clock.current_time_seconds))
+	_apply_traffic_lights_time(playback_clock.current_time_seconds)
 	return true
 
 
@@ -103,6 +109,27 @@ func pause() -> void:
 		playback_clock.pause()
 
 
+func clear_trace() -> void:
+	pause()
+	if vehicle_pool != null:
+		for vehicle_id in active_vehicles.keys():
+			var vehicle := active_vehicles[vehicle_id] as Node
+			if vehicle != null:
+				vehicle_pool.release(vehicle)
+	active_vehicles.clear()
+	replay_data = null
+	interpolator = null
+	playback_clock = null
+	mapper = null
+	vehicle_pool = null
+	vehicle_factory = null
+	current_frame_index = 0
+	frames_applied = 0
+	largest_active_vehicle_count = 0
+	off_lane_vehicle_count = 0
+	max_off_lane_distance_m = 0.0
+
+
 func restart() -> void:
 	current_frame_index = 0
 	frames_applied = 0
@@ -110,12 +137,18 @@ func restart() -> void:
 		playback_clock.restart()
 	if interpolator != null and interpolator.has_frames():
 		_apply_frame(interpolator.frame_at_time(playback_clock.current_time_seconds))
+		_apply_traffic_lights_time(playback_clock.current_time_seconds)
 
 
 func step_once() -> bool:
 	if replay_data == null or replay_data.frames.is_empty():
 		return false
-	_apply_frame(interpolator.frame_at_index(current_frame_index))
+	var frame = interpolator.frame_at_index(current_frame_index)
+	_apply_frame(frame)
+	if frame != null:
+		if playback_clock != null:
+			playback_clock.seek(frame.time_seconds)
+		_apply_traffic_lights_time(frame.time_seconds)
 	current_frame_index += 1
 	if current_frame_index >= replay_data.frames.size():
 		current_frame_index = 0
@@ -129,10 +162,16 @@ func run_headless_smoke(path: String, output_dir: String, frame_limit: int) -> i
 		return 2
 	frames_applied = 0
 	largest_active_vehicle_count = active_vehicles.size()
+
+	var visual_layer = get_node_or_null("../TrafficLightVisualLayer")
+	if visual_layer != null and visual_layer.has_method("render_traffic_lights"):
+		visual_layer.render_traffic_lights()
+
 	var limit: int = replay_data.frames.size()
 	for index in range(limit):
 		var time_seconds := _headless_sample_time(index, limit)
 		_apply_frame(interpolator.frame_at_time(time_seconds))
+		_apply_traffic_lights_time(time_seconds)
 	_write_summary(true)
 	return 0
 
@@ -174,6 +213,21 @@ func _apply_frame(frame) -> void:
 
 	largest_active_vehicle_count = max(largest_active_vehicle_count, active_vehicles.size())
 	frames_applied += 1
+
+
+func _apply_traffic_lights_time(time_seconds: float) -> void:
+	var state_layer = get_node_or_null("../TrafficLightStateLayer")
+	if state_layer != null and state_layer.has_method("apply_time"):
+		state_layer.apply_time(time_seconds)
+
+
+func _next_frame_index_after_time(time_seconds: float) -> int:
+	if replay_data == null or replay_data.frames.is_empty():
+		return 0
+	for index in range(replay_data.frames.size()):
+		if float(replay_data.frames[index].time_seconds) > time_seconds:
+			return index
+	return 0 if loop_trace else replay_data.frames.size() - 1
 
 
 func _write_summary(success: bool) -> void:

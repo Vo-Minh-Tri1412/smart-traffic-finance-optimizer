@@ -41,7 +41,7 @@ manual_start_rotation_degrees = Vector3(-28, 0, 0)
 script = ExtResource("5_bridge")
 
 [node name="DistrictReplayWorld" parent="." unique_id=942558472 instance=ExtResource("1_world")]
-net_path = "D:/Desktop/Atem/hcmus/Year1/AI-Challenge-HVTC/simulation_projects/map_intake/02_prepared_sources/district7_osm_seed_20260702/district7_seed.net.xml"
+net_path = ""
 world_scale = 1.0
 enable_large_map_lod = true
 max_visual_lanes = 3200
@@ -56,7 +56,7 @@ editor_preview_enabled = true
 
 [node name="SemanticOverlayRenderer" type="Node3D" parent="." unique_id=362413856]
 script = ExtResource("3_overlay")
-overlay_path = "D:/Desktop/Atem/hcmus/Year1/AI-Challenge-HVTC/render/outputs/godot_zone_heatmap/full_map_buildable_semantic_overlay.generated.json"
+overlay_path = ""
 auto_render = false
 render_neutral_zones = true
 max_visual_zones = 140
@@ -67,7 +67,7 @@ neutral_zone_lod_radius_m = 850.0
 
 [node name="SemanticHeatmapRenderer" type="Node3D" parent="." unique_id=1016986221]
 script = ExtResource("9_heatmap")
-overlay_path = "D:/Desktop/Atem/hcmus/Year1/AI-Challenge-HVTC/render/outputs/godot_zone_heatmap/full_map_buildable_semantic_overlay.generated.json"
+overlay_path = ""
 auto_render = true
 editor_preview_enabled = true
 
@@ -90,5 +90,5 @@ show_zone_assets = true
 show_vehicles = false
 show_traffic_lights = false
 zone_render_mode = "both"
-shared_overlay_path = "D:/Desktop/Atem/hcmus/Year1/AI-Challenge-HVTC/render/outputs/godot_zone_heatmap/full_map_buildable_semantic_overlay.generated.json"
+shared_overlay_path = ""
 auto_rebuild_visible_layers = true
