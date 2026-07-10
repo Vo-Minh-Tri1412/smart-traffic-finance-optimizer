@@ -7,6 +7,8 @@ const SchemaVersions := preload("res://scripts/contracts/schema_versions.gd")
 @export var geometry_world_path: NodePath = NodePath("../DistrictReplayWorld")
 @export var trace_replay_controller_path: NodePath = NodePath("../TraceReplayController")
 @export var semantic_overlay_renderer_path: NodePath = NodePath("../SemanticOverlayRenderer")
+@export var semantic_heatmap_renderer_path: NodePath = NodePath("../SemanticHeatmapRenderer")
+@export var preview_layer_toggles_path: NodePath = NodePath("../PreviewLayerToggles")
 @export var traffic_light_state_layer_path: NodePath = NodePath("../TrafficLightStateLayer")
 @export var sensor_export_layer_path: NodePath = NodePath("")
 @export var auto_configure := false
@@ -28,8 +30,11 @@ func configure_from_manifest(path: String) -> bool:
 	if not _check_schema_version(loaded_manifest, SchemaVersions.RENDER_RUN_MANIFEST_SCHEMA_VERSION, path):
 		return false
 
+	_apply_manifest_path("sumo_net", geometry_world_path, "net_path")
 	_apply_manifest_path("vehicle_trace", trace_replay_controller_path, "trace_path")
 	_apply_manifest_path("semantic_overlay", semantic_overlay_renderer_path, "overlay_path")
+	_apply_manifest_path("semantic_overlay", semantic_heatmap_renderer_path, "overlay_path")
+	_apply_manifest_path("semantic_overlay", preview_layer_toggles_path, "shared_overlay_path")
 	_apply_manifest_path("traffic_light_trace", traffic_light_state_layer_path, "trace_path")
 	return true
 
@@ -43,6 +48,8 @@ func bridge_summary() -> Dictionary:
 		"geometry_world_present": get_node_or_null(geometry_world_path) != null,
 		"trace_replay_controller_present": get_node_or_null(trace_replay_controller_path) != null,
 		"semantic_overlay_renderer_present": get_node_or_null(semantic_overlay_renderer_path) != null,
+		"semantic_heatmap_renderer_present": get_node_or_null(semantic_heatmap_renderer_path) != null,
+		"preview_layer_toggles_present": get_node_or_null(preview_layer_toggles_path) != null,
 		"traffic_light_state_layer_present": get_node_or_null(traffic_light_state_layer_path) != null,
 		"sensor_export_layer_present": (
 			not sensor_export_layer_path.is_empty()

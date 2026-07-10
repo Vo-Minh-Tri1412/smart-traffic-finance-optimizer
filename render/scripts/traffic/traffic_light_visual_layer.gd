@@ -21,9 +21,14 @@ var spawned_light_count := 0
 var catalog_loaded := false
 var errors: Array[String] = []
 var _catalog = null
+var _visual_nodes: Dictionary = {}
 
 
 func _ready() -> void:
+	var state_layer = get_node_or_null("../TrafficLightStateLayer")
+	if state_layer != null and state_layer.has_signal("traffic_lights_updated"):
+		state_layer.connect("traffic_lights_updated", _on_traffic_lights_updated)
+		
 	if Engine.is_editor_hint():
 		if editor_preview_enabled and auto_render:
 			call_deferred("render_traffic_lights")
@@ -50,7 +55,8 @@ func render_traffic_lights() -> bool:
 		if not (item is Dictionary):
 			continue
 		var row := item as Dictionary
-		var visual := _create_visual(str(row.get("id", "")), entry)
+		var tl_id := str(row.get("id", ""))
+		var visual := _create_visual(tl_id, entry)
 		if visual == null:
 			continue
 		var position = row.get("position")
@@ -58,8 +64,17 @@ func render_traffic_lights() -> bool:
 			visual.position = (position as Vector3) + _offset_for_visual(row)
 		visual.add_to_group("generated_traffic_light_visual")
 		add_child(visual)
+		_visual_nodes[tl_id] = visual
 		spawned_light_count += 1
 	return spawned_light_count > 0
+
+
+func _on_traffic_lights_updated(states: Dictionary) -> void:
+	for tl_id in states:
+		var visual = _visual_nodes.get(tl_id)
+		if visual != null and visual.has_method("set_signal_state"):
+			visual.set_signal_state(states[tl_id])
+
 
 
 func summary() -> Dictionary:
@@ -109,3 +124,5 @@ func _clear_generated() -> void:
 	for child in get_children():
 		if child.is_in_group("generated_traffic_light_visual"):
 			child.queue_free()
+	_visual_nodes.clear()
+

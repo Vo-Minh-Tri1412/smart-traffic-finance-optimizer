@@ -48,6 +48,7 @@ func _process(delta: float) -> void:
 		return
 	var current_time := float(playback_clock.advance(delta))
 	_apply_frame(interpolator.frame_at_time(current_time))
+	_apply_traffic_lights_time(current_time)
 
 
 func load_trace(path: String, frame_limit: int = 0) -> bool:
@@ -88,6 +89,7 @@ func load_trace(path: String, frame_limit: int = 0) -> bool:
 	off_lane_vehicle_count = 0
 	max_off_lane_distance_m = 0.0
 	_apply_frame(interpolator.frame_at_time(playback_clock.current_time_seconds))
+	_apply_traffic_lights_time(playback_clock.current_time_seconds)
 	return true
 
 
@@ -110,12 +112,16 @@ func restart() -> void:
 		playback_clock.restart()
 	if interpolator != null and interpolator.has_frames():
 		_apply_frame(interpolator.frame_at_time(playback_clock.current_time_seconds))
+		_apply_traffic_lights_time(playback_clock.current_time_seconds)
 
 
 func step_once() -> bool:
 	if replay_data == null or replay_data.frames.is_empty():
 		return false
-	_apply_frame(interpolator.frame_at_index(current_frame_index))
+	var frame = interpolator.frame_at_index(current_frame_index)
+	_apply_frame(frame)
+	if frame != null:
+		_apply_traffic_lights_time(frame.time_seconds)
 	current_frame_index += 1
 	if current_frame_index >= replay_data.frames.size():
 		current_frame_index = 0
@@ -133,6 +139,7 @@ func run_headless_smoke(path: String, output_dir: String, frame_limit: int) -> i
 	for index in range(limit):
 		var time_seconds := _headless_sample_time(index, limit)
 		_apply_frame(interpolator.frame_at_time(time_seconds))
+		_apply_traffic_lights_time(time_seconds)
 	_write_summary(true)
 	return 0
 
@@ -174,6 +181,12 @@ func _apply_frame(frame) -> void:
 
 	largest_active_vehicle_count = max(largest_active_vehicle_count, active_vehicles.size())
 	frames_applied += 1
+
+
+func _apply_traffic_lights_time(time_seconds: float) -> void:
+	var state_layer = get_node_or_null("../TrafficLightStateLayer")
+	if state_layer != null and state_layer.has_method("apply_time"):
+		state_layer.apply_time(time_seconds)
 
 
 func _write_summary(success: bool) -> void:

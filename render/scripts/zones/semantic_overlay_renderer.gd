@@ -18,6 +18,8 @@ const ZoneVisualFactoryScript := preload("res://scripts/assets/zone_visual_facto
 @export_node_path("Node3D") var zone_lod_target_path: NodePath = NodePath("../Camera3D")
 @export var zone_lod_radius_m := 950.0
 @export var neutral_zone_lod_radius_m := 520.0
+@export var zone_lod_rebuild_distance_m := 140.0
+@export var zone_lod_update_interval_seconds := 0.35
 @export var rebuild_editor_preview := false:
 	set(value):
 		rebuild_editor_preview = false
@@ -35,14 +37,37 @@ var skipped_zone_lod_count := 0
 var spawned_neutral_zone_count := 0
 var errors: Array[String] = []
 
+var _loaded_overlay_data: Dictionary = {}
+var _zone_lod_timer := 0.0
+var _has_lod_focus := false
+var _last_lod_focus_world := Vector3.ZERO
+var _rebuild_count := 0
 
 func _ready() -> void:
 	if Engine.is_editor_hint():
 		if editor_preview_enabled and auto_render:
 			call_deferred("_auto_render")
 		return
+	set_process(use_camera_zone_lod)
 	if auto_render:
 		call_deferred("_auto_render")
+
+func _process(delta: float) -> void:
+	if Engine.is_editor_hint() or not use_camera_zone_lod:
+		return
+	if overlay_path.is_empty() or _loaded_overlay_data.is_empty():
+		return
+	_zone_lod_timer += delta
+	if _zone_lod_timer < zone_lod_update_interval_seconds:
+		return
+	_zone_lod_timer = 0.0
+	var focus_world: Variant = _zone_lod_focus_world()
+	if focus_world is Vector3:
+		var current_focus := focus_world as Vector3
+		if not _has_lod_focus or current_focus.distance_to(_last_lod_focus_world) >= zone_lod_rebuild_distance_m:
+			_last_lod_focus_world = current_focus
+			_has_lod_focus = true
+			_rebuild_lod_region()
 
 
 func _auto_render() -> void:
@@ -51,6 +76,20 @@ func _auto_render() -> void:
 
 
 func render_overlay(path: String) -> bool:
+	overlay_path = path
+	var overlay := _load_overlay(path)
+	if overlay.is_empty():
+		_loaded_overlay_data = {}
+		_has_lod_focus = false
+		return false
+	_loaded_overlay_data = overlay
+	var focus_world: Variant = _zone_lod_focus_world()
+	if focus_world is Vector3:
+		_last_lod_focus_world = focus_world as Vector3
+		_has_lod_focus = true
+	return _rebuild_lod_region()
+
+func _rebuild_lod_region() -> bool:
 	_clear_generated()
 	errors.clear()
 	overlay_parse_error_count = 0
@@ -60,10 +99,9 @@ func render_overlay(path: String) -> bool:
 	skipped_zone_count = 0
 	skipped_zone_lod_count = 0
 	spawned_neutral_zone_count = 0
-	overlay_path = path
+	_rebuild_count += 1
 
-	var overlay := _load_overlay(path)
-	if overlay.is_empty():
+	if _loaded_overlay_data.is_empty():
 		return false
 
 	zone_factory = ZoneVisualFactoryScript.new()
@@ -71,9 +109,9 @@ func render_overlay(path: String) -> bool:
 		for error in zone_factory.errors:
 			push_warning(error)
 
-	var raw_zones: Variant = overlay.get("zones", [])
+	var raw_zones: Variant = _loaded_overlay_data.get("zones", [])
 	if not (raw_zones is Array):
-		errors.append("Semantic overlay zones must be an array: %s" % path)
+		errors.append("Semantic overlay zones must be an array: %s" % overlay_path)
 		return false
 
 	var world := get_node_or_null(geometry_world_path)
@@ -165,6 +203,13 @@ func summary() -> Dictionary:
 		"skipped_zone_count": skipped_zone_count,
 		"skipped_zone_lod_count": skipped_zone_lod_count,
 		"spawned_neutral_zone_count": spawned_neutral_zone_count,
+		"rebuild_count": _rebuild_count,
+		"has_lod_focus": _has_lod_focus,
+		"last_lod_focus_world": {
+			"x": _last_lod_focus_world.x,
+			"y": _last_lod_focus_world.y,
+			"z": _last_lod_focus_world.z,
+		},
 		"overlay_path": overlay_path,
 		"zone_catalog_path": zone_catalog_path,
 		"zone_asset_catalog_loaded": (
