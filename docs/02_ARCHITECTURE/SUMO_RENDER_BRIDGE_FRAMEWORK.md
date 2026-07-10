@@ -33,7 +33,7 @@ Only one layer owns each kind of truth.
 | SUMO/SUMO-RL | routes, vehicle motion, queues, traffic-light phases, traffic-event effects | visual assets, camera framing, finance decisions |
 | Python bridge | scenario config, SUMO execution, output parsing, normalized traces, metrics, finance scoring | hand-authored visual choices |
 | Semantic overlay | zone meaning, public-finance labels, demand anchors, candidate investment metadata | road/lane geometry truth |
-| Godot renderer | assets, materials, camera rigs, replay UI, visual zones, synthetic frame export | traffic physics or RL state |
+| Godot renderer | assets, materials, calibrated camera rigs, replay UI, visual zones, optical visibility and synthetic frame export | traffic physics or RL state |
 | Future Unity/Unreal/CARLA adapters | alternate visual/sensor implementation | changing bridge contracts ad hoc |
 
 If ownership is ambiguous, prefer SUMO for traffic state and Godot for visual state.
@@ -46,7 +46,7 @@ SUMO/SUMO-RL
   -> Python bridge contracts
   -> render adapter contract
   -> Godot reference renderer
-  -> visual replay / camera frames / labels / demo UI
+  -> visual replay / optical visibility / camera frames / labels / demo UI
 ```
 
 For real maps:
@@ -94,7 +94,7 @@ visual integration is trustworthy.
 | Vehicle visuals | `VehicleAssetCatalog.tres`, registry, factory, pool |
 | Zone visuals | `semantic_overlay.json`, `ZoneAssetCatalog.tres`, `SemanticOverlayRenderer` |
 | Road visuals | `RoadSceneBuilder`, `RoadVisualRoot.tscn`, `LaneVisualBase.tscn`, `RoadStyleCatalog.tres` |
-| Sensors | `DetectionCamera3D`, camera/label catalogs, smoke dataset writer |
+| Sensors | `DetectionCamera3D`, camera/label catalogs, optical visibility adapter, smoke dataset writer |
 | Quality report | replay summary today; render bridge QA report is the canonical next layer |
 
 ## Integration quality report
@@ -139,6 +139,7 @@ render_run_manifest.v1
   -> traffic_light_trace.v1
   -> semantic_overlay.v2
   -> event_trace.v1
+  -> visibility_trace.v1
   -> sensor_dataset_manifest.v1
 ```
 

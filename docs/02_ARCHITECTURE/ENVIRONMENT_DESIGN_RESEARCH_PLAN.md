@@ -4,7 +4,8 @@ This document plans how the team will design a realistic SUMO/SUMO-RL environmen
 **Smart Traffic Public Finance Optimization**. It is intentionally a planning artifact only:
 no SUMO network files, no route files, no RL training, and no custom simulator are introduced here.
 
-The target is a public-service district that feels like a project, not a tutorial map: hospitals,
+The target is the full Quận 7 OSM/SUMO district or a reviewed ROI of roughly 100 signalized
+intersections. It must feel like a project, not a tutorial map: hospitals,
 schools, residential zones, offices, entertainment/nightlife demand, priority vehicles, road capacity
 differences, bottlenecks, and candidate intersections for public investment decisions.
 
@@ -13,7 +14,7 @@ differences, bottlenecks, and candidate intersections for public investment deci
 - Do not create `.net.xml`, `.rou.xml`, `.sumocfg`, or generated SUMO artifacts.
 - Do not train RL agents.
 - Do not choose final reward weights.
-- Do not import a final real-world OpenStreetMap district yet.
+- Do not replace the reviewed Quận 7/ROI source with an unrelated sample map.
 - Do not build a custom traffic simulator outside SUMO/SUMO-RL.
 
 ## Evidence checklist
@@ -23,7 +24,7 @@ differences, bottlenecks, and candidate intersections for public investment deci
 | SUMO can model signalized intersections with explicit traffic light phases/programs. | [SUMO Traffic Lights](https://sumo.dlr.de/docs/Simulation/Traffic_Lights.html) | Traffic lights are a first-class SUMO object and can be represented with controlled phases. | This does not design our district or reward function by itself. | Yes |
 | SUMO can define vehicle types, vehicles, trips, routes, and route distributions. | [SUMO vehicle and route definitions](https://sumo.dlr.de/docs/Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.html) | Demand can be represented through vehicle types and explicit trips/routes. | Realistic calibration still needs scenario assumptions or real counts. | Yes |
 | SUMO has demand-generation tooling and route workflows. | [SUMO Demand](https://sumo.dlr.de/docs/Demand/) | Demand can be generated or specified through multiple supported workflows. | Tooling choice depends on final map and desired realism. | Yes |
-| SUMO can import OpenStreetMap networks. | [SUMO OpenStreetMap import](https://sumo.dlr.de/docs/Networks/Import/OpenStreetMap.html) | A real district map is possible in principle. | OSM import can add cleanup/debug risk; not safe as the first main demo path. | Use as stretch |
+| SUMO can import OpenStreetMap networks. | [SUMO OpenStreetMap import](https://sumo.dlr.de/docs/Networks/Import/OpenStreetMap.html) | A real district map is possible in principle. | OSM import requires reviewed cleanup and demand calibration. | Yes: Quận 7/ROI |
 | SUMO-RL supports Gymnasium and PettingZoo interfaces for traffic signal control. | [SUMO-RL documentation](https://lucasalegre.github.io/sumo-rl/) | The main RL interface can be multi-agent and can support custom observation/reward logic. | The library interface does not make the project unique; our environment and public-finance framing must. | Yes |
 | A SUMO modeling workflow should separate network, demand, control, simulation, and evaluation. | [Traffic Modeling with SUMO tutorial](https://arxiv.org/html/2304.05982v2) | Provides a useful workflow lens for structuring the simulation design. | Tutorial-level evidence; final design still needs team-specific choices. | Yes |
 
@@ -80,7 +81,8 @@ Plan controllers and metrics before implementation:
 
 - fixed-time controller as the simple baseline;
 - rule-based controller as a stronger non-RL baseline;
-- RL controller for a subset of important intersections;
+- shared multi-agent RL controller for the reviewed signalized ROI, with an upgrade mask for
+  intersections that are not equipped;
 - RL observation must follow [Observation Space v1](OBSERVATION_SPACE_V1.md), not a separate
   document-specific list;
 - fixed/rule-based control for less important intersections;
@@ -97,12 +99,12 @@ support investment decisions.
 
 | Option | Strength | Risk | Best use |
 |---|---|---|---|
-| Synthetic Public-Service District | Maximum control; easiest to add hospital, school, entertainment, bottleneck, and budget candidates. | Can look artificial if visual/story design is weak. | Best v1 implementation path. |
-| OSM Real District | Looks credible because it is based on a real map. | Import/debug risk; traffic lights, lanes, and routes may need cleanup. | Stretch goal or case-study illustration. |
-| Hybrid/Synthetic District | Controlled map inspired by real urban patterns. | Needs careful storytelling so judges understand it is simulated by design. | Recommended v1 design target. |
+| Full Quận 7 OSM/SUMO district | Highest geographic credibility and realistic network interactions. | Large-map demand, signal and render QA are expensive. | Current strategic target. |
+| Reviewed Quận 7/ROI | Keeps the real network while bounding compute/render scope. | Boundary and demand calibration must be documented. | Current implementation target, roughly 100 signals where available. |
+| Synthetic fixture | Deterministic and fast. | Not representative of the project network. | CI, adapter and dependency smoke tests only. |
 
-Recommended v1: **Hybrid/Synthetic Public-Service District**. The demo should not use a sample
-library map as the main project. A sample map is acceptable only for smoke tests.
+Recommended implementation path: **reviewed Quận 7/ROI on the same SUMO source**. The demo should not
+use a sample library map as the main project. The package fixture is acceptable only for smoke tests.
 
 ## Selection rubric
 
@@ -123,15 +125,17 @@ The next design artifact should fill this template.
 
 ### Map concept
 
-- 12-25 intersections.
-- 4-6 functional zones.
+- Full Quận 7 network or a reviewed ROI with approximately 100 signalized intersections when the
+  source map supports it.
+- Semantic zones and corridors are attached through the overlay, not hand-authored as a replacement
+  for SUMO geometry.
 - Main arterial roads with higher capacity.
 - Local roads with lower capacity.
 - At least one deliberate bottleneck.
 - At least one hospital priority route.
 - Candidate intersections for upgrades or signal-intelligence investment.
-- RL v1 controls only the most important subset of intersections.
-- Other intersections use fixed-time or rule-based control.
+- Shared multi-agent RL can run across the ROI; an upgrade mask determines which signals receive
+  intelligent sensing/control while others remain fixed-time or rule-based.
 
 ### Required places
 
@@ -175,8 +179,8 @@ The next design artifact should fill this template.
 ### Control scope
 
 - Full district may contain many signalized intersections.
-- RL v1 controls a subset of high-impact intersections.
-- Non-critical intersections stay fixed-time or rule-based.
+- Shared multi-agent RL can cover the reviewed ROI; an upgrade mask determines which signals receive
+  intelligent sensing/control while other signals remain fixed-time or rule-based.
 - This is a feature, not a weakness: it reflects public-budget limits where not every intersection can
   receive sensors, upgrades, or intelligent control at once.
 
@@ -212,8 +216,8 @@ scenario -> traffic metric change -> candidate intersection benefit -> cost/prio
 
 Example policy question:
 
-> If the city can fund intelligent control or signal upgrades at only 4 of 16 intersections, which 4
-> should be prioritized, and why?
+> If the city can fund intelligent control or signal upgrades at only a budget-feasible subset of the
+> Quận 7/ROI signals, which subset should be prioritized, and why?
 
 The answer should combine:
 
@@ -234,7 +238,8 @@ The environment design is not ready for code until it passes all checks:
 - Main and local roads have different capacities.
 - Candidate intersections for investment are listed.
 - Scenario -> metric -> public-finance use is explicit.
-- There is a fallback plan: shrink the map if needed while preserving the semantic city layer.
+- The package fixture is clearly labeled as a smoke test and is not used as evidence for the
+  Quận 7/ROI research claim.
 
 ## Role split for the next step
 

@@ -114,7 +114,7 @@ def run_smoke_test(*, steps: int, seed: int, sumo_home: str | None = None) -> Sm
     sumo_version = read_sumo_version()
     net_file, route_file = package_net_paths()
 
-    from sumo_rl import SumoEnvironment  # type: ignore[import-untyped]
+    from sumo_rl import SumoEnvironment
 
     env = SumoEnvironment(
         net_file=str(net_file),

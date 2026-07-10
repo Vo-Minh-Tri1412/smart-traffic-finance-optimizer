@@ -133,7 +133,8 @@ func build_from_spec(path: String) -> bool:
 func build_from_sumo_net(path: String) -> bool:
 	_clear_generated()
 	_sumo_geometry = SumoNetGeometryDataScript.new()
-	if not _sumo_geometry.load_xml(path):
+	var resolved_path := _resolve_repo_path(path)
+	if not _sumo_geometry.load_xml(resolved_path):
 		for error in _sumo_geometry.errors:
 			push_warning(error)
 		return false
@@ -164,6 +165,15 @@ func build_from_sumo_net(path: String) -> bool:
 	else:
 		_build_sumo_static_geometry()
 	return true
+
+
+func _resolve_repo_path(path: String) -> String:
+	if not path.begins_with("repo://"):
+		return path
+	var relative_path := path.trim_prefix("repo://").trim_prefix("/")
+	var render_project_path := ProjectSettings.globalize_path("res://").trim_suffix("/")
+	var repository_root := render_project_path.get_base_dir()
+	return repository_root.path_join(relative_path)
 
 
 func _clear_generated() -> void:
@@ -373,6 +383,12 @@ func _build_sumo_lod_region(focus_sumo: Vector2) -> void:
 	for index in range(min(junction_candidates.size(), junction_limit)):
 		var row := junction_candidates[index] as Dictionary
 		_build_sumo_junction(row.get("junction"))
+
+
+func refresh_camera_lod() -> void:
+	if not use_camera_road_lod or _sumo_geometry == null or _mapper == null:
+		return
+	_build_sumo_lod_region(_road_lod_focus_sumo())
 
 
 func _road_lod_focus_sumo() -> Vector2:
@@ -797,6 +813,12 @@ func world_position_for_lon_lat(lon: float, lat: float, height := 0.04) -> Varia
 		return null
 	var point := sumo_point as Vector2
 	return _mapper.sumo_to_world(point.x, point.y, height)
+
+
+func world_position_for_sumo_coordinate(x: float, y: float, height := 0.04) -> Variant:
+	if _mapper == null:
+		return null
+	return _mapper.sumo_to_world(x, y, height)
 
 
 func world_polygon_for_geo_coordinates(coordinates, height := 0.04) -> Array:

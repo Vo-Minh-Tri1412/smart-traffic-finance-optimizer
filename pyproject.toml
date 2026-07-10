@@ -11,6 +11,9 @@ dependencies = [
     "plotly>=6.8.0",
     "requests>=2.34.2",
     "stable-baselines3>=2.7.0",
+    "sb3-contrib>=2.7.0",
+    "supersuit>=3.9.3",
+    "pettingzoo>=1.24.3,<1.25",
     "streamlit>=1.58.0",
     "sumo-rl>=1.4.5",
 ]
@@ -34,6 +37,7 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.mypy]
 python_version = "3.12"
+ignore_missing_imports = true
 warn_unused_configs = true
 warn_redundant_casts = true
 warn_unused_ignores = true

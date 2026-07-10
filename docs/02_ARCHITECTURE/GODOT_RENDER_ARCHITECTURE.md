@@ -15,13 +15,14 @@ movement, queues, traffic-light policies, RL training, and metrics.
 Godot is the first render adapter behind the SUMO render bridge, not the center of the whole
 simulation system.
 
-## Current flow
+## Intended flow
 
 ```text
 OSM/SUMO prepared map
   -> SUMO district.net.xml + semantic_overlay.json + simulation_trace.jsonl
   -> Godot renders SUMO geometry, semantic overlay visuals, and vehicle traces
-  -> future cameras export frames/labels/video
+  -> calibrated optical visibility features for RL
+  -> optional RGB/depth/instance frames and labels
 ```
 
 Godot should prefer SUMO `district.net.xml` for road/lane geometry during replay so vehicles and
@@ -329,17 +330,20 @@ Current version labels:
 
 Loaders should reject unsupported versions clearly.
 
-## CV/sensor boundary
+## Optical sensor boundary
 
-YOLO/CV must not read hidden SUMO state at inference time.
+YOLO/CV must not read hidden SUMO state at inference time. RL may be trained before YOLO by using a
+geometry-based visibility adapter driven by the same SUMO trace.
 
 Correct synthetic CV path:
 
 ```text
 SUMO trace
-  -> Godot camera render
-  -> image frame + labels
-  -> YOLO train/evaluate
+  -> camera pose/FOV + vehicle dimensions + lane geometry
+  -> depth/instance visibility approximation
+  -> lane features + uncertainty for RL
+  -> optional RGB/depth/instance frame
+  -> optional YOLO train/evaluate
   -> detected observations
 ```
 
@@ -354,23 +358,17 @@ The sensor architecture is V2-ready even before training:
 - `ObjectIdRegistry` and the mask-pass interface create object-id mask artifacts for labels.
 - `SensorDatasetWriter` writes RGB frames, YOLO labels, object-id masks, and frame manifests.
 
+Camera rigs must be calibrated against the same world units as the selected Quận 7/ROI SUMO net.
+Vehicle assets need a canonical length/width/height mapping; `body_height` alone is only a render
+placement value. Occlusion labels should be produced from depth/instance visibility or an equivalent
+geometry algorithm, not from projected rectangles alone.
+
 The first smoke implementation may use projected replay vehicle bounds to populate the object-id
-mask artifact, but the public interface is intentionally compatible with a later true
-material/object-id render pass. Do not train or claim real CV quality until the dataset is generated
-from reviewed assets, camera rigs, scenarios, and render presets.
+mask artifact, but it is not depth-correct and must not be treated as a production occlusion labeler.
+The public interface remains compatible with a later true material/object-id/depth render pass.
 
-## Current gaps
+## Implementation status
 
-Before this becomes a polished demo renderer, the project still needs:
-
-- better district/map design after the team chooses what to simulate;
-- better vehicle/building/road art assets and materials;
-- ROI-specific visual LOD/camera presets for the selected demo map;
-- bridge manifest wiring to replace hard-coded scene paths in `Main.tscn`;
-- road style catalog expansion for road categories and markings;
-- traffic-light visual models synced from `traffic_light_trace.v1`;
-- a later SUMO scenario-event layer for incidents, closures, and temporary speed changes;
-- camera rigs and render presets;
-- synthetic CV dataset exporter beyond smoke output;
-- optional UI/HUD for demo;
-- optional native Godot tests if GDScript grows much further.
+Read [Implementation Status](../04_STATUS/IMPLEMENTATION_STATUS.md) for verified renderer and
+sensor capability, current gaps and dependency order. This document owns the intended Godot
+architecture and must not be read as a progress report.

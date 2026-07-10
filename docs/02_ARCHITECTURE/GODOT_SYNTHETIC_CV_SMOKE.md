@@ -14,7 +14,7 @@ Godot smoke script
   -> dataset validator from task 1
 ```
 
-This is intentionally small. It is not a final city renderer and not a YOLO training dataset.
+This is intentionally small. It is not a final Quận 7/ROI renderer and not a YOLO training dataset.
 Its job is to catch basic pipeline problems early:
 
 - Can Codex/Python find and run Godot headless?
@@ -73,5 +73,8 @@ Future replay/dataset code should stay inside the purpose-specific folders:
 ## Caveat
 
 The current smoke scene uses a simple Godot-generated top-down image, not the final 3D district
-render. That is deliberate: this task tests the plumbing. A later exporter should replay SUMO/SUMO-RL
-trajectories into a richer Godot 3D scene with cameras, weather, lighting, and occlusion.
+render. That is deliberate: this task tests the plumbing. It is not a depth-correct occlusion
+simulation. A later exporter should replay SUMO/SUMO-RL trajectories into the reviewed Quận 7/ROI
+Godot scene with calibrated cameras, vehicle dimensions, depth/instance visibility, weather,
+lighting and structured occlusion. RL may consume geometry-derived visibility features before a YOLO
+model is trained.

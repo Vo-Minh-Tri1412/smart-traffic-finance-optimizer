@@ -4,6 +4,7 @@ import argparse
 import json
 import sys
 import xml.etree.ElementTree as ET
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -345,27 +346,27 @@ def load_osm_zone_polygons(osm_path: Path, transform: NetTransform) -> tuple[Zon
             float(node.attrib["lon"]),
             float(node.attrib["lat"]),
         )
-    for way in root.findall("way"):
-        ways[way.attrib["id"]] = OsmWayRecord(
-            way_id=way.attrib["id"],
-            node_refs=tuple(nd.attrib["ref"] for nd in way.findall("nd")),
-            tags=_tags(way),
+    for way_element in root.findall("way"):
+        ways[way_element.attrib["id"]] = OsmWayRecord(
+            way_id=way_element.attrib["id"],
+            node_refs=tuple(nd.attrib["ref"] for nd in way_element.findall("nd")),
+            tags=_tags(way_element),
         )
 
     zones: list[ZonePolygon] = []
-    for way in ways.values():
-        classification = classify_zone_tags(way.tags)
-        if classification is None or not _is_closed_way(way):
+    for way_record in ways.values():
+        classification = classify_zone_tags(way_record.tags)
+        if classification is None or not _is_closed_way(way_record):
             continue
-        polygon = _polygon_from_way(way, nodes)
+        polygon = _polygon_from_way(way_record, nodes)
         if polygon is None:
             continue
         zone_type = classification[0]
         zones.append(
             ZonePolygon(
-                zone_id=f"way/{way.way_id}",
+                zone_id=f"way/{way_record.way_id}",
                 zone_type=zone_type,
-                source_tags=_relevant_zone_tags(way.tags),
+                source_tags=_relevant_zone_tags(way_record.tags),
                 geometry=polygon,
             )
         )
@@ -383,10 +384,10 @@ def load_osm_zone_polygons(osm_path: Path, transform: NetTransform) -> tuple[Zon
                 "outer",
             }:
                 continue
-            way = ways.get(member.attrib.get("ref", ""))
-            if way is None or not _is_closed_way(way):
+            relation_way_record = ways.get(member.attrib.get("ref", ""))
+            if relation_way_record is None or not _is_closed_way(relation_way_record):
                 continue
-            polygon = _polygon_from_way(way, nodes)
+            polygon = _polygon_from_way(relation_way_record, nodes)
             if polygon is None:
                 continue
             outer_polygons.append(polygon)
@@ -763,7 +764,7 @@ def _draw_geometry(
         ax.add_patch(patch)
 
 
-def _iter_polygons(geometry: Polygon | MultiPolygon | GeometryCollection):
+def _iter_polygons(geometry: Polygon | MultiPolygon | GeometryCollection) -> Iterator[Polygon]:
     if geometry.is_empty:
         return
     if isinstance(geometry, Polygon):

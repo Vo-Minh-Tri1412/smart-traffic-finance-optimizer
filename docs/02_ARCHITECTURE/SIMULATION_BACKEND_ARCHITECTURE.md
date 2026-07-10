@@ -10,8 +10,9 @@ simulation folders do, where SUMO actually runs, and which pieces are only valid
 - The reference backend is validation-only. It is not a simulator for final claims or demos.
 - `tests/fixtures/specs/toy_public_district_v1.json` is a synthetic fixture/test project, not the final
   district choice.
-- For real maps, the intended direction is OSM/SUMO-first: SUMO `.net.xml` owns road/lane/junction
-  geometry, while a semantic overlay owns zones, flows, investment candidates, and finance labels.
+- The current direction is OSM/SUMO-first for the full Quận 7 map or a reviewed ROI of roughly 100
+  signalized intersections: SUMO `.net.xml` owns road/lane/junction geometry, while a semantic
+  overlay owns zones, flows, investment candidates, camera anchors and finance labels.
 
 ## Main flow
 
@@ -220,30 +221,27 @@ The word "dataset" means different things in each model layer:
 | CV/YOLO sensor | Godot-rendered camera frames driven by SUMO traces | image, label, camera config, render preset, frame id |
 | Public finance/QUBO | scenario metrics + candidate costs/value assumptions | investment candidates, budget, public-value score, constraints |
 
-Godot is not the RL simulator. Godot is required for synthetic CV if the CV model is meant to learn
-from images. SUMO traces are the bridge between traffic dynamics and rendered camera frames.
+Godot is not the RL simulator. A learned CV model is optional for the first RL experiment: a
+geometry-based optical visibility adapter can produce partial observations from SUMO traces before
+YOLO exists. SUMO traces remain the bridge between traffic dynamics and rendered camera frames.
 
 ## Synthetic fixture policy
 
 `tests/fixtures/specs/toy_public_district_v1.json` is a synthetic fixture used to keep tests reproducible.
 It is not the final demo district, not a real-world claim, and not a product direction.
 
-Use it for:
+Use it only for:
 
 - smoke tests;
 - SUMO export/run/parse checks;
 - replay contract tests;
-- baseline/report fixture output.
+- baseline/report fixture output;
+- dependency and adapter smoke checks before the large ROI.
 
 Do not present it as the final city or district selected by the team.
 
-## Current gaps
+## Implementation status
 
-Before making strong simulation claims, the project still needs:
-
-- SUMO backend review for exporter/parser correctness;
-- stronger route/flow generation;
-- clearer traffic-light program design;
-- stronger fixed-time/rule-based baselines;
-- SUMO-RL training wrapper and reward contract;
-- Economics-approved public-value assumptions.
+Read [Implementation Status](../04_STATUS/IMPLEMENTATION_STATUS.md) for repository-wide gaps and
+approval dependencies before making large-ROI claims. This document owns the simulation boundary and
+backend contracts.

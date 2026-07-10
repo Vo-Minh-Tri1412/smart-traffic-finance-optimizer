@@ -30,15 +30,16 @@ for sensor realism:
 
 1. **Observation / sensor layer**: SUMO state adapters for RL/debug, with optional YOLO/CV sensing
    that estimates traffic state from Godot-rendered camera frames.
-2. **Traffic-control layer**: SUMO/SUMO-RL environment with fixed-time, rule-based, and RL
-   controllers.
+2. **Traffic-control layer**: SUMO/SUMO-RL environment with fixed-time, rule-based, and shared
+   multi-agent RL controllers with optional temporal memory.
 3. **Public-finance optimizer layer**: budget-constrained selection of intersections using exact,
    greedy, robust, and future QUBO/quantum-compatible formulations.
 4. **Synthetic visual sensor layer**: a Godot 3D render workspace that will turn SUMO/SUMO-RL
    vehicle trajectories into camera-like frames, YOLO labels, weather/noise variants, and demo
    video.
 
-The current repository is a technical scaffold with a working SUMO backend path. It contains the
+The current repository is a technical scaffold with a working SUMO backend and SUMO-to-Godot bridge
+path. It contains the
 simulation architecture, SUMO export/run/parse flow, preliminary fixed-time and rule-based
 baselines, frontend/Godot contracts, Drive-backed data/artifact workflow, and notebook entrypoints.
 It does **not** yet contain a final trained RL policy, final YOLO model, polished Godot demo UI,
@@ -120,7 +121,7 @@ of claiming that one trained policy is universally optimal.
                       +-------------------------+
 ```
 
-Future visual-sensor path:
+Future/active visual-sensor path:
 
 ```text
 SUMO/SUMO-RL world
@@ -136,7 +137,11 @@ Godot 3D synthetic camera renderer
         +--> render manifest
         |
         v
-YOLO sensor model
+geometry-based optical visibility
+        |
+        +--> RL lane observations before YOLO exists
+        v
+optional YOLO sensor model
         |
         v
 vehicle counts/type estimates + sensor-error report
@@ -148,12 +153,14 @@ Inside a simulation, the system already knows each vehicle's ID, type, position,
 waiting time. Training a CV model to re-detect those synthetic vehicles from UI assets would be
 mostly redundant if the RL controller can read the simulator state directly.
 
-So CV is treated as a **sensor layer**, not as the main source of truth:
+So CV and optical visibility are treated as a **sensor layer**, not as the main source of truth:
 
-- During simulation training, RL may use SUMO state/oracle observations for stability and debugging.
+- During development, RL may use SUMO state/oracle observations for debugging and upper-bound
+  measurements.
+- The first camera-partial-observation RL experiment may use a geometry-based visibility model from
+  camera pose, vehicle dimensions and depth ordering; YOLO is not a prerequisite.
 - For deployment-style demos, YOLO can estimate vehicle counts/types from camera or video frames.
-- For robustness testing, a synthetic camera view may be compared against SUMO ground truth to
-  measure sensor error.
+- For detector robustness, YOLO outputs may later be calibrated against SUMO/geometry ground truth.
 
 This keeps the architecture honest: CV is useful when the system does not have direct access to
 perfect simulator state, not when it merely re-detects UI icons that the simulator generated.
@@ -184,8 +191,8 @@ OSM/SUMO net + semantic overlay
 
 This makes the camera layer both visually stronger and scientifically cleaner: YOLO sees only images,
 while SUMO provides ground truth for measuring sensor error. The RL controller does not need to train
-from pixels in v1; it can train from SUMO-RL state observations while the Godot/YOLO layer supports
-deployment-style sensing, robustness checks, and a more convincing demo.
+from pixels in v1; it can train from geometry-derived partial observations and later compare against
+detector-based observations.
 
 Godot 3D is scoped as a lightweight scene-first synthetic renderer:
 
@@ -193,7 +200,8 @@ Godot 3D is scoped as a lightweight scene-first synthetic renderer:
 - reusable Godot scenes for world objects, vehicles, cameras, traffic lights, and UI panels;
 - fixed traffic cameras near hospitals, schools, industrial gates, bottlenecks, and arterial roads;
 - vehicle assets for motorbike, car, bus, truck, ambulance, and worker shuttle;
-- day/night/rain/noise variants for domain randomization;
+- day/night/rain/structured-occlusion/noise variants for domain randomization;
+- calibrated vehicle length/width/height and camera pose contracts;
 - automatic YOLO label export from known object positions;
 - generated frames, videos, labels, and model artifacts stored in Google Drive, not Git.
 
@@ -232,8 +240,8 @@ Current status:
 - `requirements-colab.txt` includes `ultralytics` and OpenCV for cloud training.
 - Local default `uv sync` does not install YOLO yet.
 - No real CV dataset or trained YOLO model is claimed.
-- Godot replay scaffolding exists under `render/`, but polished assets, camera rigs, and the
-  production dataset exporter are not implemented yet.
+- Godot replay and camera-rig scaffolding exists under `render/`; production depth/instance
+  visibility export is not implemented yet.
 
 ### 2. SUMO-RL traffic-control model
 
@@ -266,7 +274,8 @@ Current status:
   rule-based baselines, parses trip/edge/FCD metrics, and can open in SUMO GUI for inspection.
 - `tests/fixtures/specs/toy_public_district_v1.json` is a synthetic fixture/test network; it runs, but it
   is not the final district/map choice.
-- Final project-specific SUMO-RL training environment and trained policy are not complete yet.
+- A multi-agent/recurrent training scaffold exists, but the final project-specific observation
+  adapter, approved reward/flow contract, large-ROI run and trained policy are not complete yet.
 
 ### 3. Public-finance investment optimizer
 
@@ -302,10 +311,11 @@ Public value may include:
 
 Optimization approaches:
 
-- exact subset search for small candidate sets;
+- exact subset search only for tiny test candidate sets;
 - greedy benefit-cost baseline;
 - robust selection across multiple traffic scenarios;
-- QUBO export for later QAOA/D-Wave style quantum experiments.
+- interaction-aware QUBO export for later QAOA/D-Wave style experiments;
+- future bilevel/alternating optimization between QUBO investment masks and conditional RL policies.
 
 Current status:
 
@@ -559,9 +569,15 @@ It does claim:
 ## Scope guardrails
 
 - SUMO-RL remains the official traffic environment.
+- The strategic target is the full Quận 7 OSM/SUMO network or a reviewed ROI of roughly 100 signals;
+  the small fixture is CI-only.
+- Multi-agent RL uses a shared policy with optional frame stack or recurrent memory. It must be
+  evaluated on the same large-ROI network as the fixed-time and rule-based baselines.
 - Do not replace SUMO-RL with a custom simulator as the main environment without a recorded
   integrator decision.
 - Computer vision / YOLO is a sensor-layer extension, not the core data source inside simulation.
+- Geometry-based optical visibility may provide the first partial-observation sensor before YOLO is
+  trained. Vehicle height and camera calibration must be explicit before making occlusion claims.
 - Do not use unrelated public camera datasets as proof that YOLO understands the synthetic district.
 - Do not use flat UI icons as proof of a real CV model; prefer a controlled Godot 3D synthetic
   camera layer if CV becomes part of the demo.

@@ -1,159 +1,169 @@
 # SUMO-RL System Design
 
-## Architecture
+## Scope and target
+
+SUMO is the official traffic simulator and SUMO-RL is the official signal-control environment.
+The current project target is the full Quận 7 OSM/SUMO map or a reviewed ROI of roughly 100
+signalized intersections. The small package fixture and the one-intersection SUMO smoke test remain
+CI/runtime checks only; they are not the research environment or final demo claim.
+
+The latest map/render work uses the SUMO net, semantic overlay, DVC/Drive artifacts and Godot LOD
+replay path. A renderer must not replace SUMO traffic dynamics.
+
+## End-to-end architecture
 
 ```text
-Traffic scenario inputs
+Quận 7 SUMO net + semantic overlay + demand scenarios
         |
         v
-SUMO network + demand files
+SUMO / SUMO-RL traffic dynamics and signal phases
+        |
+        +--> fixed-time baseline
+        +--> rule-based baseline
+        +--> shared multi-agent RL policy
+        |
+        +--> vehicle/signal/event traces
+                    |
+                    v
+      calibrated optical visibility sensor (optional at first)
+                    |
+                    v
+      lane features + uncertainty + temporal memory
+                    |
+                    v
+      RL observations and policy actions
         |
         v
-SUMO-RL environment
-        |
-        +--> Fixed-time baseline
-        +--> Rule-based adaptive baseline
-        +--> RL agent
-        |
-        v
-Simulation metrics
-        |
-        v
-Public-value scoring layer
-        |
-        v
-Budget allocation/ranking layer
-        |
-        v
-Dashboard/report for policy decision
+metrics -> public-value scoring -> QUBO/budget allocation
 ```
 
-## Core environment
+## Environment interfaces
 
-The official environment is **SUMO-RL**. Do not use a custom simulator or an old OOP project as the
-main environment unless the integrator explicitly changes this project decision.
+SUMO-RL supports Gymnasium and PettingZoo interfaces. The project training entrypoint uses the
+PettingZoo parallel interface for multi-agent mode, converts it to a Stable-Baselines vector
+environment through SuperSuit, and applies one shared policy across signal agents.
 
-SUMO-RL provides a Gymnasium/PettingZoo-compatible interface for traffic signal control. SUMO itself
-must be installed as an external binary runtime.
+The current train scaffold supports:
 
-Current implementation status:
+- `multi_agent` shared-policy mode for all traffic signals in the loaded SUMO network;
+- `single_agent` mode only as a debugging fallback;
+- plain PPO, vector frame stacking, or RecurrentPPO LSTM memory;
+- the existing reward callback and route/export contracts as templates;
+- configurable parallel environment copies for cloud training.
 
-- SUMO export/run/parse is operational for the district spec.
-- `fixed_time` runs as the current simple baseline.
-- `rule_based` runs through TraCI as a preliminary adaptive baseline.
-- `rl_policy` is still a placeholder; training/evaluation is not implemented yet.
-- SUMO FCD/trace output is the source for future Godot replay.
+The scaffold does not claim that the final project observation adapter, reward profile, flow
+calibration or hard safety constraints are approved.
 
-## Observation, action, reward, and public-value objective
+## Observation, action and memory
 
-The canonical RL observation contract is [Observation Space v1](OBSERVATION_SPACE_V1.md). Do not
-define separate observation lists in other architecture documents.
+The canonical observation contract is [Observation Space v1](OBSERVATION_SPACE_V1.md). It is a
+per-signal local observation, not a single vector containing the whole district.
 
-In short, each controlled traffic light observes local queue/waiting pressure, downstream congestion
-risk, current signal phase, phase timing, emergency vehicles, bus/truck pressure, and coarse time
-context.
+Every agent should observe:
 
-Initial action space:
+- local incoming approach pressure and waiting time;
+- approaching vehicles and downstream capacity risk;
+- current signal phase and timing safety;
+- emergency, bus and truck pressure;
+- time/scenario context;
+- when camera-based sensing is enabled, estimated counts, confidence, visible fraction and
+  time-since-last-observed.
 
-- keep current phase
-- switch to next legal phase
+Memory is part of the policy contract for partial observation:
 
-Initial RL reward:
+1. memoryless PPO baseline;
+2. 4–8 snapshots of compact lane features;
+3. RecurrentPPO/LSTM shared policy;
+4. graph/neighborhood message passing or centralized training if network coordination remains weak.
 
-- negative total waiting time
-- negative queue length
-- penalty for unsafe or too-frequent switching
+Raw RGB frame stacking is not the first signal-control target. Camera frames should first be reduced
+to a fixed-size sensor observation by a geometry-based visibility model, tracker and optional YOLO
+detector.
 
-The initial RL reward can stay traffic-focused so training remains stable. However, the project
-objective is not merely "reduce delay." The final product objective is a public-value score used to
-rank policies and investments:
+## Structured optical occlusion
+
+The RL policy may be trained before YOLO exists. The first sensor can use deterministic or randomized
+3D visibility:
 
 ```text
-public_value_score
-  = delay_saved_minutes * value_of_time
-  + optional fuel_or_emission_proxy
-  - implementation_cost
-  - operating_or_maintenance_cost
-  - fairness_or_service_penalty
+camera height/pitch/FOV
+  + SUMO x/y/angle and lane geometry
+  + vehicle length/width/height
+  -> projected boxes and depth ordering
+  -> visible fraction and lane-level observation
 ```
 
-So there are two linked layers:
+The traffic state in SUMO is not corrupted. Only the observation is partially observed. This permits
+training under bus/truck occlusion without inventing detector-specific errors. Later, YOLO errors,
+weather, blur and class confusion may be calibrated and inserted after the visibility model. See
+[Structured Occlusion and Sensor-Based RL](STRUCTURED_OCCLUSION_AND_SENSOR_RL.md).
 
-1. **Control layer**: fixed-time, rule-based, or RL controls traffic lights in SUMO.
-2. **Public-finance layer**: converts the resulting metrics into benefit/cost and budget-priority
-   decisions.
+## Action and reward
 
-This avoids the weak pattern of building a smart-city demo and only adding economics in the slides.
-The economics assumptions directly shape the scoring, scenario sensitivity, and investment
-recommendation.
+The action remains a legal signal-phase choice supplied by SUMO-RL. The environment must enforce
+yellow/minimum-green safety timing. A policy must not be credited for illegal phase changes.
 
-## Environment scope ladder
+The current reward callback remains a template until the reward profile is approved. The initial
+traffic objective may use waiting time, queue pressure and switching penalties. Final evaluation must
+also report emergency, bus passenger, truck/logistics, fairness and spillback effects.
 
-The smoke test started with small runtime checks only to verify the stack. The project-grade
-environment should grow through this scope ladder:
+The RL reward and public-value score are related but not identical:
 
-- **Smoke test:** one signalized intersection, used only to verify local SUMO/SUMO-RL installation.
-- **Debug prototype:** a 2x2 or 3x3 network if needed to isolate controller and metric bugs.
-- **Current technical district:** a 16-intersection / 48-edge synthetic public-service district that
-  runs in SUMO and exposes metrics/traces, but still looks like a technical grid.
-- **Demo target:** a synthetic or hybrid public-service district with roughly 12-25 intersections,
-  multiple functional zones, road capacity differences, at least one bottleneck, hospital/emergency
-  priority routes, and candidate intersections for public investment.
-- **Stretch target:** an OpenStreetMap-inspired or OpenStreetMap-imported district after the synthetic
-  or hybrid pipeline is stable.
+```text
+RL: learn safe operational signal control
+finance: choose where investment creates public value under budget
+```
 
-The smoke test and any small grid are not the project. They only prove that the simulator stack works.
-The main demo should make the public-finance decision visible inside the simulation: not every
-intersection receives intelligent control, and the system must justify which intersections deserve
-investment first.
+## Scope and scaling
 
-See [Environment Design Research Plan](ENVIRONMENT_DESIGN_RESEARCH_PLAN.md) for the paper-design
-workflow and [Public-Service District Environment Spec](PUBLIC_SERVICE_DISTRICT_ENVIRONMENT_SPEC.md)
-for the concrete v1 district architecture.
+The full Quận 7/ROI network is the target. The fixture at
+`tests/fixtures/specs/toy_public_district_v1.json` is a reproducible test input only.
 
-The district architecture is engine-independent by design. SUMO/SUMO-RL remains the default
-implementation target, but the team should not weaken the city, vehicle, demand, or public-finance
-model simply to fit a convenient tutorial map. If a required behavior cannot be expressed cleanly in
-SUMO, add an adapter/domain layer or record a new approved implementation decision before replacing
-the engine.
+At approximately 100–160 signals, the project should use:
 
-## Baselines
+- shared policy parameters rather than one model per signal;
+- fixed-size local observations and adjacency/neighborhood summaries;
+- scenario and seed randomization;
+- centralized training/decentralized execution or graph policies when local policies cannot
+  coordinate;
+- LOD and camera-window rendering so Godot does not instantiate the whole map unnecessarily.
 
-Every RL result must be compared against:
+The number of signals alone is not evidence of a stable policy. Claims require network-level metrics,
+per-signal metrics, unseen demand scenarios and multiple seeds.
 
-- fixed-time controller
-- simple rule-based adaptive controller
+## Required baselines
 
-The rule-based baseline is intentionally a transparent heuristic: read queue/lane pressure and give
-simple priority to emergency/public-service vehicles. It is not expected to be optimal yet and may
-lose to fixed-time on some scenarios. That is acceptable as long as the report states it plainly.
+Every RL claim must be compared with:
 
-Baseline work can continue before Economics finishes reward/public-value, because baselines use
-traffic metrics that already exist. RL training should wait until reward and scenario definitions are
-aligned.
+- fixed-time control;
+- rule-based adaptive control;
+- the same SUMO network, demand scenarios, seeds and signal scope.
 
-If the RL agent is unstable or not ready, the project can still demo fixed-time vs rule-based plus
-the public-finance layer, but the final target remains SUMO-RL.
+For camera-based runs, also compare clean geometry visibility against structured occlusion and
+optional detector-noise conditions.
+
+## QUBO/RL relationship
+
+The long-horizon investment decision and short-horizon signal policy should be coupled through a
+bilevel or alternating workflow. QUBO selects an upgrade mask under budget; RL is evaluated or
+fine-tuned for that mask. QUBO coefficients must eventually include measured corridor interactions,
+not only independent candidate values. See [QUBO and RL Joint Optimization](QUBO_RL_JOINT_OPTIMIZATION.md).
 
 ## Outputs
 
-Required output tables:
+Required outputs remain:
 
-- `simulation_summary`: scenario, controller, total waiting time, throughput, queue statistics
-- `public_finance_summary`: scenario, controller, value-of-time saved, estimated benefit, caveats
-- `budget_priority`: intersection/scenario, benefit estimate, implementation cost assumption, net
-  public value, priority rank
-- `sensitivity_summary`: assumption set, changed parameter, decision change, caveat
+- `simulation_summary`: scenario, controller, signal scope, total waiting time, throughput and queue
+  statistics;
+- `sensor_summary`: camera/visibility configuration, observation error, occlusion rate and tracker
+  continuity;
+- `public_finance_summary`: value-of-time, emergency, bus and logistics effects with caveats;
+- `budget_priority`: candidate/mask, cost assumption, public value and robustness rank;
+- `sensitivity_summary`: changed demand, visibility, reward or cost assumption and decision impact;
+- `training_manifest`: agent mode, memory mode, seeds, scenario, checkpoint and environment contract.
 
-## External runtime notes
+## Implementation status
 
-Python dependencies are managed by `uv`.
-
-SUMO is not a normal Python dependency. Local machines must install SUMO separately and expose:
-
-- `sumo`
-- `sumo-gui`
-- `SUMO_HOME`
-
-`uv run python -m ai_quantum_hvtc doctor` reports missing SUMO runtime as a warning so repository
-checks can still run on machines that have not installed SUMO yet.
+Read [Implementation Status](../04_STATUS/IMPLEMENTATION_STATUS.md) for verified runtime
+capability, unresolved approval dependencies and the boundary on research claims. This document
+owns the intended control-system design and evaluation contract.

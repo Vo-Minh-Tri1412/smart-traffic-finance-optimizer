@@ -1,8 +1,9 @@
-# Synthetic Visual Sensor Dataset Contract
+# Synthetic Visual Sensor Dataset and Optical Visibility Contract
 
 This document defines the first technical contract for the computer-vision layer.
-It is intentionally a contract, not a finished dataset. The project can train later on
-Colab/Kaggle/cloud GPU, but the local repository must already know what a valid dataset looks like.
+It is intentionally a contract, not a finished dataset. The project can train RL before YOLO by
+using a geometry-based optical visibility adapter. YOLO remains an optional detector layer for later
+detector-specific error modeling and validation.
 
 ## Why this layer exists
 
@@ -23,17 +24,22 @@ shortcut.
 ```text
 SUMO/SUMO-RL run
   -> vehicle trajectories and traffic-light timeline
-  -> Godot 3D scene-first renderer
-  -> camera frames + generated labels
-  -> YOLO-format dataset
-  -> train/evaluate vision model on Colab/Kaggle/cloud GPU
-  -> exported detections/counts
+  -> calibrated Godot 3D camera and visibility pass
+  -> visible/occluded lane features for geometry-only RL
+  -> optional RGB/depth/instance frames and YOLO labels
+  -> optional detector training/evaluation on Colab/Kaggle/cloud GPU
+  -> observed detections/counts and uncertainty
   -> sensor observation contract used by the traffic system
 ```
 
-The renderer is allowed to stay synthetic in early versions. Synthetic data is useful because it is
+The renderer is allowed to stay synthetic in early versions. Synthetic geometry is useful because it is
 aligned with the simulated district, can include weather/lighting perturbations, and avoids the
 awkward mismatch where a real-world dataset sees real cars while the demo city uses simple icons.
+
+The first visibility model does not require a trained CV model. Camera pose, FOV, lane geometry and
+vehicle 3D dimensions can determine approximate depth ordering and visible fraction. This models
+structured bus/truck occlusion. It does not by itself model false positives, class confusion,
+rain/glare or motion-blur detector failures.
 
 The Godot project is intentionally organized as a real app under `render/`, not as a loose asset
 folder. Simulation vehicle types should map to Godot scenes through the Godot-native vehicle asset
@@ -98,9 +104,10 @@ a template or contains real generated frames.
 `render_manifest.json` records the renderer and source run: SUMO/SUMO-RL run id, Godot render id,
 camera ids, image size, weather profiles, and caveats.
 
-`camera_config.template.json` is the bridge between map design and visual sensing. It describes
-where cameras are placed and why they exist. Later, this should be generated from the district spec
-or Godot scene rather than handwritten.
+`camera_config.template.json` is the bridge between map design and visual sensing. It describes where
+cameras are placed and why they exist. Production camera entries must also record calibrated pose,
+FOV/intrinsics, image size, capture interval and the target approaches/intersections. Later, this
+should be generated from the district spec or render manifest rather than handwritten in isolation.
 
 ## Drive workflow
 
@@ -140,12 +147,13 @@ uv run python scripts/data/prepare_synthetic_cv_dataset.py `
 The validator accepts an empty template as a warning-only state. Once real frames exist, it checks
 image/label pairing and YOLO label ranges.
 
-## What this does not solve yet
+## Contract boundary
 
 - It does not train YOLO.
-- It does not export final district replay frames yet.
+- It does not export a final large-ROI RGB/depth/instance dataset yet.
 - It does not replace SUMO/SUMO-RL.
 - It does not claim synthetic data is equivalent to real traffic-camera footage.
+- It does not yet provide a canonical `height_m`/road-elevation contract for vehicles.
 
 The original smoke exporter only proves the PNG/label plumbing. The newer sensor smoke path is the
 architecture target:
@@ -159,9 +167,9 @@ SUMO trace replay in Godot
 ```
 
 The current object-id mask smoke uses projected Godot replay vehicle nodes to produce an object-id
-mask artifact. That is intentionally shaped like the future material/object-id render pass so the
-dataset writer, label mapping, camera catalog, and manifests do not need to be replaced when the
-mask pass becomes a true separate render pass.
+mask artifact. It is intentionally shaped like the future material/object-id render pass, but it is
+not a depth-correct occlusion labeler. The production pass must use depth/instance visibility or an
+equivalent deterministic geometry algorithm before the dataset is used for sensor claims.
 
 Godot-only sensor configuration is stored as `.tres` resources:
 
@@ -170,3 +178,6 @@ Godot-only sensor configuration is stored as `.tres` resources:
 
 Cross-system outputs remain JSON/JSONL/YAML because Python, Colab/Kaggle, Drive, and review scripts
 need to read them.
+
+For the verified implementation state and remaining physical-visibility work, read
+[Implementation Status](../04_STATUS/IMPLEMENTATION_STATUS.md).

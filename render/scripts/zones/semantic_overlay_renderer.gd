@@ -18,6 +18,8 @@ const ZoneVisualFactoryScript := preload("res://scripts/assets/zone_visual_facto
 @export_node_path("Node3D") var zone_lod_target_path: NodePath = NodePath("../Camera3D")
 @export var zone_lod_radius_m := 950.0
 @export var neutral_zone_lod_radius_m := 520.0
+@export var zone_lod_rebuild_distance_m := 140.0
+@export var zone_lod_update_interval_seconds := 0.35
 @export var rebuild_editor_preview := false:
 	set(value):
 		rebuild_editor_preview = false
@@ -35,14 +37,37 @@ var skipped_zone_lod_count := 0
 var spawned_neutral_zone_count := 0
 var errors: Array[String] = []
 
+var _loaded_overlay_data: Dictionary = {}
+var _zone_lod_timer := 0.0
+var _has_lod_focus := false
+var _last_lod_focus_world := Vector3.ZERO
+var _rebuild_count := 0
 
 func _ready() -> void:
 	if Engine.is_editor_hint():
 		if editor_preview_enabled and auto_render:
 			call_deferred("_auto_render")
 		return
+	set_process(use_camera_zone_lod)
 	if auto_render:
 		call_deferred("_auto_render")
+
+func _process(delta: float) -> void:
+	if Engine.is_editor_hint() or not use_camera_zone_lod:
+		return
+	if overlay_path.is_empty() or _loaded_overlay_data.is_empty():
+		return
+	_zone_lod_timer += delta
+	if _zone_lod_timer < zone_lod_update_interval_seconds:
+		return
+	_zone_lod_timer = 0.0
+	var focus_world: Variant = _zone_lod_focus_world()
+	if focus_world is Vector3:
+		var current_focus := focus_world as Vector3
+		if not _has_lod_focus or current_focus.distance_to(_last_lod_focus_world) >= zone_lod_rebuild_distance_m:
+			_last_lod_focus_world = current_focus
+			_has_lod_focus = true
+			_rebuild_lod_region()
 
 
 func _auto_render() -> void:
@@ -51,36 +76,47 @@ func _auto_render() -> void:
 
 
 func render_overlay(path: String) -> bool:
-	_clear_generated()
 	errors.clear()
 	overlay_parse_error_count = 0
-	spawned_zone_count = 0
-	fallback_zone_count = 0
-	skipped_neutral_count = 0
-	skipped_zone_count = 0
-	skipped_zone_lod_count = 0
-	spawned_neutral_zone_count = 0
 	overlay_path = path
-
 	var overlay := _load_overlay(path)
+	_loaded_overlay_data = overlay
 	if overlay.is_empty():
+		_has_lod_focus = false
+		_clear_generated()
+		_reset_render_counts()
+		return false
+	var focus_world: Variant = _zone_lod_focus_world()
+	if focus_world is Vector3:
+		_last_lod_focus_world = focus_world as Vector3
+		_has_lod_focus = true
+	return _rebuild_lod_region()
+
+func _rebuild_lod_region() -> bool:
+	_clear_generated()
+	overlay_parse_error_count = 0
+	_reset_render_counts()
+	_rebuild_count += 1
+
+	if _loaded_overlay_data.is_empty():
 		return false
 
-	zone_factory = ZoneVisualFactoryScript.new()
-	if not zone_factory.configure(zone_catalog_path):
-		for error in zone_factory.errors:
-			push_warning(error)
+	if zone_factory == null:
+		zone_factory = ZoneVisualFactoryScript.new()
+		if not zone_factory.configure(zone_catalog_path):
+			for error in zone_factory.errors:
+				push_warning(error)
 
-	var raw_zones: Variant = overlay.get("zones", [])
+	var raw_zones: Variant = _loaded_overlay_data.get("zones", [])
 	if not (raw_zones is Array):
-		errors.append("Semantic overlay zones must be an array: %s" % path)
+		errors.append("Semantic overlay zones must be an array: %s" % overlay_path)
 		return false
 
 	var world := get_node_or_null(geometry_world_path)
 	var zone_lod_focus: Variant = _zone_lod_focus_world()
 	var zones := raw_zones as Array
-	var index := 0
-	for raw_zone in zones:
+	for index in range(zones.size()):
+		var raw_zone = zones[index]
 		if not (raw_zone is Dictionary):
 			overlay_parse_error_count += 1
 			continue
@@ -96,7 +132,6 @@ func render_overlay(path: String) -> bool:
 		if world_polygons.is_empty():
 			var fallback_position := _zone_world_position(zone_data, world, index, zones.size())
 			if not _should_spawn_zone_visual(zone_type, fallback_position, zone_lod_focus, world):
-				index += 1
 				continue
 			if not _spawn_zone_visual(zone_data, [], world, index, zones.size()):
 				overlay_parse_error_count += 1
@@ -116,11 +151,19 @@ func render_overlay(path: String) -> bool:
 				if not _spawn_zone_visual(part_data, world_polygon, world, index, zones.size()):
 					overlay_parse_error_count += 1
 				part_index += 1
-		index += 1
 
 	if zone_factory != null:
 		fallback_zone_count = zone_factory.fallback_spawn_count
 	return spawned_zone_count > 0 and overlay_parse_error_count == 0
+
+
+func _reset_render_counts() -> void:
+	spawned_zone_count = 0
+	fallback_zone_count = 0
+	skipped_neutral_count = 0
+	skipped_zone_count = 0
+	skipped_zone_lod_count = 0
+	spawned_neutral_zone_count = 0
 
 
 func _spawn_zone_visual(
@@ -165,6 +208,13 @@ func summary() -> Dictionary:
 		"skipped_zone_count": skipped_zone_count,
 		"skipped_zone_lod_count": skipped_zone_lod_count,
 		"spawned_neutral_zone_count": spawned_neutral_zone_count,
+		"rebuild_count": _rebuild_count,
+		"has_lod_focus": _has_lod_focus,
+		"last_lod_focus_world": {
+			"x": float(_last_lod_focus_world.x) if is_finite(_last_lod_focus_world.x) else 0.0,
+			"y": float(_last_lod_focus_world.y) if is_finite(_last_lod_focus_world.y) else 0.0,
+			"z": float(_last_lod_focus_world.z) if is_finite(_last_lod_focus_world.z) else 0.0,
+		},
 		"overlay_path": overlay_path,
 		"zone_catalog_path": zone_catalog_path,
 		"zone_asset_catalog_loaded": (
@@ -177,7 +227,8 @@ func summary() -> Dictionary:
 
 
 func _load_overlay(path: String) -> Dictionary:
-	var file := FileAccess.open(path, FileAccess.READ)
+	var resolved_path := _resolve_repo_path(path)
+	var file := FileAccess.open(resolved_path, FileAccess.READ)
 	if file == null:
 		errors.append("Semantic overlay not found: %s" % path)
 		return {}
@@ -188,6 +239,14 @@ func _load_overlay(path: String) -> Dictionary:
 		overlay_parse_error_count += 1
 		return {}
 	return parsed as Dictionary
+
+
+func _resolve_repo_path(path: String) -> String:
+	if not path.begins_with("repo://"):
+		return path
+	var relative_path := path.trim_prefix("repo://").trim_prefix("/")
+	var render_project_path := ProjectSettings.globalize_path("res://").trim_suffix("/")
+	return render_project_path.get_base_dir().path_join(relative_path)
 
 
 func _zone_world_position(zone_data: Dictionary, world: Node, index: int, total: int) -> Vector3:
@@ -210,7 +269,9 @@ func _should_spawn_zone_visual(
 	if is_neutral and spawned_neutral_zone_count >= max_neutral_visual_zones:
 		skipped_neutral_count += 1
 		return false
-	if use_camera_zone_lod and zone_lod_focus is Vector3:
+	if use_camera_zone_lod:
+		if not (zone_lod_focus is Vector3):
+			return false
 		var focus := zone_lod_focus as Vector3
 		var world_scale := 1.0
 		if world != null and world.get("world_scale") != null:
@@ -324,4 +385,5 @@ func _local_polygon(points: Array, origin: Vector3) -> Array:
 func _clear_generated() -> void:
 	for child in get_children():
 		if child.is_in_group("generated_zone_visual"):
+			remove_child(child)
 			child.queue_free()
