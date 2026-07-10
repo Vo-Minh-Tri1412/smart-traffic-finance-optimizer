@@ -227,7 +227,8 @@ func summary() -> Dictionary:
 
 
 func _load_overlay(path: String) -> Dictionary:
-	var file := FileAccess.open(path, FileAccess.READ)
+	var resolved_path := _resolve_repo_path(path)
+	var file := FileAccess.open(resolved_path, FileAccess.READ)
 	if file == null:
 		errors.append("Semantic overlay not found: %s" % path)
 		return {}
@@ -238,6 +239,14 @@ func _load_overlay(path: String) -> Dictionary:
 		overlay_parse_error_count += 1
 		return {}
 	return parsed as Dictionary
+
+
+func _resolve_repo_path(path: String) -> String:
+	if not path.begins_with("repo://"):
+		return path
+	var relative_path := path.trim_prefix("repo://").trim_prefix("/")
+	var render_project_path := ProjectSettings.globalize_path("res://").trim_suffix("/")
+	return render_project_path.get_base_dir().path_join(relative_path)
 
 
 func _zone_world_position(zone_data: Dictionary, world: Node, index: int, total: int) -> Vector3:

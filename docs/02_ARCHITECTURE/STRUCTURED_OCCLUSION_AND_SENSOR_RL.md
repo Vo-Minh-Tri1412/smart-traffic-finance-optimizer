@@ -155,10 +155,8 @@ The key claim is not that RL reconstructs every hidden vehicle exactly. The clai
 trained under structured partial observation remains safe and useful when large vehicles occlude
 smaller vehicles.
 
-## Current repository status
+## Implementation status
 
-The camera catalog already contains positions, orientations, FOV and image sizes, and the render
-bridge already carries SUMO vehicle traces. The current sensor smoke exporter is still a plumbing
-test: it does not yet provide production RGB/depth/instance visibility or a calibrated `height_m`
-contract. This document therefore describes the approved design direction, not a completed CV
-dataset.
+Read [Implementation Status](../04_STATUS/IMPLEMENTATION_STATUS.md) for the verified sensor
+baseline and current missing physical contracts. This document describes the approved observation
+boundary and structured-occlusion target, not a completed CV dataset.

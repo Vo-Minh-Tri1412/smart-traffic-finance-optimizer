@@ -11,7 +11,7 @@ dependencies = [
   "053_godot_preview_camera_and_asset_scale",
 ]
 acceptance_commands = [
-  "uv run python scripts/render/godot_sumo_trace_replay_smoke.py --trace render/outputs/district7_preview_camera_smoke/trace.jsonl --net simulation_projects/map_intake/02_prepared_sources/district7_osm_seed_20260702/district7_seed.net.xml --overlay simulation_projects/map_intake/05_semantic_overlays/district7_overlay.v1.json --spec tests/fixtures/specs/toy_public_district_v1.json --output-root render/outputs/godot_camera_controls_smoke --max-frames 5",
+  "uv run python scripts/render/godot_sumo_trace_replay_smoke.py --trace render/outputs/district7_preview_camera_smoke/trace.jsonl --net simulation_projects/map_intake/02_prepared_sources/district7_osm_seed_20260702/district7_seed.net.xml --overlay simulation_projects/map_intake/05_semantic_overlays/district7_buildable_polygons.v2.json --spec tests/fixtures/specs/toy_public_district_v1.json --output-root render/outputs/godot_camera_controls_smoke --max-frames 5",
   "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/054_godot_preview_camera_controls.toml",
 ]
 status = "done"
@@ -19,7 +19,7 @@ status = "done"
 [handoff]
 summary = "Added runtime preview camera controls for Godot Main.tscn: mouse wheel zoom, right-mouse drag pan, WASD/arrow-key pan, and R to refit the full SUMO map."
 validation = [
-  "uv run python scripts/render/godot_sumo_trace_replay_smoke.py --trace render/outputs/district7_preview_camera_smoke/trace.jsonl --net simulation_projects/map_intake/02_prepared_sources/district7_osm_seed_20260702/district7_seed.net.xml --overlay simulation_projects/map_intake/05_semantic_overlays/district7_overlay.v1.json --spec tests/fixtures/specs/toy_public_district_v1.json --output-root render/outputs/godot_camera_controls_smoke --max-frames 5",
+  "uv run python scripts/render/godot_sumo_trace_replay_smoke.py --trace render/outputs/district7_preview_camera_smoke/trace.jsonl --net simulation_projects/map_intake/02_prepared_sources/district7_osm_seed_20260702/district7_seed.net.xml --overlay simulation_projects/map_intake/05_semantic_overlays/district7_buildable_polygons.v2.json --spec tests/fixtures/specs/toy_public_district_v1.json --output-root render/outputs/godot_camera_controls_smoke --max-frames 5",
 ]
 risks = [
   "Controls are intentionally simple preview controls, not final demo UI.",

@@ -133,7 +133,8 @@ func build_from_spec(path: String) -> bool:
 func build_from_sumo_net(path: String) -> bool:
 	_clear_generated()
 	_sumo_geometry = SumoNetGeometryDataScript.new()
-	if not _sumo_geometry.load_xml(path):
+	var resolved_path := _resolve_repo_path(path)
+	if not _sumo_geometry.load_xml(resolved_path):
 		for error in _sumo_geometry.errors:
 			push_warning(error)
 		return false
@@ -164,6 +165,15 @@ func build_from_sumo_net(path: String) -> bool:
 	else:
 		_build_sumo_static_geometry()
 	return true
+
+
+func _resolve_repo_path(path: String) -> String:
+	if not path.begins_with("repo://"):
+		return path
+	var relative_path := path.trim_prefix("repo://").trim_prefix("/")
+	var render_project_path := ProjectSettings.globalize_path("res://").trim_suffix("/")
+	var repository_root := render_project_path.get_base_dir()
+	return repository_root.path_join(relative_path)
 
 
 func _clear_generated() -> void:

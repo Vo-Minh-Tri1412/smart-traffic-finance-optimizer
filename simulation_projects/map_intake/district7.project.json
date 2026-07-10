@@ -10,7 +10,7 @@
     "kind": "sumo_net_xml",
     "net_path": "02_prepared_sources/district7_osm_seed_20260702/district7_seed.net.xml"
   },
-  "semantic_overlay_path": "05_semantic_overlays/district7_overlay.v1.json",
+  "semantic_overlay_path": "05_semantic_overlays/district7_buildable_polygons.v2.json",
   "demand_config_path": "06_demand_configs/district7_demand.v1.json",
-  "notes": "Real OSM/SUMO geometry seed for infrastructure smoke tests. Demand and public-value overlays are synthetic placeholders until reviewed."
+  "notes": "Real OSM/SUMO geometry seed with the approved full buildable semantic polygon overlay. Demand and public-value fields remain separate review inputs."
 }

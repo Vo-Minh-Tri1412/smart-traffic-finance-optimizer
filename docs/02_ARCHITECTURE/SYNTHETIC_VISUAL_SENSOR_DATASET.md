@@ -147,7 +147,7 @@ uv run python scripts/data/prepare_synthetic_cv_dataset.py `
 The validator accepts an empty template as a warning-only state. Once real frames exist, it checks
 image/label pairing and YOLO label ranges.
 
-## What this does not solve yet
+## Contract boundary
 
 - It does not train YOLO.
 - It does not export a final large-ROI RGB/depth/instance dataset yet.
@@ -178,3 +178,6 @@ Godot-only sensor configuration is stored as `.tres` resources:
 
 Cross-system outputs remain JSON/JSONL/YAML because Python, Colab/Kaggle, Drive, and review scripts
 need to read them.
+
+For the verified implementation state and remaining physical-visibility work, read
+[Implementation Status](../04_STATUS/IMPLEMENTATION_STATUS.md).

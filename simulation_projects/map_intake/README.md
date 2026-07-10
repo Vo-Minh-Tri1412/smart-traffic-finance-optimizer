@@ -22,7 +22,7 @@ For Quận 7 V1, the committed source of truth is:
 ```text
 district7.project.json
   -> 02_prepared_sources/district7_osm_seed_20260702/district7_seed.net.xml  (DVC)
-  -> 05_semantic_overlays/district7_overlay.v1.json
+  -> 05_semantic_overlays/district7_buildable_polygons.v2.json
   -> 06_demand_configs/district7_demand.v1.json
 ```
 
@@ -45,7 +45,7 @@ simulation_projects/map_intake/
 ├── 02_prepared_sources/  # clipped/simplified/cleaned sources; ignored by Git
 ├── 03_godot_seed_specs/  # generated seed specs before manual Godot editing; ignored by Git
 ├── 04_review_notes/      # small notes/checklists about map quality and assumptions
-├── 05_semantic_overlays/  # small committed SUMO-ID overlays for zones/candidates/demand anchors
+├── 05_semantic_overlays/  # approved semantic polygons and SUMO-ID overlays for zones/candidates
 ├── 06_demand_configs/    # small committed scenario/demand runtime config
 └── templates/            # committed templates for future map intake packages
 ```
@@ -75,7 +75,7 @@ Raw and prepared map files are ignored by default. Commit only:
 - `.gitkeep` placeholders;
 - small templates;
 - `.dvc` pointer files for approved DVC-tracked artifacts;
-- small, explicitly approved sample maps with clear license/provenance.
+  - explicitly approved semantic overlays with clear provenance.
 
 If a map source is large or license-sensitive, track it with DVC or store it in Google Drive and
 record the Drive/DVC reference in an intake manifest.

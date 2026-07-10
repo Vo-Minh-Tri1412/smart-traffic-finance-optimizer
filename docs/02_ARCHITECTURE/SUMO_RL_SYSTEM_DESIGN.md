@@ -1,6 +1,6 @@
 # SUMO-RL System Design
 
-## Status and target
+## Scope and target
 
 SUMO is the official traffic simulator and SUMO-RL is the official signal-control environment.
 The current project target is the full Quận 7 OSM/SUMO map or a reviewed ROI of roughly 100
@@ -162,12 +162,8 @@ Required outputs remain:
 - `sensitivity_summary`: changed demand, visibility, reward or cost assumption and decision impact;
 - `training_manifest`: agent mode, memory mode, seeds, scenario, checkpoint and environment contract.
 
-## Current limitations
+## Implementation status
 
-- SUMO runtime and existing-net replay are operational, but full Quận 7/ROI multi-agent training
-  still needs cloud-scale validation.
-- Reward and demand/flow calibration remain templates until approved by the project owners.
-- Current Godot sensor smoke output is not yet a production depth/instance visibility pass.
-- Vehicle height and road elevation are not yet first-class fields in the SUMO/domain/trace contract.
-- A trained policy, YOLO model and public-finance assumptions must not be claimed before their
-  artifacts and evaluation reports exist.
+Read [Implementation Status](../04_STATUS/IMPLEMENTATION_STATUS.md) for verified runtime
+capability, unresolved approval dependencies and the boundary on research claims. This document
+owns the intended control-system design and evaluation contract.

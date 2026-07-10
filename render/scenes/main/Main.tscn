@@ -41,7 +41,7 @@ manual_start_rotation_degrees = Vector3(-28, 0, 0)
 script = ExtResource("5_bridge")
 
 [node name="DistrictReplayWorld" parent="." unique_id=942558472 instance=ExtResource("1_world")]
-net_path = ""
+net_path = "repo://simulation_projects/map_intake/02_prepared_sources/district7_osm_seed_20260702/district7_seed.net.xml"
 world_scale = 1.0
 enable_large_map_lod = true
 max_visual_lanes = 3200
@@ -56,8 +56,8 @@ editor_preview_enabled = true
 
 [node name="SemanticOverlayRenderer" type="Node3D" parent="." unique_id=362413856]
 script = ExtResource("3_overlay")
-overlay_path = ""
-auto_render = false
+overlay_path = "repo://simulation_projects/map_intake/05_semantic_overlays/district7_buildable_polygons.v2.json"
+auto_render = true
 render_neutral_zones = true
 max_visual_zones = 140
 max_neutral_visual_zones = 160
@@ -67,7 +67,7 @@ neutral_zone_lod_radius_m = 850.0
 
 [node name="SemanticHeatmapRenderer" type="Node3D" parent="." unique_id=1016986221]
 script = ExtResource("9_heatmap")
-overlay_path = ""
+overlay_path = "repo://simulation_projects/map_intake/05_semantic_overlays/district7_buildable_polygons.v2.json"
 auto_render = true
 editor_preview_enabled = true
 
@@ -86,9 +86,10 @@ auto_play = false
 
 [node name="PreviewLayerToggles" type="Node" parent="." unique_id=571229156]
 script = ExtResource("8_toggles")
+show_zone_heatmap = true
 show_zone_assets = true
 show_vehicles = false
 show_traffic_lights = false
 zone_render_mode = "both"
-shared_overlay_path = ""
+shared_overlay_path = "repo://simulation_projects/map_intake/05_semantic_overlays/district7_buildable_polygons.v2.json"
 auto_rebuild_visible_layers = true

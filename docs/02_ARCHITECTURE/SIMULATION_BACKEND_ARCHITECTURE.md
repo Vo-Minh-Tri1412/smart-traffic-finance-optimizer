@@ -240,17 +240,8 @@ Use it only for:
 
 Do not present it as the final city or district selected by the team.
 
-## Current gaps
+## Implementation status
 
-Before making strong simulation claims on Quận 7 or a large ROI, the project still needs:
-
-- SUMO backend review for exporter/parser correctness;
-- stronger route/flow generation;
-- clearer traffic-light program design;
-- stronger fixed-time/rule-based baselines;
-- SUMO-RL multi-agent training wrapper and approved reward contract;
-- optical visibility/sensor observation adapter and vehicle height/elevation fields;
-- structured occlusion and temporal-memory evaluation;
-- large-ROI performance validation with shared policy parameters;
-- interaction-aware QUBO coefficients estimated from SUMO experiments;
-- Economics-approved public-value assumptions.
+Read [Implementation Status](../04_STATUS/IMPLEMENTATION_STATUS.md) for repository-wide gaps and
+approval dependencies before making large-ROI claims. This document owns the simulation boundary and
+backend contracts.

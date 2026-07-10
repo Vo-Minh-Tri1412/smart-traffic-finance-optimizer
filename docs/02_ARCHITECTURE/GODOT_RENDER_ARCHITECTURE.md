@@ -15,7 +15,7 @@ movement, queues, traffic-light policies, RL training, and metrics.
 Godot is the first render adapter behind the SUMO render bridge, not the center of the whole
 simulation system.
 
-## Current flow
+## Intended flow
 
 ```text
 OSM/SUMO prepared map
@@ -367,19 +367,8 @@ The first smoke implementation may use projected replay vehicle bounds to popula
 mask artifact, but it is not depth-correct and must not be treated as a production occlusion labeler.
 The public interface remains compatible with a later true material/object-id/depth render pass.
 
-## Current gaps
+## Implementation status
 
-Before this becomes a polished large-ROI sensor renderer, the project still needs:
-
-- reviewed Quận 7/ROI camera anchors and calibration;
-- better vehicle/building/road art assets and materials;
-- ROI-specific visual LOD/camera presets for the selected demo map;
-- bridge manifest wiring to replace hard-coded scene paths in `Main.tscn`;
-- road style catalog expansion for road categories and markings;
-- traffic-light visual models synced from `traffic_light_trace.v1`;
-- a later SUMO scenario-event layer for incidents, closures, and temporary speed changes;
-- camera rigs and render presets tied to physical units;
-- vehicle `height_m` and road-elevation fields in the bridge contract;
-- depth/instance visibility exporter beyond smoke output;
-- optional UI/HUD for demo;
-- optional native Godot tests if GDScript grows much further.
+Read [Implementation Status](../04_STATUS/IMPLEMENTATION_STATUS.md) for verified renderer and
+sensor capability, current gaps and dependency order. This document owns the intended Godot
+architecture and must not be read as a progress report.
