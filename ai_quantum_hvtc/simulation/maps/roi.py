@@ -334,8 +334,7 @@ def _clip_sumo_net_to_roi(*, config: RoiConfig, output_root: Path | None) -> Pat
         )
     if not prepared_net_path.is_file() or prepared_net_path.stat().st_size <= 0:
         raise RoiPrepError(
-            f"{config.roi_id}: netconvert did not produce a prepared ROI net at "
-            f"{prepared_net_path}"
+            f"{config.roi_id}: netconvert did not produce a prepared ROI net at {prepared_net_path}"
         )
     return prepared_net_path
 
@@ -530,18 +529,22 @@ def classify_zone_tags(tags: dict[str, str]) -> tuple[str, str, float] | None:
         return "transport_hub", amenity or public_transport, 0.78
     if railway in {"station", "subway_entrance"}:
         return "transport_hub", railway, 0.76
-    if amenity in {
-        "police",
-        "fire_station",
-        "townhall",
-        "courthouse",
-        "post_office",
-        "library",
-        "community_centre",
-        "place_of_worship",
-        "bank",
-        "atm",
-    } or emergency:
+    if (
+        amenity
+        in {
+            "police",
+            "fire_station",
+            "townhall",
+            "courthouse",
+            "post_office",
+            "library",
+            "community_centre",
+            "place_of_worship",
+            "bank",
+            "atm",
+        }
+        or emergency
+    ):
         return "public_service", amenity or emergency, 0.82
     if amenity in {"bar", "pub", "nightclub", "restaurant", "cafe", "fast_food"}:
         return "nightlife", amenity, 0.74

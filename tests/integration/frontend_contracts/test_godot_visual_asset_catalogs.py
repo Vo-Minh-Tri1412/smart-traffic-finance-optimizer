@@ -244,28 +244,28 @@ def test_vehicle_factory_prefers_scene_assets_and_keeps_catalog_fallback() -> No
 
 
 def test_road_style_catalog_exposes_roadside_asset_slots() -> None:
-	render_root = PROJECT_ROOT / "render"
-	catalog = render_root / "resources" / "catalogs" / "RoadStyleCatalog.tres"
-	entry_script = render_root / "scripts" / "assets" / "road_style_entry.gd"
-	lane_visual = render_root / "scripts" / "roads" / "lane_visual_base.gd"
-	world = render_root / "scripts" / "world" / "district_replay_world.gd"
+    render_root = PROJECT_ROOT / "render"
+    catalog = render_root / "resources" / "catalogs" / "RoadStyleCatalog.tres"
+    entry_script = render_root / "scripts" / "assets" / "road_style_entry.gd"
+    lane_visual = render_root / "scripts" / "roads" / "lane_visual_base.gd"
+    world = render_root / "scripts" / "world" / "district_replay_world.gd"
 
-	catalog_body = catalog.read_text(encoding="utf-8")
-	entry_body = entry_script.read_text(encoding="utf-8")
-	lane_body = lane_visual.read_text(encoding="utf-8")
-	world_body = world.read_text(encoding="utf-8")
+    catalog_body = catalog.read_text(encoding="utf-8")
+    entry_body = entry_script.read_text(encoding="utf-8")
+    lane_body = lane_visual.read_text(encoding="utf-8")
+    world_body = world.read_text(encoding="utf-8")
 
-	assert '@export_group("Roadside Assets")' in entry_body
-	assert "@export var roadside_prop_scenes" in entry_body
-	assert "res://imported_assets/traffic_lights/light-square.glb" in catalog_body
-	assert "res://imported_assets/street_furniture/signs/sign-highway.glb" in catalog_body
-	for role in ["service", "residential", "arterial", "pedestrian"]:
-		assert f'road_role = "{role}"' in catalog_body
-	assert "RoadsideProps" in lane_body
-	assert "func _build_roadside_props" in lane_body
-	assert "func roadside_prop_count" in lane_body
-	assert "func _road_role_for_lane" in world_body
-	assert "rendered_road_role_counts" in world_body
+    assert '@export_group("Roadside Assets")' in entry_body
+    assert "@export var roadside_prop_scenes" in entry_body
+    assert "res://imported_assets/traffic_lights/light-square.glb" in catalog_body
+    assert "res://imported_assets/street_furniture/signs/sign-highway.glb" in catalog_body
+    for role in ["service", "residential", "arterial", "pedestrian"]:
+        assert f'road_role = "{role}"' in catalog_body
+    assert "RoadsideProps" in lane_body
+    assert "func _build_roadside_props" in lane_body
+    assert "func roadside_prop_count" in lane_body
+    assert "func _road_role_for_lane" in world_body
+    assert "rendered_road_role_counts" in world_body
 
 
 def test_main_renderer_uses_camera_lod_and_fly_preview() -> None:

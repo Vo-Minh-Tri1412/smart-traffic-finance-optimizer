@@ -64,8 +64,7 @@ def main() -> int:
             "osm_path": str(config.osm_path),
             "source_net_path": str(config.source_net_path or ""),
             "note": (
-                "Dry-run validates polygon config shape only; "
-                "it does not read map source files."
+                "Dry-run validates polygon config shape only; it does not read map source files."
             ),
         }
         (output_root / "dry_run_summary.json").write_text(

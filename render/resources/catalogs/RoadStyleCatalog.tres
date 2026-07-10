@@ -5,6 +5,8 @@
 [ext_resource type="Material" path="res://resources/materials/road_lane_asphalt.tres" id="3_road_mat"]
 [ext_resource type="PackedScene" path="res://scenes/roads/RoadVisualRoot.tscn" id="4_road_root"]
 [ext_resource type="PackedScene" path="res://scenes/roads/LaneVisualBase.tscn" id="5_lane"]
+[ext_resource type="PackedScene" path="res://imported_assets/traffic_lights/light-square.glb" id="6_light_square"]
+[ext_resource type="PackedScene" path="res://imported_assets/street_furniture/signs/sign-highway.glb" id="7_sign_highway"]
 [ext_resource type="Material" path="res://resources/materials/road_lane_marking_yellow.tres" id="8_marking_mat"]
 [ext_resource type="Material" path="res://resources/materials/road_junction_asphalt.tres" id="9_junction_mat"]
 [ext_resource type="Material" path="res://resources/materials/road_lane_service.tres" id="10_service_mat"]
@@ -22,8 +24,10 @@ junction_material = ExtResource("9_junction_mat")
 width_multiplier = 1.0
 min_visual_lane_width = 1.2
 show_roadside_props = false
+roadside_prop_scenes = []
 roadside_prop_spacing_m = 105.0
 roadside_prop_offset_m = 5.6
+roadside_prop_scale = 0.035
 roadside_prop_lane_stride = 9
 max_roadside_props_per_lane = 0
 description = "Default SUMO lane style for replay previews."
@@ -38,6 +42,7 @@ junction_material = ExtResource("9_junction_mat")
 width_multiplier = 0.75
 min_visual_lane_width = 0.85
 show_markings = false
+roadside_prop_scenes = []
 description = "Low-priority service/local lanes: rendered quietly to avoid visual noise."
 
 [sub_resource type="Resource" id="RoadStyle_residential"]
@@ -50,7 +55,9 @@ lane_marking_material = ExtResource("8_marking_mat")
 junction_material = ExtResource("9_junction_mat")
 width_multiplier = 0.95
 min_visual_lane_width = 1.1
+show_markings = true
 show_roadside_props = false
+roadside_prop_scenes = []
 roadside_prop_spacing_m = 135.0
 roadside_prop_offset_m = 4.8
 roadside_prop_scale = 0.032
@@ -68,7 +75,9 @@ lane_marking_material = ExtResource("8_marking_mat")
 junction_material = ExtResource("9_junction_mat")
 width_multiplier = 1.05
 min_visual_lane_width = 1.4
+show_markings = true
 show_roadside_props = false
+roadside_prop_scenes = []
 roadside_prop_spacing_m = 95.0
 roadside_prop_offset_m = 6.2
 roadside_prop_scale = 0.04
@@ -86,6 +95,7 @@ junction_material = ExtResource("9_junction_mat")
 width_multiplier = 0.35
 min_visual_lane_width = 0.55
 show_markings = false
+roadside_prop_scenes = []
 description = "Pedestrian/bicycle-only geometry: faint context, not traffic simulation focus."
 
 [resource]

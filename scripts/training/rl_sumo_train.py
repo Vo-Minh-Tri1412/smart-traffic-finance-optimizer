@@ -214,8 +214,8 @@ def _build_training_env(
 
     if args.agent_mode == "multi_agent":
         _patch_sumo_rl_pettingzoo_compat()
-        from sumo_rl import parallel_env  # type: ignore[import-untyped]
-        from supersuit import (  # type: ignore[import-untyped]
+        from sumo_rl import parallel_env
+        from supersuit import (
             concat_vec_envs_v1,
             pad_action_space_v0,
             pad_observations_v0,
@@ -266,8 +266,8 @@ def _patch_sumo_rl_pettingzoo_compat() -> None:
     internals.
     """
 
-    import sumo_rl.environment.env as sumo_env_module  # type: ignore[import-untyped]
-    from pettingzoo.utils.agent_selector import AgentSelector  # type: ignore[import-untyped]
+    import sumo_rl.environment.env as sumo_env_module
+    from pettingzoo.utils.agent_selector import AgentSelector
 
     if not callable(sumo_env_module.agent_selector):
         sumo_env_module.agent_selector = AgentSelector

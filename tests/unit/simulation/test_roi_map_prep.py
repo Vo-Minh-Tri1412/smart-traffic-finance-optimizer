@@ -99,9 +99,7 @@ def test_roi_artifact_writer_outputs_overlay_review_preview_and_qa(tmp_path: Pat
     assert paths.qa_markdown.read_text(encoding="utf-8").startswith("# ROI prep QA")
 
 
-def test_prepare_roi_can_clip_sumo_net_with_geo_boundary(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_prepare_roi_can_clip_sumo_net_with_geo_boundary(tmp_path: Path, monkeypatch) -> None:
     osm = _write_tiny_osm(tmp_path)
     net = _write_tiny_net(tmp_path)
     config = RoiConfig(

@@ -16,13 +16,13 @@ from scripts.render.godot_synthetic_cv_smoke import (  # noqa: E402
 
 GODOT_SMOKE_SCRIPT = "res://scripts/smoke/test_lod_regression.gd"
 
+
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="Run a Godot headless LOD regression smoke test."
-    )
+    parser = argparse.ArgumentParser(description="Run a Godot headless LOD regression smoke test.")
     parser.add_argument("--godot-project", default=str(DEFAULT_GODOT_PROJECT))
     parser.add_argument("--godot-exe", default=None)
     return parser
+
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
@@ -40,7 +40,7 @@ def main(argv: list[str] | None = None) -> int:
         with tempfile.TemporaryDirectory(prefix="aiq_godot_lod_") as temp_dir:
             temp_dir_path = Path(temp_dir)
             overlay_path = temp_dir_path / "fixture_overlay.json"
-            
+
             # Write minimal overlay fixture
             overlay_data = {
                 "zones": [
@@ -50,8 +50,8 @@ def main(argv: list[str] | None = None) -> int:
                         "geometry": {
                             "type": "polygon",
                             "coordinates": [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]],
-                            "coordinate_system": "sumo"
-                        }
+                            "coordinate_system": "sumo",
+                        },
                     },
                     {
                         "id": "zone_2",
@@ -61,14 +61,14 @@ def main(argv: list[str] | None = None) -> int:
                             "coordinates": [
                                 [[200, 200], [210, 200], [210, 210], [200, 210], [200, 200]]
                             ],
-                            "coordinate_system": "sumo"
-                        }
-                    }
+                            "coordinate_system": "sumo",
+                        },
+                    },
                 ]
             }
             with overlay_path.open("w", encoding="utf-8") as f:
                 json.dump(overlay_data, f)
-            
+
             command = [
                 str(godot_exe),
                 "--headless",
@@ -78,9 +78,9 @@ def main(argv: list[str] | None = None) -> int:
                 GODOT_SMOKE_SCRIPT,
                 "--",
                 "--overlay",
-                overlay_path.as_posix()
+                overlay_path.as_posix(),
             ]
-            
+
             completed = subprocess.run(
                 command,
                 cwd=PROJECT_ROOT,
@@ -89,7 +89,7 @@ def main(argv: list[str] | None = None) -> int:
                 stderr=subprocess.STDOUT,
                 check=False,
             )
-            
+
     except RuntimeError as exc:
         print(f"[FAIL] {exc}")
         return 1
@@ -105,6 +105,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print("[OK] Godot LOD regression smoke valid")
     return 0
+
 
 if __name__ == "__main__":
     raise SystemExit(main())
