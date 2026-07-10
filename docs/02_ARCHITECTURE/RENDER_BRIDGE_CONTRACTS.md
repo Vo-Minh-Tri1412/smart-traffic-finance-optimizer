@@ -14,8 +14,12 @@ only for Godot-owned visual configuration.
 | `traffic_light_trace` | `traffic_light_trace.v1` | Python SUMO parser | render adapter | traffic-light phase/state replay |
 | `semantic_overlay` | `semantic_overlay.v2` | map ROI/zoning pipeline | render adapter, finance | zones, demand anchors, public-finance tags |
 | `event_trace` | `event_trace.v1` | scenario runner | render adapter, reports | incidents, closures, road works, temporary speed changes |
+| `visibility_trace` | `visibility_trace.v1` | geometry sensor adapter | RL observation adapter, sensor reports | camera FOV, depth ordering, visible/occluded vehicle state |
 | `render_run_manifest` | `render_run_manifest.v1` | Python wrapper or demo config | render adapter | one file that wires geometry, traces, overlay, assets |
 | `sensor_dataset_manifest` | `sensor_dataset_manifest.v1` | render sensor exporter | Python training workflow | frames, labels, masks, camera config, provenance |
+
+`visibility_trace.v1` is a design-only contract at this stage. No production visibility producer is
+implemented yet; the current Godot smoke path remains a projected-bounds plumbing test.
 
 Existing `simulation_trace_frame.v1` remains supported for backward compatibility. New render bridge
 work should prefer `vehicle_trace.v2` naming for vehicle-level replay.
@@ -82,7 +86,11 @@ Vehicle trace is JSONL. Each line is one frame.
       "speed": 8.9,
       "angle": 90.0,
       "lane_id": "edge_0_0",
-      "road_id": "edge_0"
+      "road_id": "edge_0",
+      "length_m": 4.5,
+      "width_m": 1.8,
+      "height_m": 1.5,
+      "elevation_m": 0.0
     }
   ]
 }
@@ -90,6 +98,33 @@ Vehicle trace is JSONL. Each line is one frame.
 
 The model input for CV must be rendered images, not hidden vehicle trace values. The trace is only
 ground truth for replay and label generation.
+
+`length_m`, `width_m`, `height_m` and `elevation_m` are required for geometry-based visibility when
+available. Existing traces without them remain backward-compatible but cannot support physically
+audited occlusion claims.
+
+## `visibility_trace.v1`
+
+The visibility trace is an optional JSONL artifact produced from a calibrated camera and vehicle
+geometry. It is also valid when no learned CV model exists:
+
+```json
+{
+  "schema_version": "visibility_trace.v1",
+  "time_seconds": 12.0,
+  "camera_id": "CAM_I06_HIGH_01",
+  "vehicle_id": "veh_001",
+  "visible_fraction": 0.42,
+  "occlusion_fraction": 0.58,
+  "depth_m": 37.4,
+  "in_fov": true,
+  "visibility_state": "partially_occluded"
+}
+```
+
+The producer must record the camera pose/FOV or intrinsics, image size, capture interval and the
+world-unit convention. This artifact describes what the camera can geometrically see; it is not a
+detector confusion matrix. Detector-specific errors may be attached later by a sensor model.
 
 ## `traffic_light_trace.v1`
 
@@ -173,6 +208,7 @@ Minimum fields:
   "source_render_run": "render_run_manifest.json",
   "frames": [],
   "labels": [],
+  "visibility_trace": "visibility.jsonl",
   "camera_rigs": [],
   "caveat": "synthetic rendered data"
 }

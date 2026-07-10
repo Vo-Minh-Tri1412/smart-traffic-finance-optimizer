@@ -65,7 +65,9 @@ These point to:
 - raw District 7 OSM seed and Overpass query;
 - prepared SUMO `.net.xml`, random-trip smoke route files, and smoke outputs.
 
-This seed is for infrastructure testing. It is not yet the official final demo map.
+This seed is the current Quận 7 map-intake source for infrastructure and ROI work. The reviewed
+full map or ROI boundary, demand calibration and signal-control scope must still be recorded in the
+project manifest before final claims.
 
 ## Normal commands
 

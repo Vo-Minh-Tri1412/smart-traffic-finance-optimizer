@@ -1,7 +1,8 @@
 # Godot render workspace
 
-`render/` is the Godot project for SUMO trace replay, real-map visual overlay work, future demo
-rendering, and future synthetic CV dataset generation.
+`render/` is the Godot project for Quận 7/ROI SUMO trace replay, real-map visual overlay work,
+calibrated optical visibility experiments, future demo rendering and optional synthetic CV dataset
+generation.
 
 Full architecture:
 
@@ -18,6 +19,8 @@ Key rule:
 - Real map authoring must happen on real SUMO/OSM geometry and semantic overlay data, not on toy
   standalone authoring scenes.
 - YOLO/CV may only read rendered camera frames, not hidden SUMO state.
+- RL may consume geometry-derived visibility features before a YOLO model exists. Detector-specific
+  errors are a later sensor layer.
 
 Useful scenes:
 

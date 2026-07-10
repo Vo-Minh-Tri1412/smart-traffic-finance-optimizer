@@ -42,6 +42,11 @@ class TrainingPlan:
     reward_profile_status: str
     total_timesteps: int
     out_dir: str
+    agent_mode: str
+    memory_mode: str
+    frame_stack_size: int
+    num_envs: int
+    rollout_steps: int
     validation_errors: list[str]
     training_blockers: list[str]
     notes: list[str]
@@ -59,14 +64,20 @@ def build_sumo_net(paths: SumoExportPaths) -> None:
     netconvert = resolve_sumo_binary("netconvert")
     if netconvert is None:
         raise SumoRuntimeError("netconvert was not found. Install SUMO in the cloud runtime first.")
+    # `subprocess.run(..., cwd=paths.work_dir)` makes relative paths resolve inside the work
+    # directory. Export paths may be relative to the project root, so pass absolute paths to avoid
+    # accidentally looking for `<work_dir>/<work_dir>/district.nod.xml` on Windows/cloud runners.
+    nodes = paths.nodes.resolve()
+    edges = paths.edges.resolve()
+    net = paths.net.resolve()
     command = [
         netconvert,
         "--node-files",
-        str(paths.nodes),
+        str(nodes),
         "--edge-files",
-        str(paths.edges),
+        str(edges),
         "--output-file",
-        str(paths.net),
+        str(net),
         "--no-turnarounds",
         "true",
     ]
@@ -100,8 +111,14 @@ def create_training_plan(args: argparse.Namespace) -> TrainingPlan:
     )
     runtime = args.cloud_runtime if args.cloud_runtime != "auto" else detect_cloud_runtime()
     notes = [
-        "Default mode is dry-run; pass --train explicitly on Colab/Kaggle to start PPO.",
-        "This scaffold trains a SUMO-RL signal-control policy, not a route-choice policy.",
+        (
+            "Default mode is dry-run; pass --train explicitly on Colab/Kaggle to start the "
+            "selected PPO/RecurrentPPO policy."
+        ),
+        (
+            "The default policy is shared multi-agent signal control with LSTM memory, "
+            "not route choice."
+        ),
         "Hard emergency priority must become an action filter/override before final claims.",
     ]
     if runtime == "local":
@@ -118,9 +135,164 @@ def create_training_plan(args: argparse.Namespace) -> TrainingPlan:
         reward_profile_status=profile.status,
         total_timesteps=args.total_timesteps,
         out_dir=str(Path(args.out_dir)),
+        agent_mode=args.agent_mode,
+        memory_mode=args.memory,
+        frame_stack_size=args.frame_stack_size,
+        num_envs=args.num_envs,
+        rollout_steps=args.rollout_steps,
         validation_errors=validation_errors,
         training_blockers=blockers,
         notes=notes,
+    )
+
+
+def _sumo_environment_kwargs(
+    *,
+    paths: SumoExportPaths,
+    log_dir: Path,
+    run_id: str,
+    reward_fn: Any,
+    spec: Any,
+    seed: int,
+    yellow_time: int,
+    min_green: int,
+    max_green: int,
+) -> dict[str, Any]:
+    """Build one shared SUMO-RL configuration for single- and multi-agent modes.
+
+    The environment remains deliberately template-friendly: demand, reward and observation
+    extensions are supplied by the district spec and reward profile instead of being hard-coded
+    for one map.  Multi-agent mode uses SUMO-RL's PettingZoo parallel API so a shared policy can
+    scale from a small ROI smoke test to a full Quận 7/large-ROI run.
+    """
+
+    return {
+        "net_file": str(paths.net),
+        "route_file": str(paths.routes),
+        "out_csv_name": str(log_dir / run_id),
+        "use_gui": False,
+        "begin_time": 0,
+        "num_seconds": spec.metadata.horizon_seconds,
+        "delta_time": max(1, spec.metadata.time_step_seconds),
+        "yellow_time": yellow_time,
+        "min_green": min_green,
+        "max_green": max_green,
+        "reward_fn": reward_fn,
+        "sumo_seed": seed,
+        "sumo_warnings": False,
+        "additional_sumo_cmd": "--no-step-log true --duration-log.disable true",
+    }
+
+
+def _build_training_env(
+    *,
+    args: argparse.Namespace,
+    paths: SumoExportPaths,
+    log_dir: Path,
+    reward_fn: Any,
+    spec: Any,
+) -> Any:
+    """Create a SB3-compatible environment with optional temporal memory.
+
+    In multi-agent mode, each traffic signal is an agent and the policy is shared through the
+    SuperSuit PettingZoo-to-VecEnv adapter.  RecurrentPPO receives one recurrent state per
+    vectorized agent stream.  This is a scalable baseline; future graph/centralized-critic work
+    can replace this adapter without changing SUMO export or reward contracts.
+    """
+
+    kwargs = _sumo_environment_kwargs(
+        paths=paths,
+        log_dir=log_dir,
+        run_id=args.run_id,
+        reward_fn=reward_fn,
+        spec=spec,
+        seed=args.seed,
+        yellow_time=args.yellow_time,
+        min_green=args.min_green,
+        max_green=args.max_green,
+    )
+
+    if args.agent_mode == "multi_agent":
+        _patch_sumo_rl_pettingzoo_compat()
+        from sumo_rl import parallel_env  # type: ignore[import-untyped]
+        from supersuit import (  # type: ignore[import-untyped]
+            concat_vec_envs_v1,
+            pad_action_space_v0,
+            pad_observations_v0,
+            pettingzoo_env_to_vec_env_v1,
+        )
+
+        env = parallel_env(**kwargs)
+        # SUMO-RL 1.4.5's PettingZoo wrapper predates the render_mode attribute expected by
+        # SuperSuit's MarkovVectorEnv. Headless training has no renderer, so an explicit None is
+        # the correct compatibility value.
+        if not hasattr(env.unwrapped, "render_mode"):
+            env.unwrapped.render_mode = None
+        # Incoming lanes/phases differ across real intersections. Padding keeps one shared policy
+        # shape while preserving each agent's local feature ordering.
+        env = pad_observations_v0(env)
+        env = pad_action_space_v0(env)
+        env = pettingzoo_env_to_vec_env_v1(env)
+        # Always pass through concat_vec_envs_v1 so the MarkovVectorEnv becomes an SB3 VecEnv,
+        # including the default single-copy case.
+        env = concat_vec_envs_v1(
+            env,
+            args.num_envs,
+            base_class="stable_baselines3",
+        )
+        # Supersuit 3.11's SB3 wrapper delegates ``seed`` to a Gymnasium VectorEnv that only
+        # accepts reset(seed=...). SUMO's `sumo_seed` is already fixed in kwargs, so expose the
+        # SB3-compatible no-op seed hook while retaining deterministic SUMO initialization.
+        if not hasattr(env.venv, "seed"):
+            env.seed = lambda seed=None: [seed] * env.num_envs
+    else:
+        from sumo_rl import SumoEnvironment
+
+        env = SumoEnvironment(single_agent=True, **kwargs)
+
+    if args.memory == "frame_stack":
+        from stable_baselines3.common.vec_env import VecFrameStack
+
+        env = VecFrameStack(env, n_stack=args.frame_stack_size)
+    return env
+
+
+def _patch_sumo_rl_pettingzoo_compat() -> None:
+    """Bridge SUMO-RL 1.4.x's old PettingZoo import to the current class export.
+
+    SUMO-RL 1.4.5 imports ``agent_selector`` as if it were callable, while compatible PettingZoo
+    releases expose the module and the ``AgentSelector`` class separately. Keep this tiny adapter
+    local to the training entrypoint so the rest of the project does not depend on private library
+    internals.
+    """
+
+    import sumo_rl.environment.env as sumo_env_module  # type: ignore[import-untyped]
+    from pettingzoo.utils.agent_selector import AgentSelector  # type: ignore[import-untyped]
+
+    if not callable(sumo_env_module.agent_selector):
+        sumo_env_module.agent_selector = AgentSelector
+
+
+def _build_policy(args: argparse.Namespace, env: Any, *, seed: int) -> Any:
+    if args.memory == "lstm":
+        from sb3_contrib import RecurrentPPO
+
+        return RecurrentPPO(
+            "MlpLstmPolicy",
+            env,
+            n_steps=args.rollout_steps,
+            verbose=1,
+            seed=seed,
+        )
+
+    from stable_baselines3 import PPO
+
+    return PPO(
+        "MlpPolicy",
+        env,
+        n_steps=args.rollout_steps,
+        verbose=1,
+        seed=seed,
     )
 
 
@@ -158,29 +330,16 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
     )
     build_sumo_net(paths)
 
-    from stable_baselines3 import PPO
-    from sumo_rl import SumoEnvironment  # type: ignore[import-untyped]
-
     reward_fn = build_sumo_rl_reward(profile, spec, scenario_id=args.scenario)
-    env = SumoEnvironment(
-        net_file=str(paths.net),
-        route_file=str(paths.routes),
-        out_csv_name=str(log_dir / args.run_id),
-        use_gui=False,
-        single_agent=True,
-        begin_time=0,
-        num_seconds=spec.metadata.horizon_seconds,
-        delta_time=max(1, spec.metadata.time_step_seconds),
-        yellow_time=args.yellow_time,
-        min_green=args.min_green,
-        max_green=args.max_green,
+    env = _build_training_env(
+        args=args,
+        paths=paths,
+        log_dir=log_dir,
         reward_fn=reward_fn,
-        sumo_seed=args.seed,
-        sumo_warnings=False,
-        additional_sumo_cmd="--no-step-log true --duration-log.disable true",
+        spec=spec,
     )
     try:
-        model = PPO("MlpPolicy", env, verbose=1, seed=args.seed)
+        model = _build_policy(args, env, seed=args.seed)
         model.learn(total_timesteps=args.total_timesteps)
         model_path = model_dir / f"{args.run_id}.zip"
         model.save(str(model_path))
@@ -196,6 +355,15 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         "reward_profile": str(args.reward_profile),
         "scenario": args.scenario,
         "total_timesteps": args.total_timesteps,
+        "agent_mode": args.agent_mode,
+        "memory_mode": args.memory,
+        "frame_stack_size": args.frame_stack_size if args.memory == "frame_stack" else 0,
+        "num_envs": args.num_envs,
+        "rollout_steps": args.rollout_steps,
+        "observation_note": (
+            "SUMO-RL default per-signal observation remains the template. Replace or extend it "
+            "with the project observation/sensor adapter before camera-based claims."
+        ),
     }
     (out_dir / "training_manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
@@ -215,6 +383,36 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--run-id", default="RUN-RL-V0-001")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--total-timesteps", type=int, default=10_000)
+    parser.add_argument(
+        "--agent-mode",
+        choices=["multi_agent", "single_agent"],
+        default="multi_agent",
+        help="Use one shared policy across all SUMO traffic signals or a single signal.",
+    )
+    parser.add_argument(
+        "--memory",
+        choices=["lstm", "frame_stack", "none"],
+        default="lstm",
+        help="Temporal memory: RecurrentPPO LSTM, vector frame stack, or plain PPO.",
+    )
+    parser.add_argument(
+        "--frame-stack-size",
+        type=int,
+        default=4,
+        help="Number of observations stacked when --memory frame_stack is selected.",
+    )
+    parser.add_argument(
+        "--num-envs",
+        type=int,
+        default=1,
+        help="Number of parallel PettingZoo copies in multi-agent mode.",
+    )
+    parser.add_argument(
+        "--rollout-steps",
+        type=int,
+        default=128,
+        help="Per-vector-agent rollout length before each PPO update.",
+    )
     parser.add_argument(
         "--cloud-runtime",
         choices=["auto", "colab", "kaggle", "local"],
@@ -245,6 +443,12 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("Choose either --dry-run or --train, not both.")
     if args.total_timesteps < 1:
         raise SystemExit("--total-timesteps must be >= 1")
+    if args.frame_stack_size < 1:
+        raise SystemExit("--frame-stack-size must be >= 1")
+    if args.num_envs < 1:
+        raise SystemExit("--num-envs must be >= 1")
+    if args.rollout_steps < 1:
+        raise SystemExit("--rollout-steps must be >= 1")
 
     plan = create_training_plan(args)
     if not args.train:

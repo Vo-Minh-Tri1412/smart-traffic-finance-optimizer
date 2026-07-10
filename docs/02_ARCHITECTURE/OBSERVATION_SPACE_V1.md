@@ -1,104 +1,95 @@
 # Observation Space v1
 
-This is the single canonical observation-space contract for the smart-traffic RL controller.
-Other architecture documents must reference this file instead of defining their own incompatible
-observation lists.
-
-## Plain meaning
-
-At each decision step, the traffic-light agent should answer:
-
-> What is happening around this intersection right now, and is there any public-service vehicle or
-> downstream road condition that should affect the next signal decision?
-
-The observation is what the RL agent can see. It is not the final economic score, and it is not the
-whole city story.
+This is the canonical local observation contract for the multi-agent traffic-signal policy. It is
+valid for the full Quận 7 SUMO network or a reviewed large ROI; the small fixture is only a schema
+and runtime test input.
 
 ## Controlled unit
 
-Default unit: **one controlled traffic light = one RL agent**.
+Default unit: **one controlled traffic light = one agent**. Agents share policy parameters but do not
+need to receive the whole district vector. Coordination comes from downstream summaries,
+neighborhood messages or centralized training when required.
 
-Each controlled intersection observes only:
+At each decision step, the agent should answer:
 
-- its incoming approaches;
-- its outgoing/downstream congestion risk;
-- its current signal phase;
-- priority vehicles near that intersection;
-- coarse time/scenario context.
+> What is happening on my approaches, what can arrive next, what is downstream, and how certain is
+> the available observation?
 
-Multi-agent coordination can be added later, but v1 should not require a single agent to observe the
-entire district.
+## Required fields
 
-## Required observation fields
-
-These fields are required for v1 unless an implementation task explicitly records a smaller fallback.
-
-| Group | Field | Type | Plain meaning |
+| Group | Field | Type | Meaning |
 |---|---|---|---|
-| Queue | `queue_length_by_approach` | numeric vector | How many vehicles are waiting on each incoming road. |
-| Waiting | `waiting_time_by_approach` | numeric vector | How long vehicles have been waiting on each incoming road. |
-| Arrival pressure | `approaching_vehicle_count_by_approach` | numeric vector | How many vehicles are close enough to arrive soon. |
-| Downstream risk | `downstream_density_by_movement` | numeric vector, 0..1 | Whether the road after the green light is already full. |
-| Signal state | `current_phase_id` | one-hot or integer | Which light phase is active now. |
-| Signal timing | `elapsed_phase_time_seconds` | numeric | How long the current phase has been active. |
-| Safety timing | `min_green_satisfied` | boolean | Whether switching phase is legally/safely allowed. |
-| Emergency | `emergency_vehicle_present_by_approach` | boolean vector | Whether an ambulance/emergency vehicle is waiting or approaching. |
-| Public transport | `bus_waiting_count_by_approach` | numeric vector | How many buses are waiting. |
-| Freight | `truck_waiting_count_by_approach` | numeric vector | How many trucks are waiting. |
-| Time context | `time_of_day_bucket` | one-hot | Morning rush, daytime, evening, night, event window, etc. |
+| Queue | `queue_length_by_approach` | numeric vector | Estimated waiting vehicles per incoming approach. |
+| Waiting | `waiting_time_by_approach` | numeric vector | Estimated waiting time per approach. |
+| Arrival | `approaching_vehicle_count_by_approach` | numeric vector | Vehicles likely to arrive before the next decision. |
+| Downstream | `downstream_density_by_movement` | numeric vector, 0..1 | Estimated downstream occupancy/capacity risk. |
+| Signal | `current_phase_id` | integer/one-hot | Current legal phase. |
+| Timing | `elapsed_phase_time_seconds` | numeric | Time spent in the current phase. |
+| Safety | `min_green_satisfied` | boolean/vector | Whether a switch is legal. |
+| Emergency | `emergency_vehicle_present_by_approach` | boolean vector | Ambulance/emergency presence estimate. |
+| Public transport | `bus_waiting_count_by_approach` | numeric vector | Estimated buses waiting. |
+| Freight | `truck_waiting_count_by_approach` | numeric vector | Estimated trucks waiting. |
+| Context | `time_of_day_bucket` | one-hot | Rush, daytime, night, event or incident window. |
 
-## Optional context fields
+## Sensor uncertainty fields
 
-These fields are useful but should be added only after the basic observation works.
+These fields are required when the policy is evaluated as camera-based or partially observed:
 
-| Field | Plain meaning | Caution |
+| Field | Type | Meaning |
 |---|---|---|
-| `intersection_role_tags` | Static tags such as hospital access, school zone, industrial gate, bus corridor, bottleneck. | Good for policy-aware control, but keep encoding simple. |
-| `scenario_id` | Normal day, industrial shift, hospital emergency, event, incident, etc. | Useful in controlled experiments; avoid hiding unrealistic assumptions. |
-| `neighbor_queue_summary` | Small summary of nearby controlled intersections. | Add only after single-intersection observations are stable. |
-| `weather_or_incident_flag` | Whether a special incident reduces capacity. | Only use if the scenario actually models it. |
+| `observation_confidence_by_approach` | numeric vector, 0..1 | Confidence in the approach estimate. |
+| `visible_fraction_by_approach` | numeric vector, 0..1 | Approximate fraction of relevant vehicles/area visible. |
+| `time_since_last_observed_by_approach` | numeric vector | Age of the last reliable observation. |
+| `detector_unknown_count_by_approach` | numeric vector | Objects visible but not confidently classified. |
+| `sensor_mode` | categorical/one-hot | SUMO oracle, geometry visibility, detector or mixed. |
 
-## Do not put these in the observation
+The visibility fields let the policy learn a conservative response to a bus/truck occlusion without
+receiving hidden SUMO IDs or exact hidden counts.
 
-The agent should not directly receive:
+## Optional coordination fields
 
-- final `public_value_score`;
-- installation cost or budget rank;
-- future metric values;
-- answer labels such as "this intersection should win";
-- hidden data from the whole simulation that a traffic controller could not plausibly know.
+- `neighbor_queue_summary`: bounded summaries of adjacent signals;
+- `neighbor_phase_summary`: phase and remaining-green summaries for adjacent signals;
+- `intersection_role_tags`: hospital, school, industrial, bus corridor or bottleneck tags;
+- `scenario_id` or `weather_or_incident_flag` when the scenario genuinely exposes that context;
+- `upgrade_mask_local`: whether the signal and relevant neighbors are equipped for intelligent control.
 
-Those belong to evaluation and public-finance scoring, not to the RL observation.
+Neighborhood fields must have a stable maximum size or graph adapter. Do not concatenate an
+unbounded 100-signal vector into every agent observation.
 
-## Fallback observation
+## Memory contract
 
-If implementation is blocked, the minimum acceptable fallback is:
+The observation at time `t` may be passed directly, stacked over a fixed window, or consumed by a
+recurrent policy state:
 
 ```text
-queue_length_by_approach
-waiting_time_by_approach
-current_phase_id
-elapsed_phase_time_seconds
+o_t                 -> memoryless PPO baseline
+[o_t-k ... o_t]     -> frame-stack baseline
+(o_t, h_{t-1})      -> LSTM/RecurrentPPO policy
 ```
 
-This fallback is acceptable only for a debug prototype. The project-grade demo should restore priority
-vehicle, downstream-density, bus/truck, and time-context fields.
+The camera capture interval and policy decision interval must be recorded in the training manifest.
+The adapter should aggregate intermediate frames rather than silently dropping them.
 
-## Relationship to economics
+## Do not expose
 
-Economics does **not** need to fill this observation space.
+The agent must not directly receive:
 
-Economics only needs to define the real-world meaning behind the fields:
+- final `public_value_score`;
+- installation cost or QUBO rank;
+- future metric values;
+- hidden vehicle state that is unavailable to the selected sensor mode;
+- an answer label saying which intersection should receive investment.
 
-- Which zones create the trips?
-- Which vehicle types matter more?
-- Which scenarios should be tested?
-- Which delays are more serious for society or the economy?
-- Which investment choices are worth comparing?
+Those belong to evaluation, finance and experiment design.
 
-CS converts those decisions into observation fields, routes, metrics, and scoring code later.
+## Oracle/debug mode
+
+SUMO state observations remain useful for debugging and an upper-bound policy. They must be tagged as
+`sensor_mode = oracle` and reported separately from geometry-visibility or detector-based runs.
 
 ## Version rule
 
-If this observation space changes, update this file first. Then update dependent docs by reference.
-Do not maintain separate observation-space lists in multiple documents.
+If this contract changes, update this file first, then update the sensor adapter, training manifest,
+and dependent docs. Keep the visibility and memory additions compatible with the multi-agent local
+observation shape.

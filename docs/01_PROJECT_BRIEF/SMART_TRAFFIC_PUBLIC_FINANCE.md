@@ -26,6 +26,7 @@ choices:
 - fixed-time traffic lights
 - simple rule-based adaptive control
 - SUMO-RL traffic signal control
+- shared multi-agent RL with optional frame-stack/LSTM memory for the large Quận 7/ROI network
 - budget-constrained rollout choices across intersections
 
 The public-finance layer is a first-class technical layer. It should estimate:
@@ -80,9 +81,11 @@ those definitions into executable config, formulas, tests, and reports.
 
 ## Non-goals for now
 
-- No heavy YOLO training before the Godot trace replay and synthetic dataset contract are ready.
+- YOLO is not a prerequisite for the first camera-partial-observation RL experiment; calibrated
+  geometry-based optical visibility may be used first.
 - No custom simulator as the main environment.
-- No claim that the current 16-intersection technical grid is a realistic final city map.
+- The package fixture is only a test input; the target is the full Quận 7 SUMO network or a reviewed
+  large ROI.
 - No claim that simulation results are real-world causal proof.
 
 ## Success criteria

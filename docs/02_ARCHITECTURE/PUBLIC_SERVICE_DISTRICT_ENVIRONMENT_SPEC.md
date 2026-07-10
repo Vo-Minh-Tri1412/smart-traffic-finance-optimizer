@@ -1,8 +1,9 @@
 # Public-Service District Environment Spec v1
 
-This document is the first concrete environment architecture for **Smart Traffic Public Finance
-Optimization**. It intentionally designs the best project environment first, then maps it to a
-simulation engine later.
+This document is the domain/semantic contract for **Smart Traffic Public Finance Optimization**. The
+current implementation target is the full Quận 7 OSM/SUMO network or a reviewed ROI of roughly 100
+signalized intersections. The conceptual intersection table below is vocabulary and review
+material; it is not a replacement for the selected SUMO net.
 
 SUMO/SUMO-RL remains the default implementation target in this repository, but the environment design
 must not be weakened just because an engine feature is inconvenient. If a behavior cannot be expressed
@@ -320,8 +321,14 @@ Use the canonical [Observation Space v1](OBSERVATION_SPACE_V1.md). This environm
 meaning and demand logic; it should not maintain a separate observation list.
 
 Plainly: the agent sees local queues, local waiting time, approaching vehicles, downstream road
-fullness, current light phase, timing safety, emergency vehicles, buses, trucks, and coarse time
-context. Economic scores and budget ranks are not part of the observation.
+fullness, current light phase, timing safety, emergency vehicles, buses, trucks, coarse time context,
+and (when camera-based) confidence, visible fraction and time-since-last-observed. Economic scores
+and budget ranks are not part of the observation.
+
+Each signal is an agent with a shared policy. Neighborhood summaries or graph message passing may be
+used for coordination, but an unbounded full-district vector must not be copied into every agent.
+Frame stacking and recurrent memory are supported training options; see [Multi-Agent RL with
+Temporal Memory](MULTI_AGENT_RL_MEMORY_TRAINING.md).
 
 ### RL action
 
@@ -482,10 +489,9 @@ Economics should not be asked to inspect code. Their job is to challenge assumpt
 - Are cost and value assumptions sourced or clearly marked as placeholders?
 - Does the final recommendation sound like policy analysis, not only an ML demo?
 
-## CS implementation contracts for later
+## CS implementation contracts
 
-No code is introduced by this document. When implementation begins, CS should create separate manifests
-for:
+Implementation remains separated into contracts for:
 
 1. district schema;
 2. OD demand generator;
@@ -495,7 +501,8 @@ for:
 6. metric extractor;
 7. public-finance scoring module;
 8. RL training wrapper;
-9. demo dashboard/report.
+9. optical visibility/sensor observation adapter;
+10. demo dashboard/report.
 
 Each contract should preserve the same conceptual boundary:
 
@@ -522,4 +529,6 @@ The environment architecture is ready for implementation only if:
 ## Recommended next step
 
 Use this spec to create the Economics handoff files first, then produce the implementation contracts.
-The team should not train RL before the OD flows, vehicle types, and scenario meanings are approved.
+The current RL entrypoint may run as a template before official OD/reward approval, but any project
+claim must wait for approved flows, vehicle types, scenario meanings and safety constraints. A
+geometry-only visibility experiment can precede YOLO training; detector-specific claims cannot.
