@@ -1,0 +1,51 @@
+id = "080_render_lod_lifecycle_and_portability"
+owner = "integrator"
+branch = "codex/render-stabilization"
+base_commit = "8d23bb7"
+allowed_paths = [
+  "coordination/tasks/080_render_lod_lifecycle_and_portability.toml",
+  "render/scenes/main/Main.tscn",
+  "render/scripts/bridge/sumo_render_bridge.gd",
+  "render/scripts/replay/capture_render_preview.gd",
+  "render/scripts/replay/trace_replay_controller.gd",
+  "render/scripts/smoke/run_manifest_configuration_smoke.gd",
+  "render/scripts/smoke/test_lod_regression.gd",
+  "render/scripts/traffic/traffic_light_state_layer.gd",
+  "render/scripts/traffic/traffic_light_visual_layer.gd",
+  "render/scripts/world/district_replay_world.gd",
+  "render/scripts/zones/semantic_overlay_renderer.gd",
+  "scripts/render/godot_lod_regression_smoke.py",
+  "tests/fixtures/traffic_light_trace_v1.jsonl",
+]
+dependencies = [
+  "052_godot_large_map_preview_lod",
+  "053_godot_preview_camera_and_asset_scale",
+  "068_traffic_light_visual_state_layer",
+  "079_neutral_fill_and_poi_buffer_zones",
+]
+acceptance_commands = [
+  "uv run python scripts/render/godot_lod_regression_smoke.py --godot-exe <godot-exe>",
+  "<godot-exe> --headless --path render --script res://scripts/smoke/run_manifest_configuration_smoke.gd -- --net <district7-net> --overlay <district7-overlay> --traffic-light-trace tests/fixtures/traffic_light_trace_v1.jsonl",
+  "uv run pytest tests/integration/frontend_contracts -q",
+  "uv run ruff check scripts/render/godot_lod_regression_smoke.py",
+]
+status = "done"
+
+[handoff]
+summary = "Added camera-driven zone LOD rebuilds with cached overlay data, portable manifest-driven Main scene configuration, lifecycle teardown for reconfiguration, traffic-light state-to-visual wiring, and deterministic Godot smoke coverage."
+validation = [
+  "Godot LOD smoke rebuilds from the initial fallback zone to the moved-camera fallback zone.",
+  "Manifest smoke loaded the District7 net (32,013 lanes), semantic overlay (7 zones), and traffic-light visuals (169 nodes).",
+  "Godot parser, frontend-contract tests, and Ruff passed.",
+  "Headed viewport captures were inspected for overview and close building/zone rendering.",
+]
+risks = [
+  "Zone rebuilds are still synchronous and can visibly pop or stutter on dense overlays; incremental streaming remains a follow-up.",
+  "Python does not yet emit production traffic_light_trace.v1 data, so live traffic-light state fidelity is limited by upstream data availability.",
+  "Godot scene ext_resource UIDs produce path-fallback warnings in a fresh worktree and should be normalized separately.",
+]
+follow_up = [
+  "Replace full clear-and-rebuild zone LOD with time-sliced spatial streaming and hysteresis.",
+  "Generate traffic_light_trace.v1 from SUMO and add state-transition visual assertions using real junction ids.",
+  "Normalize Godot resource UIDs and improve road material/lighting fidelity after lifecycle correctness is stable.",
+]

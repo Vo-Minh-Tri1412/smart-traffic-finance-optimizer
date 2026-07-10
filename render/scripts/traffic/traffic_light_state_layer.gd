@@ -12,6 +12,7 @@ var loaded_frame_count := 0
 var traffic_light_sync_count := 0
 var parse_error_count := 0
 var traffic_light_ids: Dictionary = {}
+var current_states: Dictionary = {}
 var errors: Array[String] = []
 
 var _frames: Array[Dictionary] = []
@@ -28,6 +29,7 @@ func load_trace(path: String) -> bool:
 	traffic_light_sync_count = 0
 	parse_error_count = 0
 	traffic_light_ids.clear()
+	current_states.clear()
 	errors.clear()
 	_frames.clear()
 	_current_frame_index = -1
@@ -78,6 +80,18 @@ func load_trace(path: String) -> bool:
 	return loaded_frame_count > 0 and parse_error_count == 0
 
 
+func clear_trace() -> void:
+	trace_path = ""
+	loaded_frame_count = 0
+	traffic_light_sync_count = 0
+	parse_error_count = 0
+	traffic_light_ids.clear()
+	current_states.clear()
+	errors.clear()
+	_frames.clear()
+	_current_frame_index = -1
+
+
 func apply_time(time_seconds: float) -> void:
 	if _frames.is_empty():
 		return
@@ -91,7 +105,8 @@ func apply_time(time_seconds: float) -> void:
 			
 	if target_idx != _current_frame_index:
 		_current_frame_index = target_idx
-		traffic_lights_updated.emit(_frames[target_idx].states)
+		current_states = _frames[target_idx].states.duplicate()
+		traffic_lights_updated.emit(current_states)
 
 
 

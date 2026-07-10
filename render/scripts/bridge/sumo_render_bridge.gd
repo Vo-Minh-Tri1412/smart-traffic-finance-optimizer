@@ -10,6 +10,7 @@ const SchemaVersions := preload("res://scripts/contracts/schema_versions.gd")
 @export var semantic_heatmap_renderer_path: NodePath = NodePath("../SemanticHeatmapRenderer")
 @export var preview_layer_toggles_path: NodePath = NodePath("../PreviewLayerToggles")
 @export var traffic_light_state_layer_path: NodePath = NodePath("../TrafficLightStateLayer")
+@export var traffic_light_visual_layer_path: NodePath = NodePath("../TrafficLightVisualLayer")
 @export var sensor_export_layer_path: NodePath = NodePath("")
 @export var auto_configure := false
 
@@ -30,12 +31,52 @@ func configure_from_manifest(path: String) -> bool:
 	if not _check_schema_version(loaded_manifest, SchemaVersions.RENDER_RUN_MANIFEST_SCHEMA_VERSION, path):
 		return false
 
-	_apply_manifest_path("sumo_net", geometry_world_path, "net_path")
-	_apply_manifest_path("vehicle_trace", trace_replay_controller_path, "trace_path")
-	_apply_manifest_path("semantic_overlay", semantic_overlay_renderer_path, "overlay_path")
+	var net_path := _apply_manifest_path("sumo_net", geometry_world_path, "net_path")
+	var world := get_node_or_null(geometry_world_path)
+	if world != null:
+		if not net_path.is_empty() and world.has_method("build_from_sumo_net"):
+			world.build_from_sumo_net(net_path)
+		elif world.has_method("_clear_generated"):
+			world.call("_clear_generated")
+
+	var tls_path := _apply_manifest_path("traffic_light_trace", traffic_light_state_layer_path, "trace_path")
+	var tls := get_node_or_null(traffic_light_state_layer_path)
+	if tls != null:
+		if not tls_path.is_empty() and tls.has_method("load_trace"):
+			tls.load_trace(tls_path)
+		elif tls.has_method("clear_trace"):
+			tls.clear_trace()
+
+	var trace_path := _apply_manifest_path("vehicle_trace", trace_replay_controller_path, "trace_path")
+	var trace := get_node_or_null(trace_replay_controller_path)
+	if trace != null:
+		if not trace_path.is_empty() and trace.has_method("load_trace"):
+			trace.load_trace(trace_path)
+		elif trace.has_method("clear_trace"):
+			trace.clear_trace()
+
+	var overlay_path := _apply_manifest_path("semantic_overlay", semantic_overlay_renderer_path, "overlay_path")
 	_apply_manifest_path("semantic_overlay", semantic_heatmap_renderer_path, "overlay_path")
 	_apply_manifest_path("semantic_overlay", preview_layer_toggles_path, "shared_overlay_path")
-	_apply_manifest_path("traffic_light_trace", traffic_light_state_layer_path, "trace_path")
+
+	var overlay := get_node_or_null(semantic_overlay_renderer_path)
+	if overlay != null:
+		if not overlay_path.is_empty() and overlay.has_method("render_overlay"):
+			overlay.render_overlay(overlay_path)
+		elif overlay.has_method("_clear_generated"):
+			overlay.call("_clear_generated")
+
+	var heatmap := get_node_or_null(semantic_heatmap_renderer_path)
+	if heatmap != null:
+		if not overlay_path.is_empty() and heatmap.has_method("render_heatmap"):
+			heatmap.render_heatmap(overlay_path)
+		elif heatmap.has_method("_clear_generated"):
+			heatmap.call("_clear_generated")
+
+	var tls_visuals := get_node_or_null(traffic_light_visual_layer_path)
+	if tls_visuals != null and tls_visuals.has_method("render_traffic_lights"):
+		tls_visuals.render_traffic_lights()
+
 	return true
 
 
@@ -51,6 +92,7 @@ func bridge_summary() -> Dictionary:
 		"semantic_heatmap_renderer_present": get_node_or_null(semantic_heatmap_renderer_path) != null,
 		"preview_layer_toggles_present": get_node_or_null(preview_layer_toggles_path) != null,
 		"traffic_light_state_layer_present": get_node_or_null(traffic_light_state_layer_path) != null,
+		"traffic_light_visual_layer_present": get_node_or_null(traffic_light_visual_layer_path) != null,
 		"sensor_export_layer_present": (
 			not sensor_export_layer_path.is_empty()
 			and get_node_or_null(sensor_export_layer_path) != null
@@ -83,12 +125,13 @@ func _check_schema_version(payload: Dictionary, expected_version: String, contex
 	return true
 
 
-func _apply_manifest_path(field_name: String, node_path: NodePath, property_name: String) -> void:
+func _apply_manifest_path(field_name: String, node_path: NodePath, property_name: String) -> String:
 	var value := String(loaded_manifest.get(field_name, ""))
 	if value.is_empty():
-		return
+		warnings.append("Optional manifest field missing or empty: %s" % field_name)
 	var node := get_node_or_null(node_path)
 	if node == null:
 		warnings.append("Cannot apply %s; node missing at %s" % [field_name, node_path])
-		return
+		return ""
 	node.set(property_name, value)
+	return value

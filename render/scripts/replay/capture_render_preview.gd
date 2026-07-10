@@ -19,6 +19,8 @@ func _run() -> void:
 	var height := int(options.get("height", "720"))
 	var camera_mode := String(options.get("camera", "angled"))
 	var camera_size := float(options.get("camera_size", "0"))
+	var focus_sumo_x := float(options.get("focus_sumo_x", "nan"))
+	var focus_sumo_y := float(options.get("focus_sumo_y", "nan"))
 	var show_roads := _truthy(String(options.get("show_roads", "true")))
 	var show_zones := _truthy(String(options.get("show_zones", "true")))
 	var show_vehicles := _truthy(String(options.get("show_vehicles", "true")))
@@ -107,12 +109,18 @@ func _run() -> void:
 
 	var camera := main.get_node_or_null("Camera3D") as Camera3D
 	if camera != null:
-		_configure_camera(camera, world, camera_mode, camera_size)
+		_configure_camera(camera, world, camera_mode, camera_size, focus_sumo_x, focus_sumo_y)
+		if world != null and world.has_method("refresh_camera_lod"):
+			world.refresh_camera_lod()
+		if overlay_renderer != null and not overlay_path.is_empty() and show_zone_assets:
+			overlay_renderer.render_overlay(overlay_path)
 
 	for _index in range(4):
 		await process_frame
 	if camera != null:
-		_configure_camera(camera, world, camera_mode, camera_size)
+		_configure_camera(camera, world, camera_mode, camera_size, focus_sumo_x, focus_sumo_y)
+		if world != null and world.has_method("refresh_camera_lod"):
+			world.refresh_camera_lod()
 	await process_frame
 
 	var image := root.get_texture().get_image()
@@ -131,13 +139,31 @@ func _run() -> void:
 	quit(0)
 
 
-func _configure_camera(camera: Camera3D, world, camera_mode: String, override_size: float) -> void:
+func _configure_camera(
+	camera: Camera3D,
+	world,
+	camera_mode: String,
+	override_size: float,
+	focus_sumo_x: float,
+	focus_sumo_y: float
+) -> void:
+	var focus_world := Vector3.ZERO
+	if is_finite(focus_sumo_x) and is_finite(focus_sumo_y) and world != null:
+		if world.has_method("world_position_for_sumo_coordinate"):
+			var mapped_focus = world.world_position_for_sumo_coordinate(focus_sumo_x, focus_sumo_y, 0.0)
+			if mapped_focus is Vector3:
+				focus_world = mapped_focus as Vector3
 	if camera.has_method("fit_to_world"):
 		camera.set("use_top_down_preview", camera_mode == "topdown")
-		camera.fit_to_world()
+		if not (is_finite(focus_sumo_x) and is_finite(focus_sumo_y)):
+			camera.fit_to_world()
 	if override_size > 0.0:
 		camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 		camera.size = override_size
+	if camera_mode == "topdown" and is_finite(focus_sumo_x) and is_finite(focus_sumo_y):
+		camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+		camera.position = focus_world + Vector3(0.0, max(42.0, camera.size * 2.15), 0.0)
+		camera.look_at(focus_world, Vector3.FORWARD)
 	if camera_mode == "angled":
 		camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 		if world != null and world.has_method("has_geometry_bounds") and world.has_geometry_bounds():
@@ -149,8 +175,8 @@ func _configure_camera(camera: Camera3D, world, camera_mode: String, override_si
 			var fitted_size: float = max(width_world, depth_world)
 			if override_size <= 0.0:
 				camera.size = clamp(fitted_size * 1.08, 30.0, 260.0)
-			camera.position = Vector3(0.0, max(42.0, camera.size * 2.15), camera.size * 0.55)
-			camera.look_at(Vector3.ZERO, Vector3.UP)
+			camera.position = focus_world + Vector3(0.0, max(42.0, camera.size * 2.15), camera.size * 0.55)
+			camera.look_at(focus_world, Vector3.UP)
 	camera.current = true
 
 

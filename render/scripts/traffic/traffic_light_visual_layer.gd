@@ -66,6 +66,11 @@ func render_traffic_lights() -> bool:
 		add_child(visual)
 		_visual_nodes[tl_id] = visual
 		spawned_light_count += 1
+	var state_layer = get_node_or_null("../TrafficLightStateLayer")
+	if state_layer != null:
+		var cached_states = state_layer.get("current_states")
+		if cached_states is Dictionary:
+			_on_traffic_lights_updated(cached_states as Dictionary)
 	return spawned_light_count > 0
 
 
@@ -125,4 +130,3 @@ func _clear_generated() -> void:
 		if child.is_in_group("generated_traffic_light_visual"):
 			child.queue_free()
 	_visual_nodes.clear()
-
