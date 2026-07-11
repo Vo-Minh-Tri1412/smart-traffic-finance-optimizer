@@ -3,6 +3,7 @@ extends RefCounted
 const SIMULATION_TRACE_FRAME_SCHEMA_VERSION := "simulation_trace_frame.v1"
 const GEOMETRY_MANIFEST_SCHEMA_VERSION := "geometry_manifest.v1"
 const VEHICLE_TRACE_SCHEMA_VERSION := "vehicle_trace.v2"
+const VISIBILITY_TRACE_SCHEMA_VERSION := "visibility_trace.v1"
 const TRAFFIC_LIGHT_TRACE_SCHEMA_VERSION := "traffic_light_trace.v1"
 const SEMANTIC_OVERLAY_SCHEMA_VERSION := "semantic_overlay.v2"
 const EVENT_TRACE_SCHEMA_VERSION := "event_trace.v1"
@@ -22,6 +23,7 @@ static func render_bridge_schema_versions() -> Dictionary:
 	return {
 		"geometry_manifest": GEOMETRY_MANIFEST_SCHEMA_VERSION,
 		"vehicle_trace": VEHICLE_TRACE_SCHEMA_VERSION,
+		"visibility_trace": VISIBILITY_TRACE_SCHEMA_VERSION,
 		"traffic_light_trace": TRAFFIC_LIGHT_TRACE_SCHEMA_VERSION,
 		"semantic_overlay": SEMANTIC_OVERLAY_SCHEMA_VERSION,
 		"event_trace": EVENT_TRACE_SCHEMA_VERSION,

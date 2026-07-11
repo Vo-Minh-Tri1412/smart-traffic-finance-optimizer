@@ -6,9 +6,10 @@ claim that the production sensor already exists.
 
 ## Canonical virtual camera
 
-`DetectionCamera3D` is the project’s canonical virtual traffic camera. It observes the same Godot
-world used for replay: the prepared SUMO road geometry, replay vehicles, traffic lights and visual
-occluders.
+`DetectionCamera3D` is the project’s canonical virtual traffic camera. Its physical calibration is
+stored in a renderer-neutral `camera_calibration.v1` document. The V1 RL sensor evaluates this
+calibration headlessly against SUMO vehicle geometry; Godot imports the same calibration for replay
+parity and later image capture.
 
 For every configured camera frame, the camera should be able to produce:
 
@@ -25,8 +26,8 @@ the user’s free-fly or walk camera.
 
 ```text
 SUMO truth + signal timeline
-  -> calibrated Godot virtual camera
-  -> RGB/depth/instance visibility
+  -> calibrated headless geometry camera
+  -> deterministic depth/instance visibility
   -> visible-object tracker and structured uncertainty
   -> fixed-size approach/lane observation
   -> memory-aware traffic-control policy
@@ -70,8 +71,8 @@ vector with temporal memory.
 
 - One metre in the prepared SUMO map and Godot world must retain a declared, stable relationship.
 - Vehicle length, width, height and ground offset must be canonical data, not implicit mesh values.
-- Sensor culling/LOD must retain every object capable of affecting the configured camera view. A
-  user fly-camera LOD policy cannot silently decide what a sensor has observed.
+- The headless geometry camera cannot read player-camera LOD. The future Godot depth/instance pass
+  must similarly retain every object capable of affecting the configured sensor view.
 - The capture interval, decision interval and aggregation rule are recorded in the training
   manifest.
 

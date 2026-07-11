@@ -100,6 +100,22 @@ func _interpolate_vehicle(left, right, alpha: float):
 	output.angle = _lerp_angle_degrees(float(left.angle), float(right.angle), alpha)
 	output.lane_id = String(left.lane_id) if alpha < 0.5 else String(right.lane_id)
 	output.road_id = String(left.road_id) if alpha < 0.5 else String(right.road_id)
+	output.length_m = float(left.length_m)
+	output.width_m = float(left.width_m)
+	output.height_m = float(left.height_m)
+	output.ground_clearance_m = float(left.ground_clearance_m)
+	output.elevation_m = lerp(float(left.elevation_m), float(right.elevation_m), alpha)
+	output.pos_lat_m = lerp(float(left.pos_lat_m), float(right.pos_lat_m), alpha)
+	output.lateral_speed_mps = lerp(
+		float(left.lateral_speed_mps), float(right.lateral_speed_mps), alpha
+	)
+	output.acceleration_mps2 = lerp(
+		float(left.acceleration_mps2), float(right.acceleration_mps2), alpha
+	)
+	output.elevation_source = (
+		String(left.elevation_source) if alpha < 0.5 else String(right.elevation_source)
+	)
+	output.reference_point = String(left.reference_point)
 	return output
 
 
@@ -113,6 +129,16 @@ func _copy_vehicle(source):
 	output.angle = float(source.angle)
 	output.lane_id = String(source.lane_id)
 	output.road_id = String(source.road_id)
+	output.length_m = float(source.length_m)
+	output.width_m = float(source.width_m)
+	output.height_m = float(source.height_m)
+	output.ground_clearance_m = float(source.ground_clearance_m)
+	output.elevation_m = float(source.elevation_m)
+	output.pos_lat_m = float(source.pos_lat_m)
+	output.lateral_speed_mps = float(source.lateral_speed_mps)
+	output.acceleration_mps2 = float(source.acceleration_mps2)
+	output.elevation_source = String(source.elevation_source)
+	output.reference_point = String(source.reference_point)
 	return output
 
 

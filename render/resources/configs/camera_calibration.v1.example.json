@@ -1,0 +1,20 @@
+{
+  "schema_version": "camera_calibration.v1",
+  "coordinate_system": "sumo_xy_meters_z_up",
+  "cameras": [
+    {
+      "schema_version": "camera_calibration.v1",
+      "camera_id": "CAM_GOLDEN_ROI_01",
+      "role": "intersection",
+      "position_m": [0.0, -20.0, 5.0],
+      "rotation_degrees": {"yaw": 0.0, "pitch": -8.0, "roll": 0.0},
+      "image_size": {"width": 640, "height": 640},
+      "geometry_raster_size": {"width": 160, "height": 160},
+      "intrinsics": {"fx": 417.0, "fy": 417.0, "cx": 319.5, "cy": 319.5},
+      "near_clip_m": 0.1,
+      "far_clip_m": 500.0,
+      "capture_interval_seconds": 1.0,
+      "target_lane_ids": []
+    }
+  ]
+}

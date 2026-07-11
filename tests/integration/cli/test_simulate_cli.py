@@ -98,4 +98,4 @@ def test_simulate_run_sumo_writes_real_vehicle_trace_and_keeps_artifacts(tmp_pat
     assert trace.is_file()
     assert (work_dir / "normal_weekday" / "fixed_time" / "fcd.xml").is_file()
     assert '"engine_id": "sumo"' in trace.read_text(encoding="utf-8")
-    assert '"schema_version": "simulation_trace_frame.v1"' in trace.read_text(encoding="utf-8")
+    assert '"schema_version": "vehicle_trace.v2"' in trace.read_text(encoding="utf-8")

@@ -10,12 +10,16 @@ from .existing_net import (
     prepare_existing_sumo_net_run,
     run_existing_sumo_net,
 )
+from .profiles import DEFAULT_SUMO_PROFILE, GEOMETRY_SENSOR_SUMO_PROFILE, SumoSimulationProfile
 
 __all__ = [
     "ExistingSumoNetRunPaths",
     "SumoAdapter",
     "SumoRuntimeConfig",
     "SumoRuntimeError",
+    "SumoSimulationProfile",
+    "GEOMETRY_SENSOR_SUMO_PROFILE",
+    "DEFAULT_SUMO_PROFILE",
     "prepare_existing_sumo_net_run",
     "run_existing_sumo_net",
 ]

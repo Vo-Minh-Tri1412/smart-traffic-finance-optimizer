@@ -65,10 +65,22 @@ class VehicleType:
     forbidden_road_tags: tuple[str, ...] = ()
     length_m: float = 4.5
     width_m: float = 1.8
+    height_m: float = 1.5
+    ground_clearance_m: float = 0.0
+    v_class: str = "passenger"
     max_speed_kph: float = 50.0
     accel_mps2: float = 2.6
     decel_mps2: float = 4.5
     min_gap_m: float = 2.5
+    tau_seconds: float = 1.2
+    emergency_decel_mps2: float = 7.0
+    apparent_decel_mps2: float = 4.5
+    action_step_length_seconds: float = 1.0
+    max_speed_lat_mps: float = 0.0
+    min_gap_lat_m: float = 0.0
+    lat_alignment: str = "center"
+    lc_sublane: float = 0.0
+    lc_pushy: float = 0.0
 
 
 @dataclass(frozen=True)

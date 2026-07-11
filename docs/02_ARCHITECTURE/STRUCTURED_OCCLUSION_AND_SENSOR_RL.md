@@ -3,16 +3,17 @@
 ## Decision
 
 The project may train the traffic-control RL policy before a YOLO model exists. The first visual
-sensor should be a deterministic, geometry-based partial-observation layer driven by SUMO traces
-and a calibrated Godot camera. YOLO is optional at this stage and is introduced later to model
+sensor should be a deterministic, headless geometry-based partial-observation layer driven by SUMO
+traces and a shared calibrated-camera contract. Godot imports the same calibration for parity and
+later RGB/depth capture. YOLO is optional at this stage and is introduced later to model
 detector-specific errors or to validate the synthetic sensor pipeline.
 
 This keeps the traffic simulator, visual sensor, and policy layers separate:
 
 ```text
 SUMO truth and vehicle trace
-  -> calibrated 3D camera geometry
-  -> RGB/depth/instance visibility approximation
+  -> headless calibrated 3D camera geometry
+  -> deterministic depth/instance visibility approximation
   -> observed lane features
   -> memory-aware multi-agent RL
 ```
@@ -26,8 +27,9 @@ For a structured occlusion such as a bus or heavy truck blocking cars behind it,
 causal variables are camera pose, vehicle footprint/height, lane geometry, relative depth and
 vehicle motion. They can be approximated without a learned detector.
 
-For each vehicle, the renderer should project a 3D bounding box using camera intrinsics and
-extrinsics:
+For each vehicle, the geometry engine projects a 3D bounding box using camera intrinsics and
+extrinsics. SUMO FCD `x,y` is the front-bumper centre, so the cuboid centre is shifted backward by
+half its canonical length before projection:
 
 ```text
 camera pose (height h, pitch, yaw, roll)
@@ -58,9 +60,10 @@ The render bridge should eventually produce one visibility record per vehicle an
 }
 ```
 
-The exact values may be approximate, but the ordering must be physically consistent. A production
-sensor pass should use RGB plus depth and instance/object-ID buffers. The current smoke path uses
-projected rectangles and is not yet an occlusion-quality dataset.
+The exact values may be approximate, but the ordering must be physically consistent. The V1 engine
+uses a deterministic software depth/instance buffer over vehicle cuboids. A later Godot pass should
+use RGB plus depth and instance/object-ID buffers; the current Godot smoke path uses projected
+rectangles and is not yet an occlusion-quality dataset.
 
 ### Required geometry fields
 

@@ -133,6 +133,21 @@ uv run python scripts/render/godot_sensor_dataset_smoke.py `
   --force
 ```
 
+For deterministic RL sensor geometry without Godot rendering, first generate a canonical
+`vehicle_trace.v2`, then run:
+
+```powershell
+uv run python scripts/sensors/run_geometry_camera.py `
+  --trace <vehicle_trace.v2.jsonl> `
+  --max-frames 60 `
+  --camera-calibration render/resources/configs/camera_calibration.v1.example.json `
+  --output <tmp>/visibility_trace.v1.jsonl `
+  --summary-out <tmp>/geometry_camera_summary.json
+```
+
+`camera_calibration.v1` is the shared source of pose/intrinsics. It is not the free-fly preview
+camera, and its visibility result is independent from preview LOD.
+
 Generated outputs stay out of Git:
 
 - `.godot/`

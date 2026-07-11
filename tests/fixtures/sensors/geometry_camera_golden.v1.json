@@ -1,0 +1,23 @@
+{
+  "schema_version": "geometry_camera_golden.v1",
+  "coordinate_system": "sumo_xy_meters_z_up",
+  "camera": {
+    "schema_version": "camera_calibration.v1",
+    "camera_id": "CAM_GOLDEN",
+    "position_m": [0.0, -20.0, 5.0],
+    "rotation_degrees": {"yaw": 0.0, "pitch": -8.0, "roll": 0.0},
+    "image_size": {"width": 240, "height": 160},
+    "intrinsics": {"fx": 208.0, "fy": 208.0, "cx": 119.5, "cy": 79.5},
+    "near_clip_m": 0.1,
+    "far_clip_m": 500.0,
+    "capture_interval_seconds": 1.0,
+    "target_lane_ids": ["inbound_0"]
+  },
+  "scenarios": [
+    "single vehicle visible",
+    "near bus occludes car behind",
+    "near truck occludes elevated motorbike",
+    "same-depth lexical tie",
+    "out-of-frustum vehicle"
+  ]
+}

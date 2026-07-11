@@ -48,13 +48,19 @@ func populate_from_dictionary(frame: Dictionary, line_number: int, errors: Array
 	controller_id = String(frame.get("controller_id", ""))
 	engine_id = String(frame.get("engine_id", ""))
 	vehicles.clear()
+	var require_geometry := schema_version == SchemaVersionsScript.VEHICLE_TRACE_SCHEMA_VERSION
 
 	for raw_vehicle in frame["vehicles"]:
 		if typeof(raw_vehicle) != TYPE_DICTIONARY:
 			errors.append("Line %d has a non-object vehicle entry." % line_number)
 			return false
 		var vehicle_state = TraceVehicleStateScript.new()
-		if not vehicle_state.populate_from_dictionary(raw_vehicle as Dictionary, line_number, errors):
+		if not vehicle_state.populate_from_dictionary(
+			raw_vehicle as Dictionary,
+			line_number,
+			errors,
+			require_geometry
+		):
 			return false
 		vehicles.append(vehicle_state)
 	return true

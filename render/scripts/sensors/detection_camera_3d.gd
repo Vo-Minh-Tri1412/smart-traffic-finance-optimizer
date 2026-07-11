@@ -6,6 +6,8 @@ extends Camera3D
 @export var split := "train"
 @export var output_size := Vector2i(640, 640)
 @export var capture_interval_seconds := 1.0
+@export var calibration_schema_version := ""
+@export var coordinate_system := ""
 
 
 func _ready() -> void:
@@ -23,6 +25,47 @@ func configure_from_entry(entry) -> void:
 	position = entry.get("position") as Vector3
 	rotation_degrees = entry.get("rotation_degrees") as Vector3
 	fov = float(entry.get("fov_degrees"))
+	name = _safe_node_name(sensor_id)
+
+
+func configure_from_calibration(entry: Dictionary, geometry_world: Node = null) -> void:
+	sensor_id = String(entry.get("camera_id", ""))
+	role = String(entry.get("role", "intersection"))
+	calibration_schema_version = String(entry.get("schema_version", "camera_calibration.v1"))
+	coordinate_system = "sumo_xy_meters_z_up"
+	var image = entry.get("image_size", {})
+	if image is Dictionary:
+		output_size = Vector2i(
+			int((image as Dictionary).get("width", 640)),
+			int((image as Dictionary).get("height", 640))
+		)
+	var intrinsics = entry.get("intrinsics", {})
+	if intrinsics is Dictionary and output_size.y > 0:
+		var fy := float((intrinsics as Dictionary).get("fy", 0.0))
+		if fy > 0.0:
+			fov = rad_to_deg(2.0 * atan(float(output_size.y) / (2.0 * fy)))
+	capture_interval_seconds = float(entry.get("capture_interval_seconds", 1.0))
+	var rotation = entry.get("rotation_degrees", {})
+	if rotation is Dictionary:
+		rotation_degrees = Vector3(
+			float((rotation as Dictionary).get("pitch", 0.0)),
+			90.0 - float((rotation as Dictionary).get("yaw", 0.0)),
+			float((rotation as Dictionary).get("roll", 0.0))
+		)
+	var position_values = entry.get("position_m", [])
+	if position_values is Array and (position_values as Array).size() == 3:
+		var values := position_values as Array
+		var mapped_position = null
+		if geometry_world != null and geometry_world.has_method("world_position_for_sumo_coordinate"):
+			mapped_position = geometry_world.world_position_for_sumo_coordinate(
+				float(values[0]),
+				float(values[1]),
+				float(values[2])
+			)
+		if mapped_position is Vector3:
+			position = mapped_position as Vector3
+		else:
+			position = Vector3(float(values[0]), float(values[2]), float(values[1]))
 	name = _safe_node_name(sensor_id)
 
 

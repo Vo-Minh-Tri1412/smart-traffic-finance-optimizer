@@ -1,14 +1,20 @@
 from __future__ import annotations
 
+import math
 import xml.etree.ElementTree as ET
 from collections.abc import Iterable, Mapping
 from typing import Any
 
-from ai_quantum_hvtc.simulation.domain import DistrictSpec
+from ai_quantum_hvtc.simulation.domain import DistrictSpec, VehicleType
+from ai_quantum_hvtc.simulation.engines.sumo.errors import SumoRuntimeError
 from ai_quantum_hvtc.simulation.engines.sumo.exporter import SumoExportPaths
 from ai_quantum_hvtc.simulation.metrics import IntersectionMetric, SimulationResult
 from ai_quantum_hvtc.simulation.routing import RouteNotFoundError, RoutePlanner
-from ai_quantum_hvtc.simulation.traces import SIMULATION_TRACE_FRAME_SCHEMA_VERSION
+from ai_quantum_hvtc.simulation.traces import (
+    SIMULATION_TRACE_FRAME_SCHEMA_VERSION,
+    VEHICLE_TRACE_SCHEMA_VERSION,
+)
+from ai_quantum_hvtc.simulation.vehicle_geometry import FRONT_BUMPER_REFERENCE_POINT
 
 
 def parse_sumo_result(
@@ -296,6 +302,7 @@ def _fcd_trace_frames(
     if not paths.fcd.is_file():
         return []
     tree = ET.parse(paths.fcd)
+    lane_elevation_shapes = _lane_elevation_shapes(paths.net)
     frames: list[dict[str, Any]] = []
     for frame_index, timestep in enumerate(tree.getroot().iter("timestep")):
         time_seconds = _float_attr(dict(timestep.attrib), "time")
@@ -303,21 +310,24 @@ def _fcd_trace_frames(
         for vehicle in timestep.iter("vehicle"):
             row = dict(vehicle.attrib)
             lane_id = row.get("lane", "")
+            vehicle_type_id = row.get("type", "")
+            vehicle_type = spec.vehicle_types.get(vehicle_type_id)
+            if vehicle_type is None:
+                raise SumoRuntimeError(
+                    "SUMO FCD vehicle cannot be emitted as vehicle_trace.v2 without a canonical "
+                    f"vehicle type: id={row.get('id', '')!r}, type={vehicle_type_id!r}"
+                )
             vehicles.append(
-                {
-                    "vehicle_id": row.get("id", ""),
-                    "vehicle_type": row.get("type", ""),
-                    "x": _float_attr(row, "x"),
-                    "y": _float_attr(row, "y"),
-                    "speed": _float_attr(row, "speed"),
-                    "angle": _float_attr(row, "angle"),
-                    "lane_id": lane_id,
-                    "road_id": _road_id_from_lane(lane_id),
-                }
+                _trace_vehicle_row(
+                    row,
+                    lane_id=lane_id,
+                    vehicle_type=vehicle_type,
+                    lane_elevation_shapes=lane_elevation_shapes,
+                )
             )
         frames.append(
             {
-                "schema_version": SIMULATION_TRACE_FRAME_SCHEMA_VERSION,
+                "schema_version": VEHICLE_TRACE_SCHEMA_VERSION,
                 "timestep": frame_index,
                 "time_seconds": time_seconds,
                 "district_id": spec.metadata.district_id,
@@ -342,6 +352,8 @@ def _existing_fcd_trace_frames(
     if not paths.fcd.is_file():
         return []
     tree = ET.parse(paths.fcd)
+    route_vehicle_types = _vehicle_types_from_route_file(paths.routes)
+    lane_elevation_shapes = _lane_elevation_shapes(paths.net)
     frames: list[dict[str, Any]] = []
     for frame_index, timestep in enumerate(tree.getroot().iter("timestep")):
         time_seconds = _float_attr(dict(timestep.attrib), "time")
@@ -349,21 +361,23 @@ def _existing_fcd_trace_frames(
         for vehicle in timestep.iter("vehicle"):
             row = dict(vehicle.attrib)
             lane_id = row.get("lane", "")
+            vehicle_type_id = row.get("type", "")
             vehicles.append(
-                {
-                    "vehicle_id": row.get("id", ""),
-                    "vehicle_type": row.get("type", ""),
-                    "x": _float_attr(row, "x"),
-                    "y": _float_attr(row, "y"),
-                    "speed": _float_attr(row, "speed"),
-                    "angle": _float_attr(row, "angle"),
-                    "lane_id": lane_id,
-                    "road_id": _road_id_from_lane(lane_id),
-                }
+                _trace_vehicle_row(
+                    row,
+                    lane_id=lane_id,
+                    vehicle_type=route_vehicle_types.get(vehicle_type_id),
+                    lane_elevation_shapes=lane_elevation_shapes,
+                )
             )
+        has_canonical_geometry = all(_has_geometry_fields(vehicle) for vehicle in vehicles)
         frames.append(
             {
-                "schema_version": SIMULATION_TRACE_FRAME_SCHEMA_VERSION,
+                "schema_version": (
+                    VEHICLE_TRACE_SCHEMA_VERSION
+                    if has_canonical_geometry
+                    else SIMULATION_TRACE_FRAME_SCHEMA_VERSION
+                ),
                 "timestep": frame_index,
                 "time_seconds": time_seconds,
                 "district_id": district_id,
@@ -375,6 +389,163 @@ def _existing_fcd_trace_frames(
             }
         )
     return frames
+
+
+def _trace_vehicle_row(
+    row: dict[str, str],
+    *,
+    lane_id: str,
+    vehicle_type: VehicleType | None,
+    lane_elevation_shapes: Mapping[str, tuple[tuple[float, float, float], ...]],
+) -> dict[str, Any]:
+    x = _float_attr(row, "x")
+    y = _float_attr(row, "y")
+    elevation_m, elevation_source = _vehicle_elevation(
+        row,
+        lane_id=lane_id,
+        x=x,
+        y=y,
+        lane_elevation_shapes=lane_elevation_shapes,
+    )
+    vehicle = {
+        "vehicle_id": row.get("id", ""),
+        "vehicle_type": row.get("type", ""),
+        "x": x,
+        "y": y,
+        "speed": _float_attr(row, "speed"),
+        "angle": _float_attr(row, "angle"),
+        "lane_id": lane_id,
+        "road_id": _road_id_from_lane(lane_id),
+        "pos_lat_m": _float_attr(row, "posLat"),
+        "lateral_speed_mps": _float_attr(row, "speedLat"),
+        "acceleration_mps2": _float_attr(row, "acceleration"),
+        "elevation_m": elevation_m,
+        "elevation_source": elevation_source,
+    }
+    if vehicle_type is None:
+        return vehicle
+    vehicle.update(
+        {
+            "length_m": vehicle_type.length_m,
+            "width_m": vehicle_type.width_m,
+            "height_m": vehicle_type.height_m,
+            "ground_clearance_m": vehicle_type.ground_clearance_m,
+            "reference_point": FRONT_BUMPER_REFERENCE_POINT,
+        }
+    )
+    return vehicle
+
+
+def _vehicle_types_from_route_file(path: Any) -> dict[str, VehicleType]:
+    if not path.is_file():
+        return {}
+    tree = ET.parse(path)
+    vehicle_types: dict[str, VehicleType] = {}
+    for element in tree.getroot().iter("vType"):
+        row = dict(element.attrib)
+        vehicle_type_id = row.get("id", "")
+        if not vehicle_type_id:
+            continue
+        if not {"length", "width", "height"}.issubset(row):
+            continue
+        vehicle_types[vehicle_type_id] = VehicleType(
+            vehicle_type_id=vehicle_type_id,
+            passenger_count=1.0,
+            pcu=1.0,
+            value_class="trace_only",
+            length_m=_float_attr(row, "length", 4.5),
+            width_m=_float_attr(row, "width", 1.8),
+            height_m=_float_attr(row, "height", 1.5),
+            ground_clearance_m=0.0,
+            v_class=row.get("vClass", "passenger"),
+            max_speed_kph=_float_attr(row, "maxSpeed") * 3.6,
+            accel_mps2=_float_attr(row, "accel", 2.6),
+            decel_mps2=_float_attr(row, "decel", 4.5),
+            min_gap_m=_float_attr(row, "minGap", 2.5),
+            tau_seconds=_float_attr(row, "tau", 1.2),
+            emergency_decel_mps2=_float_attr(row, "emergencyDecel", 7.0),
+            apparent_decel_mps2=_float_attr(row, "apparentDecel", 4.5),
+            action_step_length_seconds=_float_attr(row, "actionStepLength", 1.0),
+            max_speed_lat_mps=_float_attr(row, "maxSpeedLat"),
+            min_gap_lat_m=_float_attr(row, "minGapLat"),
+            lat_alignment=row.get("latAlignment", "center"),
+            lc_sublane=_float_attr(row, "lcSublane"),
+            lc_pushy=_float_attr(row, "lcPushy"),
+        )
+    return vehicle_types
+
+
+def _has_geometry_fields(vehicle: dict[str, Any]) -> bool:
+    return all(
+        field in vehicle
+        for field in (
+            "length_m",
+            "width_m",
+            "height_m",
+            "ground_clearance_m",
+            "reference_point",
+        )
+    )
+
+
+def _lane_elevation_shapes(path: Any) -> dict[str, tuple[tuple[float, float, float], ...]]:
+    if not path.is_file():
+        return {}
+    tree = ET.parse(path)
+    shapes: dict[str, tuple[tuple[float, float, float], ...]] = {}
+    for lane in tree.getroot().iter("lane"):
+        row = dict(lane.attrib)
+        lane_id = row.get("id", "")
+        points = _parse_shape_3d(row.get("shape", ""))
+        if lane_id and points is not None:
+            shapes[lane_id] = points
+    return shapes
+
+
+def _parse_shape_3d(value: str) -> tuple[tuple[float, float, float], ...] | None:
+    points: list[tuple[float, float, float]] = []
+    for token in value.split():
+        values = token.split(",")
+        if len(values) != 3:
+            return None
+        try:
+            points.append((float(values[0]), float(values[1]), float(values[2])))
+        except ValueError:
+            return None
+    return tuple(points) if len(points) >= 2 else None
+
+
+def _vehicle_elevation(
+    row: Mapping[str, str],
+    *,
+    lane_id: str,
+    x: float,
+    y: float,
+    lane_elevation_shapes: Mapping[str, tuple[tuple[float, float, float], ...]],
+) -> tuple[float, str]:
+    if "z" in row:
+        return _float_attr(dict(row), "z"), "fcd_z"
+    shape = lane_elevation_shapes.get(lane_id)
+    if shape is None:
+        return 0.0, "flat_assumption"
+    closest_z: float | None = None
+    closest_distance = math.inf
+    for start, end in zip(shape[:-1], shape[1:], strict=True):
+        dx = end[0] - start[0]
+        dy = end[1] - start[1]
+        squared_length = dx * dx + dy * dy
+        if squared_length <= 0:
+            continue
+        ratio = max(0.0, min(1.0, ((x - start[0]) * dx + (y - start[1]) * dy) / squared_length))
+        closest_x = start[0] + ratio * dx
+        closest_y = start[1] + ratio * dy
+        distance = (x - closest_x) ** 2 + (y - closest_y) ** 2
+        if distance < closest_distance:
+            closest_distance = distance
+            closest_z = start[2] + ratio * (end[2] - start[2])
+    if closest_z is None:
+        return 0.0, "flat_assumption"
+    return closest_z, "lane_shape_3d"
 
 
 def _road_id_from_lane(lane_id: str) -> str:

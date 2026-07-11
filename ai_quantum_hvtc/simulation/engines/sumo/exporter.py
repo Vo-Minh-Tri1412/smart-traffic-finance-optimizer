@@ -6,7 +6,12 @@ from pathlib import Path
 
 from ai_quantum_hvtc.simulation.domain import DistrictSpec
 from ai_quantum_hvtc.simulation.engines.sumo.errors import SumoRuntimeError
+from ai_quantum_hvtc.simulation.engines.sumo.profiles import (
+    DEFAULT_SUMO_PROFILE,
+    SumoSimulationProfile,
+)
 from ai_quantum_hvtc.simulation.routing import RouteNotFoundError, RoutePlanner
+from ai_quantum_hvtc.simulation.vehicle_geometry import write_vehicle_geometry_catalog
 
 
 @dataclass(frozen=True)
@@ -23,6 +28,8 @@ class SumoExportPaths:
     edge_data: Path
     fcd: Path
     controller_log: Path
+    vehicle_geometry_catalog: Path
+    simulation_profile: SumoSimulationProfile
 
 
 def export_sumo_project(
@@ -32,6 +39,7 @@ def export_sumo_project(
     controller_id: str,
     seed: int,
     work_dir: Path,
+    simulation_profile: SumoSimulationProfile = DEFAULT_SUMO_PROFILE,
 ) -> SumoExportPaths:
     if scenario_id not in spec.scenarios:
         raise SumoRuntimeError(f"unknown scenario_id for SUMO export: {scenario_id}")
@@ -52,11 +60,14 @@ def export_sumo_project(
         edge_data=work_dir / "edge_data.xml",
         fcd=work_dir / "fcd.xml",
         controller_log=work_dir / "controller_interventions.jsonl",
+        vehicle_geometry_catalog=work_dir / "vehicle_geometry_catalog.v1.json",
+        simulation_profile=simulation_profile,
     )
     _write_nodes(spec, paths.nodes)
     _write_edges(spec, paths.edges)
     _write_routes(spec, scenario_id, paths.routes)
     _write_additional(spec, paths)
+    write_vehicle_geometry_catalog(spec, paths.vehicle_geometry_catalog)
     _write_config(spec, controller_id, seed, paths)
     return paths
 
@@ -107,16 +118,25 @@ def _write_routes(spec: DistrictSpec, scenario_id: str, path: Path) -> None:
             "vType",
             {
                 "id": vehicle_type.vehicle_type_id,
-                "vClass": _sumo_vehicle_class(vehicle_type.vehicle_type_id),
+                "vClass": vehicle_type.v_class,
                 "personCapacity": str(max(1, int(round(vehicle_type.passenger_count)))),
                 "color": _vehicle_color(vehicle_type.vehicle_type_id),
                 "length": f"{vehicle_type.length_m:.3f}",
                 "width": f"{vehicle_type.width_m:.3f}",
+                "height": f"{vehicle_type.height_m:.3f}",
                 "maxSpeed": f"{vehicle_type.max_speed_kph / 3.6:.3f}",
                 "accel": f"{vehicle_type.accel_mps2:.3f}",
                 "decel": f"{vehicle_type.decel_mps2:.3f}",
+                "emergencyDecel": f"{vehicle_type.emergency_decel_mps2:.3f}",
+                "apparentDecel": f"{vehicle_type.apparent_decel_mps2:.3f}",
                 "minGap": f"{vehicle_type.min_gap_m:.3f}",
-                "tau": "5.0",
+                "tau": f"{vehicle_type.tau_seconds:.3f}",
+                "actionStepLength": f"{vehicle_type.action_step_length_seconds:.3f}",
+                "maxSpeedLat": f"{vehicle_type.max_speed_lat_mps:.3f}",
+                "minGapLat": f"{vehicle_type.min_gap_lat_m:.3f}",
+                "latAlignment": vehicle_type.lat_alignment,
+                "lcSublane": f"{vehicle_type.lc_sublane:.3f}",
+                "lcPushy": f"{vehicle_type.lc_pushy:.3f}",
             },
         )
 
@@ -197,11 +217,20 @@ def _write_config(
     ET.SubElement(output_node, "summary-output", {"value": paths.summary.name})
     ET.SubElement(output_node, "fcd-output", {"value": paths.fcd.name})
     ET.SubElement(output_node, "fcd-output.skip-empty", {"value": "true"})
+    ET.SubElement(
+        output_node,
+        "fcd-output.attributes",
+        {"value": "location,posLat,speedLat,acceleration"},
+    )
 
     time_node = ET.SubElement(root, "time")
     ET.SubElement(time_node, "begin", {"value": "0"})
     ET.SubElement(time_node, "end", {"value": str(spec.metadata.horizon_seconds)})
-    ET.SubElement(time_node, "step-length", {"value": "1"})
+    ET.SubElement(
+        time_node,
+        "step-length",
+        {"value": f"{paths.simulation_profile.step_length_seconds:g}"},
+    )
 
     processing_node = ET.SubElement(root, "processing")
     ET.SubElement(processing_node, "ignore-route-errors", {"value": "true"})
@@ -217,18 +246,6 @@ def _write_xml(root: ET.Element, path: Path) -> None:
     tree = ET.ElementTree(root)
     ET.indent(tree, space="  ")
     tree.write(path, encoding="utf-8", xml_declaration=True)
-
-
-def _sumo_vehicle_class(vehicle_type_id: str) -> str:
-    if vehicle_type_id in {"BUS", "SCHOOL_BUS", "WORKER_SHUTTLE"}:
-        return "bus"
-    if vehicle_type_id == "AMBULANCE":
-        return "emergency"
-    if vehicle_type_id in {"LIGHT_TRUCK", "HEAVY_TRUCK"}:
-        return "truck"
-    if vehicle_type_id in {"MOTORBIKE", "DELIVERY_BIKE"}:
-        return "motorcycle"
-    return "passenger"
 
 
 def _vehicle_color(vehicle_type_id: str) -> str:

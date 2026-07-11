@@ -58,7 +58,16 @@ def _build_network(paths: SumoExportPaths, netconvert: str, *, controller_id: st
 
 
 def _sumo_command(sumo: str, paths: SumoExportPaths) -> list[str]:
-    return [sumo, "-c", str(paths.config), "--no-step-log", "true", "--no-warnings", "true"]
+    return [
+        sumo,
+        "-c",
+        str(paths.config),
+        "--no-step-log",
+        "true",
+        "--no-warnings",
+        "true",
+        *paths.simulation_profile.command_args(),
+    ]
 
 
 def _required_binary(binary_name: str) -> str:

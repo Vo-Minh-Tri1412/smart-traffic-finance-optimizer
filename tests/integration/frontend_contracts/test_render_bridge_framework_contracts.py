@@ -33,6 +33,7 @@ def test_render_bridge_schema_versions_are_declared_in_python_and_godot() -> Non
     expected_versions = {
         "geometry_manifest": "geometry_manifest.v1",
         "vehicle_trace": "vehicle_trace.v2",
+        "visibility_trace": "visibility_trace.v1",
         "traffic_light_trace": "traffic_light_trace.v1",
         "semantic_overlay": "semantic_overlay.v2",
         "event_trace": "event_trace.v1",
