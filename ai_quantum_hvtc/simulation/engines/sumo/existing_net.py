@@ -9,6 +9,10 @@ from ai_quantum_hvtc.simulation.engines.sumo.config import (
     resolve_sumo_binary,
 )
 from ai_quantum_hvtc.simulation.engines.sumo.errors import SumoRuntimeError
+from ai_quantum_hvtc.simulation.engines.sumo.profiles import (
+    DEFAULT_SUMO_PROFILE,
+    SumoSimulationProfile,
+)
 
 
 @dataclass(frozen=True)
@@ -23,6 +27,7 @@ class ExistingSumoNetRunPaths:
     edge_data: Path
     fcd: Path
     controller_log: Path
+    simulation_profile: SumoSimulationProfile
 
 
 def prepare_existing_sumo_net_run(
@@ -35,6 +40,7 @@ def prepare_existing_sumo_net_run(
     seed: int,
     horizon_seconds: int,
     step_length_seconds: float = 1.0,
+    simulation_profile: SumoSimulationProfile | None = None,
 ) -> ExistingSumoNetRunPaths:
     if controller_id != "fixed_time":
         raise SumoRuntimeError(
@@ -46,6 +52,17 @@ def prepare_existing_sumo_net_run(
     if not routes.is_file():
         raise SumoRuntimeError(f"SUMO route file not found: {routes}")
 
+    profile = simulation_profile or DEFAULT_SUMO_PROFILE
+    if (
+        simulation_profile is None
+        and step_length_seconds != DEFAULT_SUMO_PROFILE.step_length_seconds
+    ):
+        profile = SumoSimulationProfile(
+            profile_id="custom",
+            step_length_seconds=step_length_seconds,
+            action_step_length_seconds=DEFAULT_SUMO_PROFILE.action_step_length_seconds,
+            fcd_period_seconds=DEFAULT_SUMO_PROFILE.fcd_period_seconds,
+        )
     run_dir = work_dir / scenario_id / controller_id
     run_dir.mkdir(parents=True, exist_ok=True)
     paths = ExistingSumoNetRunPaths(
@@ -59,13 +76,14 @@ def prepare_existing_sumo_net_run(
         edge_data=run_dir / "edge_data.xml",
         fcd=run_dir / "fcd.xml",
         controller_log=run_dir / "controller_interventions.jsonl",
+        simulation_profile=profile,
     )
-    _write_additional(paths, step_length_seconds=step_length_seconds)
+    _write_additional(paths, step_length_seconds=profile.step_length_seconds)
     _write_config(
         paths,
         seed=seed,
         horizon_seconds=horizon_seconds,
-        step_length_seconds=step_length_seconds,
+        step_length_seconds=profile.step_length_seconds,
     )
     paths.controller_log.write_text("", encoding="utf-8")
     return paths
@@ -77,7 +95,16 @@ def run_existing_sumo_net(paths: ExistingSumoNetRunPaths, config: SumoRuntimeCon
         raise SumoRuntimeError(
             f"SUMO binary '{config.sumo_binary}' was not found. Install SUMO or set SUMO_HOME."
         )
-    command = [sumo, "-c", str(paths.config), "--no-step-log", "true", "--no-warnings", "true"]
+    command = [
+        sumo,
+        "-c",
+        str(paths.config),
+        "--no-step-log",
+        "true",
+        "--no-warnings",
+        "true",
+        *paths.simulation_profile.command_args(),
+    ]
     import subprocess
 
     completed = subprocess.run(
@@ -130,6 +157,11 @@ def _write_config(
     ET.SubElement(output_node, "summary-output", {"value": paths.summary.name})
     ET.SubElement(output_node, "fcd-output", {"value": paths.fcd.name})
     ET.SubElement(output_node, "fcd-output.skip-empty", {"value": "true"})
+    ET.SubElement(
+        output_node,
+        "fcd-output.attributes",
+        {"value": "location,posLat,speedLat,acceleration"},
+    )
 
     time_node = ET.SubElement(root, "time")
     ET.SubElement(time_node, "begin", {"value": "0"})

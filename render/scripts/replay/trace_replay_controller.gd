@@ -202,7 +202,7 @@ func _apply_frame(frame) -> void:
 			if node.get_parent() != self:
 				add_child(node)
 			active_vehicles[vehicle_id] = node
-		node.apply_trace_vehicle(vehicle, mapper)
+		node.apply_trace_vehicle(vehicle, mapper, geometry_node)
 
 	for vehicle_id in active_vehicles.keys():
 		if not seen.has(vehicle_id):
@@ -238,6 +238,7 @@ func _write_summary(success: bool) -> void:
 		push_error("Cannot create output root %s: %s" % [output_root, error])
 		return
 
+	var visual_fit := _vehicle_visual_fit_summary()
 	var payload := {
 		"success": success,
 		"loaded_frames": replay_data.loaded_frame_count() if replay_data != null else 0,
@@ -274,6 +275,8 @@ func _write_summary(success: bool) -> void:
 		"vehicle_fallback_spawn_count": (
 			vehicle_factory.fallback_spawn_count if vehicle_factory != null else 0
 		),
+		"vehicle_visual_fit_asset_count": int(visual_fit.get("asset_count", 0)),
+		"vehicle_visual_fit_max_error_world_units": float(visual_fit.get("max_error", 0.0)),
 		"vehicle_pool_model": "VehiclePool",
 		"vehicle_pool_created_count": (
 			vehicle_pool.created_count if vehicle_pool != null else 0
@@ -310,6 +313,20 @@ func _write_summary(success: bool) -> void:
 		return
 	file.store_string(JSON.stringify(payload, "\t") + "\n")
 	file.close()
+
+
+func _vehicle_visual_fit_summary() -> Dictionary:
+	var asset_count := 0
+	var max_error := 0.0
+	for raw_vehicle in active_vehicles.values():
+		if raw_vehicle == null or not raw_vehicle.has_method("visual_physical_fit_error_world_units"):
+			continue
+		var error := float(raw_vehicle.visual_physical_fit_error_world_units())
+		if error < 0.0:
+			continue
+		asset_count += 1
+		max_error = max(max_error, error)
+	return {"asset_count": asset_count, "max_error": max_error}
 
 
 func _geometry_node() -> Node:

@@ -21,8 +21,11 @@ from ai_quantum_hvtc.reports import (
 )
 from ai_quantum_hvtc.simulation.engines import ReferenceGraphEngine, SimulationEngine, SumoAdapter
 from ai_quantum_hvtc.simulation.engines.sumo import (
+    DEFAULT_SUMO_PROFILE,
+    GEOMETRY_SENSOR_SUMO_PROFILE,
     SumoRuntimeConfig,
     SumoRuntimeError,
+    SumoSimulationProfile,
     prepare_existing_sumo_net_run,
     run_existing_sumo_net,
 )
@@ -36,11 +39,16 @@ from ai_quantum_hvtc.simulation.maps.source import SumoMapSourceError
 from ai_quantum_hvtc.simulation.specs import load_district_spec
 
 
-def _engine(engine_id: str, *, sumo_work_dir: Path | None = None) -> SimulationEngine:
+def _engine(
+    engine_id: str,
+    *,
+    sumo_work_dir: Path | None = None,
+    sumo_profile: SumoSimulationProfile = DEFAULT_SUMO_PROFILE,
+) -> SimulationEngine:
     if engine_id == "reference":
         return ReferenceGraphEngine()
     if engine_id == "sumo":
-        return SumoAdapter(work_dir=sumo_work_dir)
+        return SumoAdapter(work_dir=sumo_work_dir, simulation_profile=sumo_profile)
     raise ValueError(f"unknown engine: {engine_id}")
 
 
@@ -60,6 +68,14 @@ def _dedupe_controllers(controllers: list[str]) -> list[str]:
         if controller_id not in deduped:
             deduped.append(controller_id)
     return deduped
+
+
+def _sumo_profile(profile_id: str) -> SumoSimulationProfile:
+    profiles = {
+        "standard": DEFAULT_SUMO_PROFILE,
+        "geometry_sensor": GEOMETRY_SENSOR_SUMO_PROFILE,
+    }
+    return profiles[profile_id]
 
 
 def _expanded_paths(patterns: list[str]) -> list[Path]:
@@ -104,6 +120,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
                 scenario_id=args.scenario,
                 controller_id=args.controller,
             ),
+            sumo_profile=_sumo_profile(args.sumo_profile),
         ).run(
             spec=spec,
             scenario_id=args.scenario,
@@ -179,6 +196,7 @@ def _cmd_run_sumo_net(args: argparse.Namespace) -> int:
             seed=args.seed,
             horizon_seconds=args.horizon_seconds,
             step_length_seconds=args.step_length,
+            simulation_profile=_sumo_profile(args.sumo_profile),
         )
         run_existing_sumo_net(paths, SumoRuntimeConfig())
         result = parse_existing_sumo_net_result(
@@ -352,6 +370,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Simulation backend. Use sumo for project runs; reference is validation-only.",
     )
     run_parser.add_argument("--seed", type=int, default=42)
+    run_parser.add_argument(
+        "--sumo-profile",
+        default="standard",
+        choices=["standard", "geometry_sensor"],
+        help=(
+            "Physical SUMO execution profile; geometry_sensor enables 0.2s/sub-lane visibility "
+            "runs."
+        ),
+    )
     run_parser.add_argument("--out", required=True)
     run_parser.add_argument("--trace-out", default=None)
     run_parser.add_argument(
@@ -374,6 +401,12 @@ def build_parser() -> argparse.ArgumentParser:
     run_net_parser.add_argument("--seed", type=int, default=42)
     run_net_parser.add_argument("--horizon-seconds", type=int, default=900)
     run_net_parser.add_argument("--step-length", type=float, default=1.0)
+    run_net_parser.add_argument(
+        "--sumo-profile",
+        default="standard",
+        choices=["standard", "geometry_sensor"],
+        help="Physical SUMO execution profile for existing-net runs.",
+    )
     run_net_parser.add_argument("--out", required=True)
     run_net_parser.add_argument("--trace-out", default=None)
     run_net_parser.add_argument("--sumo-work-dir", required=True)

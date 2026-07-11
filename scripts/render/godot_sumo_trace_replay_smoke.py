@@ -153,6 +153,15 @@ def _summary_int(summary: dict[str, object], key: str) -> int:
     return 0
 
 
+def _summary_float(summary: dict[str, object], key: str) -> float:
+    value = summary.get(key, 0.0)
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        return float(value)
+    return 0.0
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     spec = Path(args.spec).resolve()
@@ -230,6 +239,13 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     if _summary_int(summary, "off_lane_vehicle_count") != 0:
         print("[FAIL] replay_summary.json reports vehicles outside SUMO lane geometry")
+        return 1
+    if (
+        summary.get("trace_schema_version") == "vehicle_trace.v2"
+        and _summary_int(summary, "vehicle_visual_fit_asset_count") > 0
+        and _summary_float(summary, "vehicle_visual_fit_max_error_world_units") > 0.001
+    ):
+        print("[FAIL] replay_summary.json reports visual assets that do not match physical proxies")
         return 1
     zone_overlay = summary.get("zone_overlay", {})
     if args.overlay and isinstance(zone_overlay, dict):

@@ -821,6 +821,17 @@ func world_position_for_sumo_coordinate(x: float, y: float, height := 0.04) -> V
 	return _mapper.sumo_to_world(x, y, height)
 
 
+func world_position_for_trace_vehicle(
+	x: float,
+	y: float,
+	_pos_lat_m: float,
+	height := 0.04
+) -> Variant:
+	# SUMO FCD x/y already include the sublane displacement described by posLat.  Applying
+	# posLat again here would double-offset vehicles from their simulated world position.
+	return world_position_for_sumo_coordinate(x, y, height)
+
+
 func world_polygon_for_geo_coordinates(coordinates, height := 0.04) -> Array:
 	var output: Array[Vector3] = []
 	if not (coordinates is Array):

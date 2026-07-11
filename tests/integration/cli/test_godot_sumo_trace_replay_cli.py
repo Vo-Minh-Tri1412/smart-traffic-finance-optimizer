@@ -45,6 +45,7 @@ def test_godot_sumo_trace_replay_smoke_runs_when_godot_is_available(tmp_path: Pa
     assert summary["vehicle_scene_count"] >= 5
     assert summary["trace_data_model"] == "TraceFrameData/TraceVehicleState"
     assert summary["trace_schema_version"] == "simulation_trace_frame.v1"
+    assert summary["vehicle_visual_fit_asset_count"] == 0
     assert summary["playback_data_model"] == "TracePlaybackClock/TraceInterpolator"
     assert summary["interpolated_frame_count"] >= 1
     assert summary["vehicle_pool_model"] == "VehiclePool"
@@ -86,6 +87,8 @@ def test_godot_sumo_trace_replay_generates_sumo_net_geometry_when_trace_is_omitt
     assert summary["average_lane_width_m"] >= summary["min_lane_width_m"]
     assert summary["vehicle_asset_registry_loaded"] is True
     assert summary["vehicle_fallback_spawn_count"] == 0
+    assert summary["vehicle_visual_fit_asset_count"] > 0
+    assert summary["vehicle_visual_fit_max_error_world_units"] <= 0.001
     assert summary["sumo_geometry_data_model"] == "SumoNetGeometryData"
     assert summary["playback_data_model"] == "TracePlaybackClock/TraceInterpolator"
     assert summary["vehicle_pool_model"] == "VehiclePool"

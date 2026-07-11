@@ -106,10 +106,20 @@ def validate_spec(spec: DistrictSpec) -> None:
         if (
             vehicle_type.length_m <= 0
             or vehicle_type.width_m <= 0
+            or vehicle_type.height_m <= 0
+            or vehicle_type.ground_clearance_m < 0
             or vehicle_type.max_speed_kph <= 0
             or vehicle_type.accel_mps2 <= 0
             or vehicle_type.decel_mps2 <= 0
             or vehicle_type.min_gap_m < 0
+            or vehicle_type.tau_seconds <= 0
+            or vehicle_type.emergency_decel_mps2 <= 0
+            or vehicle_type.apparent_decel_mps2 <= 0
+            or vehicle_type.action_step_length_seconds <= 0
+            or vehicle_type.max_speed_lat_mps < 0
+            or vehicle_type.min_gap_lat_m < 0
+            or not vehicle_type.v_class
+            or not vehicle_type.lat_alignment
         ):
             raise SpecValidationError(
                 f"{vehicle_type.vehicle_type_id}: SUMO vehicle dimensions/dynamics invalid"

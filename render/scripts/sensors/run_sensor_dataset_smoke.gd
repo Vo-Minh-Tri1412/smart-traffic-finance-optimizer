@@ -1,6 +1,7 @@
 extends SceneTree
 
 const CameraRigCatalogScript := preload("res://scripts/sensors/camera_rig_catalog.gd")
+const CameraCalibrationLoaderScript := preload("res://scripts/sensors/camera_calibration_loader.gd")
 const DetectionCameraScene := preload("res://scenes/sensors/DetectionCamera3D.tscn")
 const LabelMappingCatalogScript := preload("res://scripts/sensors/label_mapping_catalog.gd")
 const SensorRenderPipelineScript := preload("res://scripts/sensors/sensor_render_pipeline.gd")
@@ -22,6 +23,7 @@ func _run() -> void:
 	var max_frames := int(options.get("max_frames", "6"))
 	var scene_path := str(options.get("scene", "res://scenes/main/Main.tscn"))
 	var camera_catalog_path := str(options.get("camera_catalog", "res://resources/catalogs/CameraRigCatalog.tres"))
+	var camera_calibration_path := str(options.get("camera_calibration", ""))
 	var label_mapping_path := str(options.get("label_mapping", "res://resources/catalogs/LabelMappingCatalog.tres"))
 
 	if trace_path.is_empty() or dataset_root.is_empty():
@@ -29,10 +31,10 @@ func _run() -> void:
 		quit(2)
 		return
 
-	var camera_catalog = load(camera_catalog_path)
+	var camera_catalog = load(camera_catalog_path) if camera_calibration_path.is_empty() else null
 	var label_catalog = load(label_mapping_path)
 	print("[sensor-smoke] catalogs loaded")
-	if not (camera_catalog is CameraRigCatalogScript):
+	if camera_calibration_path.is_empty() and not (camera_catalog is CameraRigCatalogScript):
 		push_error("Camera catalog is missing or invalid: %s" % camera_catalog_path)
 		quit(3)
 		return
@@ -74,7 +76,12 @@ func _run() -> void:
 		quit(7)
 		return
 
-	var cameras := _instantiate_cameras(camera_catalog, root_node)
+	var cameras := _instantiate_cameras(
+		camera_catalog,
+		camera_calibration_path,
+		root_node,
+		world
+	)
 	print("[sensor-smoke] cameras=%d" % cameras.size())
 	if cameras.is_empty():
 		push_error("No enabled cameras in catalog: %s" % camera_catalog_path)
@@ -121,8 +128,26 @@ func _run() -> void:
 	quit(0)
 
 
-func _instantiate_cameras(camera_catalog, parent: Node) -> Array:
+func _instantiate_cameras(
+	camera_catalog,
+	calibration_path: String,
+	parent: Node,
+	geometry_world: Node
+) -> Array:
 	var cameras: Array = []
+	if not calibration_path.is_empty():
+		var errors: Array[String] = []
+		var loader = CameraCalibrationLoaderScript.new()
+		for entry in loader.load_entries(calibration_path, errors):
+			var calibrated_camera = DetectionCameraScene.instantiate()
+			calibrated_camera.configure_from_calibration(entry as Dictionary, geometry_world)
+			parent.add_child(calibrated_camera)
+			cameras.append(calibrated_camera)
+		for error in errors:
+			push_warning(error)
+		return cameras
+	if not (camera_catalog is CameraRigCatalogScript):
+		return cameras
 	for raw_entry in camera_catalog.enabled_entries():
 		var camera = DetectionCameraScene.instantiate()
 		camera.configure_from_entry(raw_entry)

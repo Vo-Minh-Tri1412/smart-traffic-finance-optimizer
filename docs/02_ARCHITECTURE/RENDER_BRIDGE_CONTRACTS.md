@@ -18,8 +18,10 @@ only for Godot-owned visual configuration.
 | `render_run_manifest` | `render_run_manifest.v1` | Python wrapper or demo config | render adapter | one file that wires geometry, traces, overlay, assets |
 | `sensor_dataset_manifest` | `sensor_dataset_manifest.v1` | render sensor exporter | Python training workflow | frames, labels, masks, camera config, provenance |
 
-`visibility_trace.v1` is a design-only contract at this stage. No production visibility producer is
-implemented yet; the current Godot smoke path remains a projected-bounds plumbing test.
+`visibility_trace.v1` is produced by the deterministic Python geometry camera. It rasterizes
+canonical vehicle cuboids into a software depth/instance buffer and does not depend on Godot meshes
+or player-camera LOD. The Godot smoke path remains a projected-bounds plumbing test; it is not the
+visibility producer.
 
 Existing `simulation_trace_frame.v1` remains supported for backward compatibility. New render bridge
 work should prefer `vehicle_trace.v2` naming for vehicle-level replay.
@@ -90,7 +92,10 @@ Vehicle trace is JSONL. Each line is one frame.
       "length_m": 4.5,
       "width_m": 1.8,
       "height_m": 1.5,
-      "elevation_m": 0.0
+      "ground_clearance_m": 0.0,
+      "elevation_m": 0.0,
+      "pos_lat_m": 0.0,
+      "reference_point": "front_bumper_center"
     }
   ]
 }
@@ -99,9 +104,25 @@ Vehicle trace is JSONL. Each line is one frame.
 The model input for CV must be rendered images, not hidden vehicle trace values. The trace is only
 ground truth for replay and label generation.
 
-`length_m`, `width_m`, `height_m` and `elevation_m` are required for geometry-based visibility when
-available. Existing traces without them remain backward-compatible but cannot support physically
-audited occlusion claims.
+`vehicle_trace.v2` requires canonical physical fields for geometry visibility. SUMO `x,y` is the
+front-bumper centre, so consumers must not treat it as the centre of the vehicle box. Existing
+`simulation_trace_frame.v1` remains replay-compatible but is rejected by the geometry camera.
+
+With the SUMO Sublane model, FCD `x,y` already includes the physical lateral displacement. The
+separate `pos_lat_m` is preserved and interpolated as lateral-motion state, but replay must **not**
+add it to `x,y` a second time. Godot fits each vehicle's fallback mesh or imported visual asset to
+the canonical `width_m × height_m × length_m` proxy after mapping that FCD pose.
+
+## `camera_calibration.v1`
+
+Camera calibration is JSON rather than a Godot `.tres` resource so Python geometry visibility and
+Godot receive the same physical source. It contains camera pose in `sumo_xy_meters_z_up`, intrinsics,
+image size, clipping planes, capture interval and target lanes. Godot converts this coordinate system
+through the active SUMO world mapper; free-fly camera state is never used.
+
+`geometry_raster_size` may be lower than the future RGB resolution for fast RL visibility runs. The
+geometry engine scales intrinsics to that raster deterministically and records the calibration, so
+the effective resolution remains explicit rather than being an accidental LOD policy.
 
 ## `visibility_trace.v1`
 
@@ -122,9 +143,9 @@ geometry. It is also valid when no learned CV model exists:
 }
 ```
 
-The producer must record the camera pose/FOV or intrinsics, image size, capture interval and the
-world-unit convention. This artifact describes what the camera can geometrically see; it is not a
-detector confusion matrix. Detector-specific errors may be attached later by a sensor model.
+The producer records camera pose/intrinsics through the linked `camera_calibration.v1` artifact.
+This trace describes physical geometry visibility, not a detector confusion matrix. Detector-specific
+errors may be attached later by a sensor model.
 
 ## `traffic_light_trace.v1`
 

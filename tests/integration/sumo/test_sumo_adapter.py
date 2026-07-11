@@ -7,6 +7,7 @@ import pytest
 from ai_quantum_hvtc.simulation.engines.sumo import SumoAdapter
 from ai_quantum_hvtc.simulation.engines.sumo.errors import SumoRuntimeError
 from ai_quantum_hvtc.simulation.engines.sumo.exporter import export_sumo_project
+from ai_quantum_hvtc.simulation.engines.sumo.profiles import GEOMETRY_SENSOR_SUMO_PROFILE
 from ai_quantum_hvtc.simulation.engines.sumo.runner import has_sumo_runtime
 from ai_quantum_hvtc.simulation.specs import load_district_spec
 
@@ -50,7 +51,7 @@ def test_sumo_adapter_runs_when_runtime_is_available(tmp_path: Path) -> None:
     assert result.max_queue_vehicles > 0
     assert any(metric.delay_seconds > 0 for metric in result.intersections.values())
     assert result.vehicle_trace_frames
-    assert result.vehicle_trace_frames[0]["schema_version"] == "simulation_trace_frame.v1"
+    assert result.vehicle_trace_frames[0]["schema_version"] == "vehicle_trace.v2"
     assert "vehicles" in result.vehicle_trace_frames[0]
 
 
@@ -70,6 +71,32 @@ def test_sumo_rule_based_controller_runs_and_writes_controller_log(tmp_path: Pat
     assert result.total_vehicles > 0
     assert result.controller_interventions >= 0
     assert (tmp_path / "controller_interventions.jsonl").is_file()
+
+
+@pytest.mark.skipif(not has_sumo_runtime(), reason="SUMO/netconvert runtime is not available")
+def test_sumo_geometry_sensor_profile_emits_geometry_ready_trace(tmp_path: Path) -> None:
+    spec = load_district_spec(SPEC_PATH)
+
+    result = SumoAdapter(
+        work_dir=tmp_path,
+        simulation_profile=GEOMETRY_SENSOR_SUMO_PROFILE,
+    ).run(
+        spec=spec,
+        scenario_id="normal_weekday",
+        controller_id="fixed_time",
+        seed=42,
+    )
+
+    vehicle = next(
+        vehicle
+        for frame in result.vehicle_trace_frames
+        for vehicle in frame["vehicles"]
+        if vehicle.get("vehicle_type")
+    )
+    assert result.vehicle_trace_frames[0]["schema_version"] == "vehicle_trace.v2"
+    assert vehicle["reference_point"] == "front_bumper_center"
+    assert vehicle["height_m"] > 0
+    assert "pos_lat_m" in vehicle
 
 
 def test_sumo_rl_policy_placeholder_fails_clearly(tmp_path: Path) -> None:

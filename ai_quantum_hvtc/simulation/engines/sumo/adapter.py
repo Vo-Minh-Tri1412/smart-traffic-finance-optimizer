@@ -9,6 +9,10 @@ from ai_quantum_hvtc.simulation.engines.sumo.config import SumoRuntimeConfig
 from ai_quantum_hvtc.simulation.engines.sumo.errors import SumoRuntimeError
 from ai_quantum_hvtc.simulation.engines.sumo.exporter import export_sumo_project
 from ai_quantum_hvtc.simulation.engines.sumo.parser import parse_sumo_result
+from ai_quantum_hvtc.simulation.engines.sumo.profiles import (
+    DEFAULT_SUMO_PROFILE,
+    SumoSimulationProfile,
+)
 from ai_quantum_hvtc.simulation.engines.sumo.runner import run_sumo_pipeline
 from ai_quantum_hvtc.simulation.metrics import SimulationResult
 
@@ -21,9 +25,11 @@ class SumoAdapter(SimulationEngine):
         *,
         runtime_config: SumoRuntimeConfig | None = None,
         work_dir: Path | None = None,
+        simulation_profile: SumoSimulationProfile = DEFAULT_SUMO_PROFILE,
     ) -> None:
         self._runtime_config = runtime_config or SumoRuntimeConfig()
         self._work_dir = work_dir
+        self._simulation_profile = simulation_profile
 
     def run(
         self,
@@ -70,6 +76,7 @@ class SumoAdapter(SimulationEngine):
             controller_id=controller_id,
             seed=seed,
             work_dir=work_dir,
+            simulation_profile=self._simulation_profile,
         )
         run_sumo_pipeline(paths, self._runtime_config, controller_id=controller_id)
         return parse_sumo_result(

@@ -5,6 +5,9 @@
 [sub_resource type="BoxMesh" id="BoxMesh_vehicle"]
 size = Vector3(1, 1, 1)
 
+[sub_resource type="BoxMesh" id="BoxMesh_physical_proxy"]
+size = Vector3(1.8, 1.5, 4.5)
+
 [node name="VehicleBase" type="Node3D"]
 script = ExtResource("1_vehicle_base")
 default_vehicle_type = "UNKNOWN"
@@ -14,3 +17,8 @@ body_height = 0.25
 
 [node name="Body" type="MeshInstance3D" parent="."]
 mesh = SubResource("BoxMesh_vehicle")
+
+[node name="PhysicalProxy" type="MeshInstance3D" parent="."]
+visible = false
+position = Vector3(0, 0.75, 0)
+mesh = SubResource("BoxMesh_physical_proxy")

@@ -107,6 +107,7 @@ def _vehicle_types(items: list[dict[str, Any]]) -> dict[str, VehicleType]:
     vehicle_types: dict[str, VehicleType] = {}
     for item in items:
         defaults = _vehicle_type_defaults(str(item["id"]))
+        behavior_defaults = _vehicle_behavior_defaults(str(item["id"]))
         vehicle_type = VehicleType(
             vehicle_type_id=str(item["id"]),
             passenger_count=float(item["passenger_count"]),
@@ -116,10 +117,35 @@ def _vehicle_types(items: list[dict[str, Any]]) -> dict[str, VehicleType]:
             forbidden_road_tags=_tuple_of_strings(item.get("forbidden_road_tags", [])),
             length_m=float(item.get("length_m", defaults["length_m"])),
             width_m=float(item.get("width_m", defaults["width_m"])),
+            height_m=float(item.get("height_m", defaults["height_m"])),
+            ground_clearance_m=float(
+                item.get("ground_clearance_m", defaults["ground_clearance_m"])
+            ),
+            v_class=str(item.get("v_class", behavior_defaults["v_class"])),
             max_speed_kph=float(item.get("max_speed_kph", defaults["max_speed_kph"])),
             accel_mps2=float(item.get("accel_mps2", defaults["accel_mps2"])),
             decel_mps2=float(item.get("decel_mps2", defaults["decel_mps2"])),
             min_gap_m=float(item.get("min_gap_m", defaults["min_gap_m"])),
+            tau_seconds=float(item.get("tau_seconds", behavior_defaults["tau_seconds"])),
+            emergency_decel_mps2=float(
+                item.get("emergency_decel_mps2", behavior_defaults["emergency_decel_mps2"])
+            ),
+            apparent_decel_mps2=float(
+                item.get("apparent_decel_mps2", behavior_defaults["apparent_decel_mps2"])
+            ),
+            action_step_length_seconds=float(
+                item.get(
+                    "action_step_length_seconds",
+                    behavior_defaults["action_step_length_seconds"],
+                )
+            ),
+            max_speed_lat_mps=float(
+                item.get("max_speed_lat_mps", behavior_defaults["max_speed_lat_mps"])
+            ),
+            min_gap_lat_m=float(item.get("min_gap_lat_m", behavior_defaults["min_gap_lat_m"])),
+            lat_alignment=str(item.get("lat_alignment", behavior_defaults["lat_alignment"])),
+            lc_sublane=float(item.get("lc_sublane", behavior_defaults["lc_sublane"])),
+            lc_pushy=float(item.get("lc_pushy", behavior_defaults["lc_pushy"])),
         )
         vehicle_types[vehicle_type.vehicle_type_id] = vehicle_type
     return vehicle_types
@@ -129,6 +155,8 @@ def _vehicle_type_defaults(vehicle_type_id: str) -> dict[str, float]:
     defaults = {
         "length_m": 4.5,
         "width_m": 1.8,
+        "height_m": 1.5,
+        "ground_clearance_m": 0.0,
         "max_speed_kph": 50.0,
         "accel_mps2": 2.6,
         "decel_mps2": 4.5,
@@ -138,6 +166,8 @@ def _vehicle_type_defaults(vehicle_type_id: str) -> dict[str, float]:
         "MOTORBIKE": {
             "length_m": 2.0,
             "width_m": 0.7,
+            "height_m": 1.2,
+            "ground_clearance_m": 0.12,
             "max_speed_kph": 45.0,
             "accel_mps2": 3.0,
             "decel_mps2": 5.0,
@@ -146,40 +176,104 @@ def _vehicle_type_defaults(vehicle_type_id: str) -> dict[str, float]:
         "DELIVERY_BIKE": {
             "length_m": 2.0,
             "width_m": 0.7,
+            "height_m": 1.45,
+            "ground_clearance_m": 0.12,
             "max_speed_kph": 40.0,
             "accel_mps2": 2.8,
             "decel_mps2": 5.0,
             "min_gap_m": 1.0,
         },
-        "BUS": {"length_m": 12.0, "width_m": 2.5, "max_speed_kph": 45.0, "min_gap_m": 3.0},
+        "BUS": {
+            "length_m": 12.0,
+            "width_m": 2.5,
+            "height_m": 3.2,
+            "max_speed_kph": 45.0,
+            "min_gap_m": 3.0,
+        },
         "SCHOOL_BUS": {
             "length_m": 10.0,
             "width_m": 2.4,
+            "height_m": 3.0,
             "max_speed_kph": 40.0,
             "min_gap_m": 3.0,
         },
         "WORKER_SHUTTLE": {
             "length_m": 9.0,
             "width_m": 2.3,
+            "height_m": 3.0,
             "max_speed_kph": 45.0,
             "min_gap_m": 3.0,
         },
         "AMBULANCE": {
             "length_m": 5.5,
             "width_m": 2.0,
+            "height_m": 2.7,
             "max_speed_kph": 70.0,
             "accel_mps2": 3.5,
             "decel_mps2": 5.5,
             "min_gap_m": 2.0,
         },
-        "LIGHT_TRUCK": {"length_m": 6.5, "width_m": 2.2, "max_speed_kph": 50.0},
+        "LIGHT_TRUCK": {
+            "length_m": 6.5,
+            "width_m": 2.2,
+            "height_m": 3.0,
+            "max_speed_kph": 50.0,
+        },
         "HEAVY_TRUCK": {
             "length_m": 12.0,
             "width_m": 2.5,
+            "height_m": 3.8,
             "max_speed_kph": 40.0,
             "accel_mps2": 1.2,
             "decel_mps2": 3.5,
             "min_gap_m": 3.5,
+        },
+    }
+    return {**defaults, **overrides.get(vehicle_type_id, {})}
+
+
+def _vehicle_behavior_defaults(vehicle_type_id: str) -> dict[str, str | float]:
+    defaults: dict[str, str | float] = {
+        "v_class": "passenger",
+        "tau_seconds": 1.2,
+        "emergency_decel_mps2": 7.0,
+        "apparent_decel_mps2": 4.5,
+        "action_step_length_seconds": 1.0,
+        "max_speed_lat_mps": 0.8,
+        "min_gap_lat_m": 0.2,
+        "lat_alignment": "center",
+        "lc_sublane": 1.0,
+        "lc_pushy": 0.0,
+    }
+    overrides: dict[str, dict[str, str | float]] = {
+        "MOTORBIKE": {
+            "v_class": "motorcycle",
+            "tau_seconds": 1.0,
+            "max_speed_lat_mps": 1.2,
+            "min_gap_lat_m": 0.1,
+            "lat_alignment": "right",
+            "lc_sublane": 1.5,
+            "lc_pushy": 0.3,
+        },
+        "DELIVERY_BIKE": {
+            "v_class": "motorcycle",
+            "tau_seconds": 1.0,
+            "max_speed_lat_mps": 1.1,
+            "min_gap_lat_m": 0.1,
+            "lat_alignment": "right",
+            "lc_sublane": 1.4,
+            "lc_pushy": 0.2,
+        },
+        "BUS": {"v_class": "bus", "tau_seconds": 1.5, "max_speed_lat_mps": 0.4},
+        "SCHOOL_BUS": {"v_class": "bus", "tau_seconds": 1.5, "max_speed_lat_mps": 0.4},
+        "WORKER_SHUTTLE": {"v_class": "bus", "tau_seconds": 1.5, "max_speed_lat_mps": 0.4},
+        "AMBULANCE": {"v_class": "emergency", "tau_seconds": 1.0, "max_speed_lat_mps": 0.7},
+        "LIGHT_TRUCK": {"v_class": "truck", "tau_seconds": 1.5, "max_speed_lat_mps": 0.4},
+        "HEAVY_TRUCK": {
+            "v_class": "truck",
+            "tau_seconds": 1.6,
+            "emergency_decel_mps2": 5.5,
+            "max_speed_lat_mps": 0.3,
         },
     }
     return {**defaults, **overrides.get(vehicle_type_id, {})}
