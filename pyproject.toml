@@ -16,10 +16,13 @@ dependencies = [
     "pettingzoo>=1.24.3,<1.25",
     "streamlit>=1.58.0",
     "sumo-rl>=1.4.5",
+    "fastapi>=0.139.2",
+    "uvicorn>=0.49.0",
 ]
 
 [dependency-groups]
 dev = [
+  "httpx>=0.28.1",
   "mypy>=1.18.2",
   "pytest>=9.0.1",
   "ruff>=0.14.8",
