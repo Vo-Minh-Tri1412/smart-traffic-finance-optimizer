@@ -45,6 +45,10 @@ extends Node3D
 	set(value):
 		show_roadside_props = value
 		_rebuild_preview_if_needed()
+@export var roadside_prop_entries: Array[Resource] = []:
+	set(value):
+		roadside_prop_entries = value
+		_rebuild_preview_if_needed()
 @export var roadside_prop_scenes: Array[PackedScene] = []:
 	set(value):
 		roadside_prop_scenes = value
@@ -127,6 +131,11 @@ func _apply_style_entry(style_entry, fallback_lane_material: Material) -> void:
 		min_visual_lane_width = float(style_entry.get("min_visual_lane_width"))
 		show_center_marking = bool(style_entry.get("show_markings"))
 		show_roadside_props = bool(style_entry.get("show_roadside_props"))
+		if style_entry.get("roadside_prop_entries") is Array:
+			roadside_prop_entries.clear()
+			for raw_entry in style_entry.get("roadside_prop_entries") as Array:
+				if raw_entry is Resource:
+					roadside_prop_entries.append(raw_entry as Resource)
 		if style_entry.get("roadside_prop_scenes") is Array:
 			roadside_prop_scenes.clear()
 			for raw_scene in style_entry.get("roadside_prop_scenes") as Array:
@@ -248,19 +257,23 @@ func _build_roadside_props() -> void:
 		child.queue_free()
 	if (
 		not show_roadside_props
-		or roadside_prop_scenes.is_empty()
+		or (roadside_prop_entries.is_empty() and roadside_prop_scenes.is_empty())
 		or max_roadside_props_per_lane <= 0
 		or _points_m.size() < 2
 	):
 		return
 	if _stable_lane_bucket() % roadside_prop_lane_stride != 0:
 		return
+	var entry = _roadside_prop_entry_for_lane()
+	var spacing_m := _roadside_prop_spacing_m(entry)
+	if spacing_m <= 0.0:
+		return
 	var length_m := _polyline_length_m()
-	if length_m < roadside_prop_spacing_m * 0.45:
+	if length_m < spacing_m * 0.45:
 		return
 	var prop_count: int = min(
 		max_roadside_props_per_lane,
-		max(1, int(floor(length_m / roadside_prop_spacing_m)))
+		max(1, int(floor(length_m / spacing_m)))
 	)
 	for index in range(prop_count):
 		var fraction := float(index + 1) / float(prop_count + 1)
@@ -271,7 +284,7 @@ func _build_roadside_props() -> void:
 			continue
 		var normal := Vector2(-tangent.y, tangent.x).normalized()
 		var side := 1.0 if (_stable_lane_bucket() + index) % 2 == 0 else -1.0
-		var prop_scene := roadside_prop_scenes[index % roadside_prop_scenes.size()]
+		var prop_scene := _roadside_prop_scene(entry, index)
 		if prop_scene == null:
 			continue
 		var prop = prop_scene.instantiate()
@@ -283,12 +296,12 @@ func _build_roadside_props() -> void:
 		var wrapper := Node3D.new()
 		wrapper.name = "RoadsideProp_%d" % index
 		wrapper.position = _point_to_world(
-			point + normal * roadside_prop_offset_m * side,
+			point + normal * (_lane_half_width_m() + _roadside_prop_offset_m(entry)) * side,
 			lane_surface_height + 0.015
 		)
 		wrapper.rotation.y = atan2(tangent.x, tangent.y)
-		wrapper.scale = Vector3.ONE * roadside_prop_scale
 		wrapper.add_child(prop_node)
+		_fit_roadside_prop_to_target_size(wrapper, prop_node, _roadside_prop_target_size_m(entry))
 		wrapper.add_to_group("generated_roadside_prop")
 		props_root.add_child(wrapper)
 		_set_editor_owner(wrapper)
@@ -297,6 +310,113 @@ func _build_roadside_props() -> void:
 
 func roadside_prop_count() -> int:
 	return _roadside_prop_count
+
+
+func _roadside_prop_entry_for_lane():
+	if roadside_prop_entries.is_empty():
+		return null
+	return roadside_prop_entries[_stable_lane_bucket() % roadside_prop_entries.size()]
+
+
+func _roadside_prop_scene(entry, index: int) -> PackedScene:
+	if entry != null and entry.get("scene") is PackedScene:
+		return entry.get("scene") as PackedScene
+	if roadside_prop_scenes.is_empty():
+		return null
+	return roadside_prop_scenes[index % roadside_prop_scenes.size()]
+
+
+func _roadside_prop_spacing_m(entry) -> float:
+	if entry != null:
+		return max(0.0, float(entry.get("spacing_m")))
+	return roadside_prop_spacing_m
+
+
+func _roadside_prop_offset_m(entry) -> float:
+	if entry != null:
+		return max(0.0, float(entry.get("lateral_offset_m")))
+	return roadside_prop_offset_m
+
+
+func _roadside_prop_target_size_m(entry) -> Vector3:
+	if entry != null and entry.get("target_size_m") is Vector3:
+		return entry.get("target_size_m") as Vector3
+	return Vector3.ONE * roadside_prop_scale
+
+
+func _lane_half_width_m() -> float:
+	return max(0.1, lane_width_m * width_multiplier * 0.5)
+
+
+func _fit_roadside_prop_to_target_size(
+	wrapper: Node3D,
+	prop_node: Node3D,
+	target_size_m: Vector3
+) -> void:
+	var bounds := _node_local_bounds(prop_node, Transform3D.IDENTITY)
+	if not bool(bounds.get("has_bounds", false)):
+		wrapper.scale = Vector3.ONE * roadside_prop_scale
+		return
+	var minimum := bounds.get("minimum", Vector3.ZERO) as Vector3
+	var maximum := bounds.get("maximum", Vector3.ZERO) as Vector3
+	var raw_size := maximum - minimum
+	if min(raw_size.x, min(raw_size.y, raw_size.z)) <= 0.000001:
+		wrapper.scale = Vector3.ONE * roadside_prop_scale
+		return
+	var target_size := target_size_m * world_scale
+	wrapper.scale = Vector3(
+		target_size.x / raw_size.x,
+		target_size.y / raw_size.y,
+		target_size.z / raw_size.z
+	)
+	wrapper.position.y += -minimum.y * wrapper.scale.y
+
+
+func _node_local_bounds(node: Node, parent_transform: Transform3D) -> Dictionary:
+	var result := {
+		"has_bounds": false,
+		"minimum": Vector3.ZERO,
+		"maximum": Vector3.ZERO,
+	}
+	_collect_node_local_bounds(node, parent_transform, result)
+	return result
+
+
+func _collect_node_local_bounds(node: Node, parent_transform: Transform3D, result: Dictionary) -> void:
+	var current_transform := parent_transform
+	if node is Node3D:
+		current_transform = parent_transform * (node as Node3D).transform
+	if node is MeshInstance3D:
+		var mesh_instance := node as MeshInstance3D
+		if mesh_instance.mesh != null:
+			for corner in _aabb_corners(mesh_instance.mesh.get_aabb()):
+				var point := current_transform * corner
+				if not bool(result.get("has_bounds", false)):
+					result["has_bounds"] = true
+					result["minimum"] = point
+					result["maximum"] = point
+					continue
+				var minimum := result.get("minimum", Vector3.ZERO) as Vector3
+				var maximum := result.get("maximum", Vector3.ZERO) as Vector3
+				result["minimum"] = minimum.min(point)
+				result["maximum"] = maximum.max(point)
+	for child in node.get_children():
+		_collect_node_local_bounds(child, current_transform, result)
+
+
+func _aabb_corners(box: AABB) -> Array[Vector3]:
+	var position := box.position
+	var size := box.size
+	return [
+		position,
+		position + Vector3(size.x, 0.0, 0.0),
+		position + Vector3(0.0, size.y, 0.0),
+		position + Vector3(0.0, 0.0, size.z),
+		position + Vector3(size.x, size.y, 0.0),
+		position + Vector3(size.x, 0.0, size.z),
+		position + Vector3(0.0, size.y, size.z),
+		position + size,
+	]
 
 
 func _polyline_length_m() -> float:

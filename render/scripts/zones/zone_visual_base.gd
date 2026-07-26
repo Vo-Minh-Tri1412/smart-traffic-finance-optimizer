@@ -56,6 +56,15 @@ extends Node3D
 	set(value):
 		building_ground_clearance = value
 		_request_zone_refresh()
+@export_group("Placement Safety")
+@export var enforce_building_footprint_clearance := true:
+	set(value):
+		enforce_building_footprint_clearance = value
+		_request_zone_refresh()
+@export var building_neighbor_clearance_m := 1.5:
+	set(value):
+		building_neighbor_clearance_m = max(0.0, value)
+		_request_zone_refresh()
 @export var building_override_material: Material:
 	set(value):
 		building_override_material = value
@@ -90,6 +99,10 @@ var zone_type := ""
 var display_name := ""
 var _configured_zone_entry = null
 var _configured_ground_polygon: Array[Vector3] = []
+var _road_clearance_world: Node = null
+var rejected_outside_zone_count := 0
+var rejected_road_clearance_count := 0
+var rejected_building_overlap_count := 0
 
 
 func configure_zone(zone_data: Dictionary, zone_entry = null) -> void:
@@ -113,6 +126,12 @@ func configure_zone_polygon(local_polygon: Array) -> void:
 
 func configure_world_units_per_meter(value: float) -> void:
 	world_units_per_meter = max(0.0001, value)
+	if is_node_ready():
+		_refresh_zone_visuals()
+
+
+func configure_road_clearance_world(world: Node) -> void:
+	_road_clearance_world = world
 	if is_node_ready():
 		_refresh_zone_visuals()
 
@@ -198,6 +217,9 @@ func _build_building_cluster(zone_entry) -> void:
 		child.queue_free()
 	if Engine.is_editor_hint() and not show_editor_building_preview:
 		return
+	rejected_outside_zone_count = 0
+	rejected_road_clearance_count = 0
+	rejected_building_overlap_count = 0
 
 	var config := _resolve_building_config(zone_entry)
 	var active_profile = config.get("profile")
@@ -218,13 +240,19 @@ func _build_building_cluster(zone_entry) -> void:
 	var desired_count := _desired_building_count(active_profile, int(config.get("density", 0)), ground_polygon)
 	if desired_count <= 0:
 		return
-	var positions := _building_positions(active_profile, ground_polygon, desired_count, rng)
+	var candidate_count: int = min(220, max(desired_count + 16, desired_count * 4))
+	var positions := _building_positions(active_profile, ground_polygon, candidate_count, rng)
 	if positions.is_empty():
 		return
 
 	var base_rotation_y := _dominant_polygon_rotation_y(ground_polygon)
-	var count: int = min(desired_count, positions.size())
-	for index in range(count):
+	var boundary_setback_world := _placement_boundary_setback_world(active_profile)
+	var neighbor_clearance_world := building_neighbor_clearance_m * world_units_per_meter
+	var occupied_footprints: Array[Rect2] = []
+	var placed_count := 0
+	for index in range(positions.size()):
+		if placed_count >= desired_count:
+			break
 		var target_footprint_m2 := _random_profile_footprint_m2(active_profile, rng)
 		var floor_count := _random_profile_floor_count(active_profile, rng)
 		var building: Node3D = _instantiate_building(
@@ -240,13 +268,46 @@ func _build_building_cluster(zone_entry) -> void:
 		)
 		if building == null:
 			continue
-		building.scale *= _asset_scale_multiplier(active_profile, target_footprint_m2, rng, building)
+		building.scale *= _asset_scale_multiplier(
+			active_profile,
+			target_footprint_m2,
+			rng,
+			building,
+			min_scale,
+			max_scale
+		)
 		building.rotation.y = _building_rotation_y(active_profile, base_rotation_y, rng, index)
 		var position := positions[index] as Vector3
 		building.position.x += position.x
 		building.position.z += position.z
+		var footprint := _node_local_footprint_rect(building)
+		if enforce_building_footprint_clearance and not _footprint_within_zone(
+			footprint,
+			ground_polygon,
+			boundary_setback_world
+		):
+			rejected_outside_zone_count += 1
+			building.queue_free()
+			continue
+		if enforce_building_footprint_clearance and _footprint_overlaps_existing(
+			footprint,
+			occupied_footprints,
+			neighbor_clearance_world
+		):
+			rejected_building_overlap_count += 1
+			building.queue_free()
+			continue
+		if enforce_building_footprint_clearance and not _footprint_respects_road_clearance(
+			footprint,
+			active_profile
+		):
+			rejected_road_clearance_count += 1
+			building.queue_free()
+			continue
 		_align_node_bottom_to_ground(building, active_building_ground_clearance)
 		cluster_root.add_child(building)
+		occupied_footprints.append(footprint)
+		placed_count += 1
 
 
 func _resolve_building_config(zone_entry) -> Dictionary:
@@ -642,6 +703,79 @@ func _point_is_buildable(point: Vector2, polygon: PackedVector2Array, setback_wo
 	return _distance_to_polygon_edges(point, polygon) >= setback_world
 
 
+func _placement_boundary_setback_world(profile) -> float:
+	if profile == null:
+		return 0.0
+	var boundary_setback_m: float = max(0.0, float(profile.get("boundary_setback_m")))
+	var road_setback_m: float = max(0.0, float(profile.get("road_setback_m")))
+	return max(boundary_setback_m, road_setback_m) * world_units_per_meter
+
+
+func _node_local_footprint_rect(node: Node3D) -> Rect2:
+	var bounds: Dictionary = _node_local_xz_bounds_with_transform(node, Transform3D.IDENTITY)
+	if not bool(bounds.get("has_bounds", false)):
+		return Rect2(Vector2(node.position.x, node.position.z), Vector2.ZERO)
+	var minimum := Vector2(float(bounds.get("min_x")), float(bounds.get("min_z")))
+	var maximum := Vector2(float(bounds.get("max_x")), float(bounds.get("max_z")))
+	return Rect2(minimum, maximum - minimum)
+
+
+func _footprint_within_zone(
+	footprint: Rect2,
+	polygon: PackedVector2Array,
+	setback_world: float
+) -> bool:
+	for point in _rect_corners_and_center(footprint):
+		if not Geometry2D.is_point_in_polygon(point, polygon):
+			return false
+		if setback_world > 0.0001 and _distance_to_polygon_edges(point, polygon) < setback_world:
+			return false
+	return true
+
+
+func _footprint_overlaps_existing(
+	footprint: Rect2,
+	existing_footprints: Array[Rect2],
+	clearance_world: float
+) -> bool:
+	for existing in existing_footprints:
+		if footprint.intersects(existing.grow(max(0.0, clearance_world)), true):
+			return true
+	return false
+
+
+func _footprint_respects_road_clearance(footprint: Rect2, profile) -> bool:
+	if _road_clearance_world == null:
+		return true
+	if not _road_clearance_world.has_method("is_world_position_clear_of_roads"):
+		return true
+	if (
+		_road_clearance_world.has_method("has_geometry_bounds")
+		and not bool(_road_clearance_world.has_geometry_bounds())
+	):
+		return true
+	var clearance_m: float = (
+		max(0.0, float(profile.get("road_setback_m"))) if profile != null else 0.0
+	)
+	if clearance_m <= 0.0001:
+		return true
+	for local_point in _rect_corners_and_center(footprint):
+		var world_point := to_global(Vector3(local_point.x, 0.0, local_point.y))
+		if not bool(_road_clearance_world.is_world_position_clear_of_roads(world_point, clearance_m)):
+			return false
+	return true
+
+
+func _rect_corners_and_center(rect: Rect2) -> Array[Vector2]:
+	return [
+		rect.position,
+		Vector2(rect.end.x, rect.position.y),
+		rect.end,
+		Vector2(rect.position.x, rect.end.y),
+		rect.get_center(),
+	]
+
+
 func _profile_average_footprint_m2(profile) -> float:
 	if profile != null and profile.has_method("average_building_footprint_m2"):
 		return float(profile.average_building_footprint_m2())
@@ -728,9 +862,11 @@ func _asset_scale_multiplier(
 	profile,
 	target_footprint_m2: float,
 	rng: RandomNumberGenerator,
-	building: Node3D = null
+	building: Node3D = null,
+	minimum_scale := 0.8,
+	maximum_scale := 1.25
 ) -> float:
-	var legacy_scale := rng.randf_range(min_building_scale, max_building_scale)
+	var legacy_scale := rng.randf_range(minimum_scale, max(maximum_scale, minimum_scale))
 	var lower := 0.01
 	var upper := 8.0
 	if profile != null:

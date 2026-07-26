@@ -1,0 +1,46 @@
+id = "TASK-081"
+owner = "integrator"
+branch = "main"
+base_commit = "777a932064f0bd34f07bd2b5b2f22ae710f89035"
+allowed_paths = [
+  "coordination/tasks/081_dashboard_backend_react_frontend.toml",
+  "pyproject.toml",
+  "uv.lock",
+  "ai_quantum_hvtc/__main__.py",
+  "ai_quantum_hvtc/dashboard/",
+  "frontend/",
+  "tests/unit/dashboard/",
+  "docs/04_STATUS/IMPLEMENTATION_STATUS.md",
+  ".claude/launch.json",
+]
+dependencies = []
+acceptance_commands = [
+  "uv run python -m ai_quantum_hvtc doctor",
+  "uv run ruff check ai_quantum_hvtc tests",
+  "uv run mypy ai_quantum_hvtc",
+  "uv run pytest tests/unit/dashboard -q",
+]
+status = "in_progress"
+
+[handoff]
+summary = """
+Add the dashboard layer for the system: a FastAPI backend service
+(ai_quantum_hvtc/dashboard) that indexes simulation run artifacts, launches
+reference-engine runs on demand, exposes district spec / runs / trace replay /
+baseline comparison / finance optimization endpoints, plus a React 19 + Vite +
+TypeScript + Tailwind v4 frontend in frontend/ that replays backend artifacts
+per the existing UI architecture docs. Frontend keeps contracts/ and mock-data/
+as the shared contract layer and falls back to mock data when the API is down.
+"""
+validation = [
+  "uv run pytest tests/unit/dashboard -q",
+  "npm --prefix frontend run build",
+]
+risks = [
+  "SUMO engine runs from the dashboard require a local SUMO install; reference engine remains the default for on-demand dashboard runs.",
+  "Finance numbers shown in the dashboard reuse demo placeholder assumptions; Economics review is still required before any policy claim.",
+]
+next_steps = [
+  "Wire SUMO-engine dashboard runs against the District 7 net once demand config is approved.",
+  "Add RL policy run ingestion when a trained policy artifact exists.",
+]

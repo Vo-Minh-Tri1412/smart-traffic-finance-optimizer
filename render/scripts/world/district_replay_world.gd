@@ -821,6 +821,21 @@ func world_position_for_sumo_coordinate(x: float, y: float, height := 0.04) -> V
 	return _mapper.sumo_to_world(x, y, height)
 
 
+func sumo_coordinates_for_world_position(position: Vector3) -> Variant:
+	if _mapper == null:
+		return null
+	return _mapper.world_to_sumo(position)
+
+
+func is_world_position_clear_of_roads(position: Vector3, required_clearance_m: float) -> bool:
+	if _mapper == null or _sumo_geometry == null:
+		return true
+	if not _sumo_geometry.has_method("is_point_clear_of_roads_m"):
+		return true
+	var sumo_point: Vector2 = _mapper.world_to_sumo(position)
+	return bool(_sumo_geometry.is_point_clear_of_roads_m(sumo_point, required_clearance_m))
+
+
 func world_position_for_trace_vehicle(
 	x: float,
 	y: float,

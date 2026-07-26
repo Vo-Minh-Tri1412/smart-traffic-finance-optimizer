@@ -64,6 +64,9 @@ func _run() -> void:
 	if summary_1["rebuild_count"] != 1:
 		_fail("Expected 1 rebuild for initial render, got " + str(summary_1["rebuild_count"]))
 		return
+	if summary_1["spawned_neutral_zone_count"] != 1:
+		_fail("Expected the nearby neutral zone to stream in without a global quota.")
+		return
 		
 	var initial_zones = []
 	for child in renderer.get_children():
@@ -95,6 +98,9 @@ func _run() -> void:
 	
 	if summary_3["rebuild_count"] != 2:
 		_fail("Expected rebuild count to increment to 2, got " + str(summary_3["rebuild_count"]))
+		return
+	if summary_3["streamed_in_zone_count"] != 2 or summary_3["streamed_out_zone_count"] != 1:
+		_fail("Expected incremental zone streaming to retain the local set and swap only on travel.")
 		return
 		
 	var final_zones = []

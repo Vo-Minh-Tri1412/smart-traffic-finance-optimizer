@@ -34,9 +34,16 @@ func _run() -> void:
 	if overlay_renderer != null:
 		overlay_renderer.auto_render = false
 		overlay_renderer.overlay_path = ""
+	var heatmap_renderer = main.get_node_or_null("SemanticHeatmapRenderer")
+	if heatmap_renderer != null:
+		heatmap_renderer.auto_render = false
+		heatmap_renderer.overlay_path = ""
 	var traffic_light_visual_layer = main.get_node_or_null("TrafficLightVisualLayer")
 	if traffic_light_visual_layer != null:
 		traffic_light_visual_layer.auto_render = false
+	var preview_layer_toggles = main.get_node_or_null("PreviewLayerToggles")
+	if preview_layer_toggles != null:
+		preview_layer_toggles.auto_rebuild_visible_layers = false
 	var controller = main.get_node_or_null("TraceReplayController")
 	if controller != null:
 		controller.trace_path = ""

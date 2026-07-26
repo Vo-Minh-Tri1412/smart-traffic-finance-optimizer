@@ -14,6 +14,7 @@ extends Resource
 @export var show_markings := true
 @export_group("Roadside Assets")
 @export var show_roadside_props := true
+@export var roadside_prop_entries: Array[Resource] = []
 @export var roadside_prop_scenes: Array[PackedScene] = []
 @export var roadside_prop_spacing_m := 120.0
 @export var roadside_prop_offset_m := 5.2
