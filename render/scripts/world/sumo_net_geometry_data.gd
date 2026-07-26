@@ -3,11 +3,13 @@ extends RefCounted
 
 const SumoLaneGeometryScript := preload("res://scripts/world/sumo_lane_geometry.gd")
 const SumoJunctionGeometryScript := preload("res://scripts/world/sumo_junction_geometry.gd")
+const ROAD_CLEARANCE_CELL_SIZE_M := 96.0
 
 var lanes: Array = []
 var distance_lanes: Array = []
 var junctions: Array = []
 var lane_by_id: Dictionary = {}
+var road_clearance_lane_buckets: Dictionary = {}
 var lane_to_edge: Dictionary = {}
 var edge_to_lanes: Dictionary = {}
 var edge_metadata_by_id: Dictionary = {}
@@ -30,6 +32,7 @@ func load_xml(path: String) -> bool:
 	distance_lanes.clear()
 	junctions.clear()
 	lane_by_id.clear()
+	road_clearance_lane_buckets.clear()
 	lane_to_edge.clear()
 	edge_to_lanes.clear()
 	edge_metadata_by_id.clear()
@@ -90,6 +93,7 @@ func load_xml(path: String) -> bool:
 
 	_configure_bounds(all_points)
 	_configure_lane_width_stats()
+	_configure_road_clearance_index()
 	return errors.is_empty()
 
 
@@ -109,6 +113,31 @@ func distance_to_nearest_lane_m(point: Vector2) -> float:
 	for lane in search_lanes:
 		best = min(best, float(lane.distance_to_point_m(point)))
 	return best
+
+
+func is_point_clear_of_roads_m(point: Vector2, required_clearance_m: float) -> bool:
+	var clearance: float = max(0.0, required_clearance_m)
+	if clearance <= 0.0001 or road_clearance_lane_buckets.is_empty():
+		return true
+	var min_cell := _road_clearance_cell_for(point - Vector2.ONE * clearance)
+	var max_cell := _road_clearance_cell_for(point + Vector2.ONE * clearance)
+	var seen_lane_ids: Dictionary = {}
+	for cell_x in range(int(min_cell.x), int(max_cell.x) + 1):
+		for cell_y in range(int(min_cell.y), int(max_cell.y) + 1):
+			var bucket_key := _road_clearance_bucket_key(cell_x, cell_y)
+			var raw_bucket: Variant = road_clearance_lane_buckets.get(bucket_key, [])
+			if not (raw_bucket is Array):
+				continue
+			for lane in raw_bucket as Array:
+				if lane == null:
+					continue
+				var lane_id := String(lane.lane_id)
+				if seen_lane_ids.has(lane_id):
+					continue
+				seen_lane_ids[lane_id] = true
+				if float(lane.distance_to_point_m(point)) < clearance:
+					return false
+	return true
 
 
 func center_for_edge(edge_id: String) -> Variant:
@@ -264,6 +293,40 @@ func _configure_lane_width_stats() -> void:
 	min_lane_width_m = min_width
 	max_lane_width_m = max_width
 	average_lane_width_m = total / float(source_lanes.size())
+
+
+func _configure_road_clearance_index() -> void:
+	road_clearance_lane_buckets.clear()
+	for lane in distance_lanes:
+		if lane == null or not (lane.points is Array) or (lane.points as Array).size() < 2:
+			continue
+		var minimum := lane.points[0] as Vector2
+		var maximum := minimum
+		for raw_point in lane.points:
+			var point := raw_point as Vector2
+			minimum.x = min(minimum.x, point.x)
+			minimum.y = min(minimum.y, point.y)
+			maximum.x = max(maximum.x, point.x)
+			maximum.y = max(maximum.y, point.y)
+		var min_cell := _road_clearance_cell_for(minimum)
+		var max_cell := _road_clearance_cell_for(maximum)
+		for cell_x in range(int(min_cell.x), int(max_cell.x) + 1):
+			for cell_y in range(int(min_cell.y), int(max_cell.y) + 1):
+				var bucket_key := _road_clearance_bucket_key(cell_x, cell_y)
+				if not road_clearance_lane_buckets.has(bucket_key):
+					road_clearance_lane_buckets[bucket_key] = []
+				(road_clearance_lane_buckets[bucket_key] as Array).append(lane)
+
+
+func _road_clearance_cell_for(point: Vector2) -> Vector2i:
+	return Vector2i(
+		floori(point.x / ROAD_CLEARANCE_CELL_SIZE_M),
+		floori(point.y / ROAD_CLEARANCE_CELL_SIZE_M)
+	)
+
+
+func _road_clearance_bucket_key(cell_x: int, cell_y: int) -> String:
+	return "%d:%d" % [cell_x, cell_y]
 
 
 func _parse_shape(shape: String) -> Array[Vector2]:

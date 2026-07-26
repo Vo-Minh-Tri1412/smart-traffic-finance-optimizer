@@ -59,11 +59,11 @@ script = ExtResource("3_overlay")
 overlay_path = "repo://simulation_projects/map_intake/05_semantic_overlays/district7_buildable_polygons.v2.json"
 auto_render = true
 render_neutral_zones = true
-max_visual_zones = 140
-max_neutral_visual_zones = 160
 use_camera_zone_lod = true
-zone_lod_radius_m = 950.0
-neutral_zone_lod_radius_m = 850.0
+zone_lod_radius_m = 720.0
+zone_lod_prefetch_distance_m = 520.0
+zone_lod_exit_margin_m = 180.0
+zone_lod_rebuild_distance_m = 70.0
 
 [node name="SemanticHeatmapRenderer" type="Node3D" parent="." unique_id=1016986221]
 script = ExtResource("9_heatmap")

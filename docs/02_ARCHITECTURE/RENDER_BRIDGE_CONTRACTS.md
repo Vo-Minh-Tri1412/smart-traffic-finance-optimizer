@@ -113,6 +113,14 @@ separate `pos_lat_m` is preserved and interpolated as lateral-motion state, but 
 add it to `x,y` a second time. Godot fits each vehicle's fallback mesh or imported visual asset to
 the canonical `width_m × height_m × length_m` proxy after mapping that FCD pose.
 
+## Camera-zone streaming
+
+The official Quận 7 renderer keeps every semantic and neutral zone whose conservative cached
+polygon bound intersects the camera's active-radius and forward-prefetch corridor. It does not
+impose a global zone-count quota: the active set is spatial, retained across small camera moves,
+and updated incrementally. Neutral zones therefore remain ordinary building-bearing zones; they
+are not a blank fallback plane.
+
 ## `camera_calibration.v1`
 
 Camera calibration is JSON rather than a Godot `.tres` resource so Python geometry visibility and

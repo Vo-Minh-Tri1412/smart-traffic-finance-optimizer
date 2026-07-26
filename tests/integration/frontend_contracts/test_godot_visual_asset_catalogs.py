@@ -50,6 +50,7 @@ def test_godot_visual_asset_catalog_files_exist() -> None:
         render_root / "scripts" / "assets" / "building_placement_profile.gd",
         render_root / "scripts" / "assets" / "road_style_catalog.gd",
         render_root / "scripts" / "assets" / "traffic_light_asset_catalog.gd",
+        render_root / "scripts" / "assets" / "roadside_prop_entry.gd",
         render_root / "scripts" / "zones" / "semantic_overlay_renderer.gd",
         render_root / "scripts" / "zones" / "semantic_heatmap_renderer.gd",
         render_root / "scenes" / "zones" / "ZoneVisualBase.tscn",
@@ -257,15 +258,36 @@ def test_road_style_catalog_exposes_roadside_asset_slots() -> None:
 
     assert '@export_group("Roadside Assets")' in entry_body
     assert "@export var roadside_prop_scenes" in entry_body
+    assert "@export var roadside_prop_entries" in entry_body
     assert "res://imported_assets/traffic_lights/light-square.glb" in catalog_body
     assert "res://imported_assets/street_furniture/signs/sign-highway.glb" in catalog_body
     for role in ["service", "residential", "arterial", "pedestrian"]:
         assert f'road_role = "{role}"' in catalog_body
     assert "RoadsideProps" in lane_body
     assert "func _build_roadside_props" in lane_body
+    assert "func _fit_roadside_prop_to_target_size" in lane_body
     assert "func roadside_prop_count" in lane_body
     assert "func _road_role_for_lane" in world_body
     assert "rendered_road_role_counts" in world_body
+
+
+def test_zone_placement_uses_real_footprints_and_spatial_road_clearance() -> None:
+    render_root = PROJECT_ROOT / "render"
+    zone = (render_root / "scripts" / "zones" / "zone_visual_base.gd").read_text(encoding="utf-8")
+    world = (render_root / "scripts" / "world" / "district_replay_world.gd").read_text(
+        encoding="utf-8"
+    )
+    geometry = (render_root / "scripts" / "world" / "sumo_net_geometry_data.gd").read_text(
+        encoding="utf-8"
+    )
+
+    assert "_node_local_footprint_rect" in zone
+    assert "_footprint_within_zone" in zone
+    assert "_footprint_overlaps_existing" in zone
+    assert "_footprint_respects_road_clearance" in zone
+    assert "is_world_position_clear_of_roads" in world
+    assert "is_point_clear_of_roads_m" in geometry
+    assert "ROAD_CLEARANCE_CELL_SIZE_M" in geometry
 
 
 def test_main_renderer_uses_camera_lod_and_fly_preview() -> None:
@@ -286,6 +308,13 @@ def test_main_renderer_uses_camera_lod_and_fly_preview() -> None:
     assert "auto_fit_on_ready = false" in main_body
     assert "world_scale = 1.0" in main_body
     assert "use_camera_road_lod = true" in main_body
+    assert "max_visual_zones" not in main_body
+    assert "max_neutral_visual_zones" not in main_body
+    assert "zone_lod_prefetch_distance_m" in main_body
+    overlay_body = (render_root / "scripts" / "zones" / "semantic_overlay_renderer.gd").read_text(
+        encoding="utf-8"
+    )
+    assert "camera_corridor_incremental" in overlay_body
 
 
 def test_traffic_light_visual_catalog_is_wired_into_main_scene() -> None:

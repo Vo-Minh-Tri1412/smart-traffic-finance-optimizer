@@ -10,16 +10,15 @@ const ZoneVisualFactoryScript := preload("res://scripts/assets/zone_visual_facto
 @export var auto_render := true
 @export var editor_preview_enabled := false
 @export var show_zone_labels := false
-@export var render_neutral_zones := false
-@export var max_visual_zones := 350
-@export var max_neutral_visual_zones := 45
-@export_group("Zone LOD")
+@export var render_neutral_zones := true
+@export_group("Camera Zone Streaming")
 @export var use_camera_zone_lod := true
 @export_node_path("Node3D") var zone_lod_target_path: NodePath = NodePath("../Camera3D")
-@export var zone_lod_radius_m := 950.0
-@export var neutral_zone_lod_radius_m := 520.0
-@export var zone_lod_rebuild_distance_m := 140.0
-@export var zone_lod_update_interval_seconds := 0.35
+@export var zone_lod_radius_m := 720.0
+@export var zone_lod_prefetch_distance_m := 520.0
+@export var zone_lod_exit_margin_m := 180.0
+@export var zone_lod_rebuild_distance_m := 70.0
+@export var zone_lod_update_interval_seconds := 0.20
 @export var rebuild_editor_preview := false:
 	set(value):
 		rebuild_editor_preview = false
@@ -35,12 +34,18 @@ var skipped_neutral_count := 0
 var skipped_zone_count := 0
 var skipped_zone_lod_count := 0
 var spawned_neutral_zone_count := 0
+var candidate_zone_count := 0
+var streamed_in_zone_count := 0
+var streamed_out_zone_count := 0
 var errors: Array[String] = []
 
 var _loaded_overlay_data: Dictionary = {}
+var _zone_records: Dictionary = {}
+var _active_zone_nodes: Dictionary = {}
 var _zone_lod_timer := 0.0
 var _has_lod_focus := false
 var _last_lod_focus_world := Vector3.ZERO
+var _last_lod_forward_world := Vector3.FORWARD
 var _rebuild_count := 0
 
 func _ready() -> void:
@@ -64,9 +69,10 @@ func _process(delta: float) -> void:
 	var focus_world: Variant = _zone_lod_focus_world()
 	if focus_world is Vector3:
 		var current_focus := focus_world as Vector3
-		if not _has_lod_focus or current_focus.distance_to(_last_lod_focus_world) >= zone_lod_rebuild_distance_m:
-			_last_lod_focus_world = current_focus
-			_has_lod_focus = true
+		var current_forward := _zone_lod_forward_world()
+		var moved := current_focus.distance_to(_last_lod_focus_world) >= zone_lod_rebuild_distance_m
+		var turned := current_forward.dot(_last_lod_forward_world) < 0.96
+		if not _has_lod_focus or moved or turned:
 			_rebuild_lod_region()
 
 
@@ -81,77 +87,70 @@ func render_overlay(path: String) -> bool:
 	overlay_path = path
 	var overlay := _load_overlay(path)
 	_loaded_overlay_data = overlay
+	_clear_generated()
+	_reset_render_counts()
+	_zone_records.clear()
 	if overlay.is_empty():
 		_has_lod_focus = false
-		_clear_generated()
-		_reset_render_counts()
 		return false
-	var focus_world: Variant = _zone_lod_focus_world()
-	if focus_world is Vector3:
-		_last_lod_focus_world = focus_world as Vector3
-		_has_lod_focus = true
+	if not _configure_zone_factory():
+		return false
+	_prepare_zone_records()
 	return _rebuild_lod_region()
 
 func _rebuild_lod_region() -> bool:
-	_clear_generated()
-	overlay_parse_error_count = 0
-	_reset_render_counts()
 	_rebuild_count += 1
-
-	if _loaded_overlay_data.is_empty():
+	if _loaded_overlay_data.is_empty() or _zone_records.is_empty():
 		return false
-
-	if zone_factory == null:
-		zone_factory = ZoneVisualFactoryScript.new()
-		if not zone_factory.configure(zone_catalog_path):
-			for error in zone_factory.errors:
-				push_warning(error)
-
-	var raw_zones: Variant = _loaded_overlay_data.get("zones", [])
-	if not (raw_zones is Array):
-		errors.append("Semantic overlay zones must be an array: %s" % overlay_path)
+	var stream_state := _zone_stream_state()
+	if use_camera_zone_lod and stream_state.is_empty():
 		return false
-
+	var desired_records: Dictionary = {}
+	var sorted_desired: Array = []
+	skipped_zone_lod_count = 0
+	for raw_record in _zone_records.values():
+		if not (raw_record is Dictionary):
+			continue
+		var record := raw_record as Dictionary
+		var record_id := str(record.get("id", ""))
+		var is_active := _active_zone_nodes.has(record_id)
+		var stream_distance := _record_stream_distance(record, stream_state)
+		if use_camera_zone_lod and not _record_is_in_stream(stream_distance, stream_state, is_active):
+			skipped_zone_lod_count += 1
+			continue
+		var prioritized := record.duplicate()
+		prioritized["stream_distance"] = stream_distance
+		desired_records[record_id] = prioritized
+		sorted_desired.append(prioritized)
+	candidate_zone_count = desired_records.size()
+	sorted_desired.sort_custom(
+		func(left, right): return float((left as Dictionary).get("stream_distance", 0.0)) < float((right as Dictionary).get("stream_distance", 0.0))
+	)
+	for active_id in _active_zone_nodes.keys():
+		if desired_records.has(active_id):
+			continue
+		var zone_node := _active_zone_nodes.get(active_id) as Node
+		if zone_node != null:
+			remove_child(zone_node)
+			zone_node.queue_free()
+		_active_zone_nodes.erase(active_id)
+		streamed_out_zone_count += 1
 	var world := get_node_or_null(geometry_world_path)
-	var zone_lod_focus: Variant = _zone_lod_focus_world()
-	var zones := raw_zones as Array
-	for index in range(zones.size()):
-		var raw_zone = zones[index]
-		if not (raw_zone is Dictionary):
+	for raw_record in sorted_desired:
+		var record := raw_record as Dictionary
+		var record_id := str(record.get("id", ""))
+		if _active_zone_nodes.has(record_id):
+			continue
+		if not _spawn_zone_record(record, world):
 			overlay_parse_error_count += 1
 			continue
-		var zone_data := raw_zone as Dictionary
-		var zone_type := str(zone_data.get("type", zone_data.get("zone_type", ""))).strip_edges().to_lower()
-		if zone_type == "neutral" and not render_neutral_zones:
-			skipped_neutral_count += 1
-			continue
-		if max_visual_zones > 0 and spawned_zone_count >= max_visual_zones:
-			skipped_zone_count += 1
-			continue
-		var world_polygons := _zone_world_polygons(zone_data, world)
-		if world_polygons.is_empty():
-			var fallback_position := _zone_world_position(zone_data, world, index, zones.size())
-			if not _should_spawn_zone_visual(zone_type, fallback_position, zone_lod_focus, world):
-				continue
-			if not _spawn_zone_visual(zone_data, [], world, index, zones.size()):
-				overlay_parse_error_count += 1
-		else:
-			var part_index := 0
-			for raw_polygon in world_polygons:
-				if not (raw_polygon is Array):
-					continue
-				var world_polygon := raw_polygon as Array
-				if world_polygon.size() < 3:
-					continue
-				var zone_position := _polygon_centroid(world_polygon)
-				if not _should_spawn_zone_visual(zone_type, zone_position, zone_lod_focus, world):
-					continue
-				var part_data := zone_data.duplicate(true)
-				part_data["id"] = "%s_part_%d" % [str(zone_data.get("id", "zone")), part_index + 1]
-				if not _spawn_zone_visual(part_data, world_polygon, world, index, zones.size()):
-					overlay_parse_error_count += 1
-				part_index += 1
-
+		streamed_in_zone_count += 1
+	_update_active_zone_counts()
+	var focus_world: Variant = _zone_lod_focus_world()
+	if focus_world is Vector3:
+		_last_lod_focus_world = focus_world as Vector3
+		_last_lod_forward_world = _zone_lod_forward_world()
+		_has_lod_focus = true
 	if zone_factory != null:
 		fallback_zone_count = zone_factory.fallback_spawn_count
 	return spawned_zone_count > 0 and overlay_parse_error_count == 0
@@ -164,27 +163,95 @@ func _reset_render_counts() -> void:
 	skipped_zone_count = 0
 	skipped_zone_lod_count = 0
 	spawned_neutral_zone_count = 0
+	candidate_zone_count = 0
+	streamed_in_zone_count = 0
+	streamed_out_zone_count = 0
 
 
-func _spawn_zone_visual(
+func _configure_zone_factory() -> bool:
+	if zone_factory == null:
+		zone_factory = ZoneVisualFactoryScript.new()
+		if not zone_factory.configure(zone_catalog_path):
+			for error in zone_factory.errors:
+				push_warning(error)
+			return false
+	return true
+
+
+func _prepare_zone_records() -> void:
+	var raw_zones: Variant = _loaded_overlay_data.get("zones", [])
+	if not (raw_zones is Array):
+		errors.append("Semantic overlay zones must be an array: %s" % overlay_path)
+		return
+	var world := get_node_or_null(geometry_world_path)
+	var zones := raw_zones as Array
+	for index in range(zones.size()):
+		var raw_zone = zones[index]
+		if not (raw_zone is Dictionary):
+			overlay_parse_error_count += 1
+			continue
+		var zone_data := raw_zone as Dictionary
+		var zone_type := str(zone_data.get("type", zone_data.get("zone_type", ""))).strip_edges().to_lower()
+		if zone_type == "neutral" and not render_neutral_zones:
+			skipped_neutral_count += 1
+			continue
+		var world_polygons := _zone_world_polygons(zone_data, world)
+		if world_polygons.is_empty():
+			_register_zone_record(
+				zone_data,
+				[],
+				_zone_world_position(zone_data, world, index, zones.size()),
+				zone_type
+			)
+			continue
+		var part_index := 0
+		for raw_polygon in world_polygons:
+			if not (raw_polygon is Array):
+				continue
+			var world_polygon := raw_polygon as Array
+			if world_polygon.size() < 3:
+				continue
+			var part_data := zone_data.duplicate(true)
+			part_data["id"] = "%s_part_%d" % [str(zone_data.get("id", "zone")), part_index + 1]
+			_register_zone_record(part_data, world_polygon, _polygon_centroid(world_polygon), zone_type)
+			part_index += 1
+
+
+func _register_zone_record(
 	zone_data: Dictionary,
 	world_polygon: Array,
-	world: Node,
-	index: int,
-	total: int
-) -> bool:
+	zone_position: Vector3,
+	zone_type: String
+) -> void:
+	var record_id := str(zone_data.get("id", "")).strip_edges()
+	if record_id.is_empty():
+		overlay_parse_error_count += 1
+		return
+	if zone_type == "neutral":
+		zone_position.y = 0.004
+	else:
+		zone_position.y = 0.012
+	_zone_records[record_id] = {
+		"id": record_id,
+		"zone_data": zone_data,
+		"world_polygon": world_polygon,
+		"position": zone_position,
+		"type": zone_type,
+		"radius_world": _polygon_radius_world(world_polygon, zone_position),
+	}
+
+
+func _spawn_zone_record(record: Dictionary, world: Node) -> bool:
+	var zone_data := record.get("zone_data", {}) as Dictionary
+	var world_polygon := record.get("world_polygon", []) as Array
 	var zone_node: Node3D = zone_factory.create_zone(zone_data)
 	if zone_node == null:
 		return false
-	var zone_position := _zone_world_position(zone_data, world, index, total)
-	if not world_polygon.is_empty():
-		zone_position = _polygon_centroid(world_polygon)
-		if str(zone_data.get("type", "")) == "neutral":
-			zone_position.y = 0.004
-		else:
-			zone_position.y = 0.012
+	var zone_position := record.get("position", Vector3.ZERO) as Vector3
 	zone_node.position = zone_position
 	zone_node.set("show_label", show_zone_labels)
+	if world != null and zone_node.has_method("configure_road_clearance_world"):
+		zone_node.configure_road_clearance_world(world)
 	if (
 		world != null
 		and zone_node.has_method("configure_world_units_per_meter")
@@ -195,7 +262,7 @@ func _spawn_zone_visual(
 		zone_node.configure_zone_polygon(_local_polygon(world_polygon, zone_position))
 	zone_node.add_to_group("generated_zone_visual")
 	add_child(zone_node)
-	spawned_zone_count += 1
+	_active_zone_nodes[str(record.get("id", ""))] = zone_node
 	return true
 
 
@@ -208,6 +275,10 @@ func summary() -> Dictionary:
 		"skipped_zone_count": skipped_zone_count,
 		"skipped_zone_lod_count": skipped_zone_lod_count,
 		"spawned_neutral_zone_count": spawned_neutral_zone_count,
+		"candidate_zone_count": candidate_zone_count,
+		"streamed_in_zone_count": streamed_in_zone_count,
+		"streamed_out_zone_count": streamed_out_zone_count,
+		"streaming_model": "camera_corridor_incremental",
 		"rebuild_count": _rebuild_count,
 		"has_lod_focus": _has_lod_focus,
 		"last_lod_focus_world": {
@@ -259,33 +330,95 @@ func _zone_world_position(zone_data: Dictionary, world: Node, index: int, total:
 	return Vector3(cos(angle) * fallback_ring_radius, 0.15, sin(angle) * fallback_ring_radius)
 
 
-func _should_spawn_zone_visual(
-	zone_type: String,
-	zone_position: Vector3,
-	zone_lod_focus: Variant,
-	world: Node
+func _zone_stream_state() -> Dictionary:
+	if not use_camera_zone_lod:
+		return {"radius_world": INF, "exit_margin_world": 0.0}
+	var focus_world: Variant = _zone_lod_focus_world()
+	if not (focus_world is Vector3):
+		return {}
+	var world_scale := 1.0
+	var world := get_node_or_null(geometry_world_path)
+	if world != null and world.get("world_scale") != null:
+		world_scale = max(0.0001, float(world.get("world_scale")))
+	var focus := focus_world as Vector3
+	var forward := _zone_lod_forward_world()
+	var prefetch_world: float = max(0.0, zone_lod_prefetch_distance_m) * world_scale
+	return {
+		"focus": focus,
+		"prefetch_end": focus + forward * prefetch_world,
+		"radius_world": max(1.0, zone_lod_radius_m * world_scale),
+		"exit_margin_world": max(0.0, zone_lod_exit_margin_m * world_scale),
+	}
+
+
+func _record_is_in_stream(
+	stream_distance: float,
+	stream_state: Dictionary,
+	is_active: bool
 ) -> bool:
-	var is_neutral := zone_type == "neutral"
-	if is_neutral and spawned_neutral_zone_count >= max_neutral_visual_zones:
-		skipped_neutral_count += 1
+	if not use_camera_zone_lod:
+		return true
+	if stream_state.is_empty():
 		return false
-	if use_camera_zone_lod:
-		if not (zone_lod_focus is Vector3):
-			return false
-		var focus := zone_lod_focus as Vector3
-		var world_scale := 1.0
-		if world != null and world.get("world_scale") != null:
-			world_scale = max(0.0001, float(world.get("world_scale")))
-		var radius_m := neutral_zone_lod_radius_m if is_neutral else zone_lod_radius_m
-		var radius_world := radius_m * world_scale
-		var flat_zone := Vector3(zone_position.x, 0.0, zone_position.z)
-		var flat_focus := Vector3(focus.x, 0.0, focus.z)
-		if flat_zone.distance_to(flat_focus) > radius_world:
-			skipped_zone_lod_count += 1
-			return false
-	if is_neutral:
-		spawned_neutral_zone_count += 1
-	return true
+	var radius := float(stream_state.get("radius_world", 0.0))
+	if is_active:
+		radius += float(stream_state.get("exit_margin_world", 0.0))
+	return stream_distance <= radius
+
+
+func _record_stream_distance(record: Dictionary, stream_state: Dictionary) -> float:
+	if not use_camera_zone_lod:
+		return 0.0
+	if stream_state.is_empty():
+		return INF
+	var position := record.get("position", Vector3.ZERO) as Vector3
+	var point := Vector2(position.x, position.z)
+	var focus := stream_state.get("focus", Vector3.ZERO) as Vector3
+	var prefetch_end := stream_state.get("prefetch_end", focus) as Vector3
+	var capsule_distance := _distance_to_segment_2d(
+		point,
+		Vector2(focus.x, focus.z),
+		Vector2(prefetch_end.x, prefetch_end.z)
+	)
+	return max(0.0, capsule_distance - float(record.get("radius_world", 0.0)))
+
+
+func _distance_to_segment_2d(point: Vector2, start: Vector2, end: Vector2) -> float:
+	var segment := end - start
+	var length_squared := segment.length_squared()
+	if length_squared <= 0.000001:
+		return point.distance_to(start)
+	var progress: float = clamp((point - start).dot(segment) / length_squared, 0.0, 1.0)
+	return point.distance_to(start + segment * progress)
+
+
+func _polygon_radius_world(world_polygon: Array, position: Vector3) -> float:
+	var radius := 0.0
+	for raw_point in world_polygon:
+		if not (raw_point is Vector3):
+			continue
+		var point := raw_point as Vector3
+		radius = max(radius, Vector2(point.x, point.z).distance_to(Vector2(position.x, position.z)))
+	return radius
+
+
+func _update_active_zone_counts() -> void:
+	spawned_zone_count = _active_zone_nodes.size()
+	spawned_neutral_zone_count = 0
+	for record_id in _active_zone_nodes.keys():
+		var record := _zone_records.get(record_id, {}) as Dictionary
+		if str(record.get("type", "")) == "neutral":
+			spawned_neutral_zone_count += 1
+
+
+func _zone_lod_forward_world() -> Vector3:
+	var target := get_node_or_null(zone_lod_target_path)
+	if target is Node3D:
+		var forward := -(target as Node3D).global_transform.basis.z
+		forward.y = 0.0
+		if forward.length_squared() > 0.000001:
+			return forward.normalized()
+	return Vector3.FORWARD
 
 
 func _zone_lod_focus_world() -> Variant:
@@ -387,3 +520,4 @@ func _clear_generated() -> void:
 		if child.is_in_group("generated_zone_visual"):
 			remove_child(child)
 			child.queue_free()
+	_active_zone_nodes.clear()

@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="RoadStyleCatalog" format=3 uid="uid://bk7t6sx2sm0ku"]
+[gd_resource type="Resource" script_class="RoadStyleCatalog" load_steps=18 format=3 uid="uid://bk7t6sx2sm0ku"]
 
 [ext_resource type="Script" uid="uid://bsvebmyf4yru8" path="res://scripts/assets/road_style_catalog.gd" id="1_catalog"]
 [ext_resource type="Script" uid="uid://bc3jvb1l0hcww" path="res://scripts/assets/road_style_entry.gd" id="2_entry"]
@@ -13,6 +13,46 @@
 [ext_resource type="Material" path="res://resources/materials/road_lane_residential.tres" id="11_residential_mat"]
 [ext_resource type="Material" path="res://resources/materials/road_lane_arterial.tres" id="12_arterial_mat"]
 [ext_resource type="Material" path="res://resources/materials/road_lane_pedestrian.tres" id="13_pedestrian_mat"]
+[ext_resource type="Script" path="res://scripts/assets/roadside_prop_entry.gd" id="14_prop_entry"]
+[ext_resource type="PackedScene" path="res://imported_assets/street_furniture/trees/tree-small.glb" id="15_tree_small"]
+[ext_resource type="PackedScene" path="res://imported_assets/street_furniture/trees/tree-large.glb" id="16_tree_large"]
+[ext_resource type="PackedScene" path="res://imported_assets/street_furniture/trees/planter.glb" id="17_planter"]
+
+[sub_resource type="Resource" id="RoadsideProp_arterial_sign"]
+script = ExtResource("14_prop_entry")
+prop_id = "arterial_direction_sign"
+scene = ExtResource("7_sign_highway")
+target_size_m = Vector3(2.4, 3.2, 0.45)
+lateral_offset_m = 1.6
+spacing_m = 180.0
+description = "Calibrated directional-sign proxy for arterial roadside placement."
+
+[sub_resource type="Resource" id="RoadsideProp_arterial_tree"]
+script = ExtResource("14_prop_entry")
+prop_id = "arterial_tree_large"
+scene = ExtResource("16_tree_large")
+target_size_m = Vector3(5.0, 8.0, 5.0)
+lateral_offset_m = 4.2
+spacing_m = 220.0
+description = "Large arterial verge tree; kept outside the simulated carriageway."
+
+[sub_resource type="Resource" id="RoadsideProp_residential_tree"]
+script = ExtResource("14_prop_entry")
+prop_id = "residential_tree_small"
+scene = ExtResource("15_tree_small")
+target_size_m = Vector3(2.8, 4.5, 2.8)
+lateral_offset_m = 2.4
+spacing_m = 115.0
+description = "Small residential street tree."
+
+[sub_resource type="Resource" id="RoadsideProp_planter"]
+script = ExtResource("14_prop_entry")
+prop_id = "pedestrian_planter"
+scene = ExtResource("17_planter")
+target_size_m = Vector3(1.2, 0.9, 1.2)
+lateral_offset_m = 1.0
+spacing_m = 80.0
+description = "Planter for pedestrian and local-road edges."
 
 [sub_resource type="Resource" id="RoadStyle_default"]
 script = ExtResource("2_entry")
@@ -24,6 +64,7 @@ junction_material = ExtResource("9_junction_mat")
 width_multiplier = 1.0
 min_visual_lane_width = 1.2
 show_roadside_props = false
+roadside_prop_entries = []
 roadside_prop_scenes = []
 roadside_prop_spacing_m = 105.0
 roadside_prop_offset_m = 5.6
@@ -42,6 +83,8 @@ junction_material = ExtResource("9_junction_mat")
 width_multiplier = 0.75
 min_visual_lane_width = 0.85
 show_markings = false
+show_roadside_props = false
+roadside_prop_entries = []
 roadside_prop_scenes = []
 description = "Low-priority service/local lanes: rendered quietly to avoid visual noise."
 
@@ -56,14 +99,15 @@ junction_material = ExtResource("9_junction_mat")
 width_multiplier = 0.95
 min_visual_lane_width = 1.1
 show_markings = true
-show_roadside_props = false
+show_roadside_props = true
+roadside_prop_entries = [SubResource("RoadsideProp_residential_tree"), SubResource("RoadsideProp_planter")]
 roadside_prop_scenes = []
 roadside_prop_spacing_m = 135.0
 roadside_prop_offset_m = 4.8
 roadside_prop_scale = 0.032
-roadside_prop_lane_stride = 10
-max_roadside_props_per_lane = 0
-description = "Residential roads: visible, but less dominant than arterial roads."
+roadside_prop_lane_stride = 36
+max_roadside_props_per_lane = 1
+description = "Residential roads: sparse calibrated trees or planters outside the lane surface."
 
 [sub_resource type="Resource" id="RoadStyle_arterial"]
 script = ExtResource("2_entry")
@@ -76,14 +120,15 @@ junction_material = ExtResource("9_junction_mat")
 width_multiplier = 1.05
 min_visual_lane_width = 1.4
 show_markings = true
-show_roadside_props = false
+show_roadside_props = true
+roadside_prop_entries = [SubResource("RoadsideProp_arterial_sign"), SubResource("RoadsideProp_arterial_tree")]
 roadside_prop_scenes = []
 roadside_prop_spacing_m = 95.0
 roadside_prop_offset_m = 6.2
 roadside_prop_scale = 0.04
-roadside_prop_lane_stride = 5
-max_roadside_props_per_lane = 0
-description = "Main/collector roads: strongest visual emphasis for ROI previews."
+roadside_prop_lane_stride = 28
+max_roadside_props_per_lane = 1
+description = "Main/collector roads: calibrated signs or verge trees, placed sparsely."
 
 [sub_resource type="Resource" id="RoadStyle_pedestrian"]
 script = ExtResource("2_entry")
@@ -95,8 +140,12 @@ junction_material = ExtResource("9_junction_mat")
 width_multiplier = 0.35
 min_visual_lane_width = 0.55
 show_markings = false
+show_roadside_props = true
+roadside_prop_entries = [SubResource("RoadsideProp_planter")]
 roadside_prop_scenes = []
-description = "Pedestrian/bicycle-only geometry: faint context, not traffic simulation focus."
+roadside_prop_lane_stride = 42
+max_roadside_props_per_lane = 1
+description = "Pedestrian/bicycle geometry: sparse calibrated planters for context."
 
 [resource]
 script = ExtResource("1_catalog")

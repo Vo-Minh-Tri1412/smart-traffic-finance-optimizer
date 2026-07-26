@@ -46,7 +46,7 @@ def main(argv: list[str] | None = None) -> int:
                 "zones": [
                     {
                         "id": "zone_1",
-                        "type": "residential",
+                        "type": "neutral",
                         "geometry": {
                             "type": "polygon",
                             "coordinates": [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]],
