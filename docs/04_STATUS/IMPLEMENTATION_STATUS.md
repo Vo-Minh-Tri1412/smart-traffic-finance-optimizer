@@ -33,6 +33,33 @@ Git.
   does not yet perform a depth/instance visibility pass.
 - No trained RL policy, trained YOLO detector or final public-finance result should be claimed.
 
+## Unreal and map-economic implementation (2026-09-16)
+
+The active renderer migration is implemented as a UE 5.8 C++ project in `render_unreal/`, with
+manifest/trace loaders, coordinate conversion, replay proxies, lane geometry, camera calibration,
+and editor automation scaffolding. Godot remains the legacy parity reference. Native UE compilation
+is blocked before C++ compilation by missing host NetFxSDK required by SwarmInterface. Python
+contract checks do not establish successful editor replay or rendered-image parity. Depth/instance
+capture, traffic-light and semantic visual layers, and bounded ROI streaming remain incomplete.
+See [Unreal migration](../02_ARCHITECTURE/UNREAL_RENDER_MIGRATION_PLAN.md).
+
+`map_economic_profile.v1` now links prepared map entities, SUMO edges, zones, corridors, OD pairs and
+economic evidence. The materializer preserves the current map and distinguishes derived nearest-edge
+coverage from sourced economic calibration. The supplied numeric configuration is an assumption
+register; reviewed OD demand and measured investment effects are still missing. See
+[map-economic model](../02_ARCHITECTURE/MAP_ECONOMIC_DATA_MODEL.md).
+
+The opt-in SUMO-RL economic callback uses incremental time loss and the profile's OD valuation and
+occupancy. It exposes sampled local cost independently of learning normalization. These samples omit
+first sightings and vehicles leaving between observations and are not a complete network-cost
+estimate. Training checks map identity and economic coverage in addition to existing safety gates.
+The existing-net map needs explicit training OD/spec integration before a full-map run.
+
+The map-aware QUBO consumes explicit marginal OD impacts and pair interactions, produces an
+evidence-bearing matrix/manifest, and includes a deterministic small-instance exact solver. It
+supports signed adverse effects and conservative uncertainty cases. No calibrated full-map investment
+ranking is claimed. See [map-aware QUBO](../02_ARCHITECTURE/MAP_AWARE_QUBO.md) and tasks 082–085.
+
 ## Active dependency order
 
 ```text

@@ -35,8 +35,11 @@ architecture/contract decision.
 5. [Observation space v1](02_ARCHITECTURE/OBSERVATION_SPACE_V1.md)
 6. [Structured occlusion and sensor-based RL](02_ARCHITECTURE/STRUCTURED_OCCLUSION_AND_SENSOR_RL.md)
 7. [Synthetic visual sensor dataset contract](02_ARCHITECTURE/SYNTHETIC_VISUAL_SENSOR_DATASET.md)
+8. [Unreal render migration plan](02_ARCHITECTURE/UNREAL_RENDER_MIGRATION_PLAN.md)
+9. [Map economic data model](02_ARCHITECTURE/MAP_ECONOMIC_DATA_MODEL.md)
+10. [Map-aware QUBO](02_ARCHITECTURE/MAP_AWARE_QUBO.md)
 
-Use the remaining architecture documents for their bounded domain: map intake, Godot renderer,
+Use the remaining architecture documents for their bounded domain: map intake, legacy Godot parity,
 multi-agent memory, QUBO coupling, data artifacts and DVC.
 
 ### Check what is true now

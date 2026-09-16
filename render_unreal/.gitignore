@@ -1,0 +1,14 @@
+/.vs/
+/.vscode/
+/Binaries/
+/DerivedDataCache/
+/Intermediate/
+/Saved/
+/*.sln
+/*.suo
+/*.opensdf
+/*.sdf
+/Plugins/*/Binaries/
+/Plugins/*/Intermediate/
+/outputs/*
+!/outputs/.gitkeep

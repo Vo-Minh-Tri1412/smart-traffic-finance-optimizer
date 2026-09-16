@@ -1,0 +1,2 @@
+source_id,title,source_type,publisher,uri,publication_date,accessed_at,geographic_scope,price_year,variables,evidence_grade,transferability_review,status,notes
+REPLACE_ME,REPLACE_ME,official_statistics,REPLACE_ME,REPLACE_ME,YYYY-MM-DD,YYYY-MM-DD,REPLACE_ME,YYYY,"value_of_time;annual_trips",A,required,candidate,"Do not copy an old monetary value without an explicit price-year conversion."

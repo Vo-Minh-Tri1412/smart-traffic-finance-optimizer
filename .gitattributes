@@ -1,0 +1,5 @@
+# Unreal packages are binary and must never use text merges. Keep the small,
+# curated set that cannot be regenerated in Git LFS; generated map/sensor data
+# remains in DVC or ignored output directories.
+*.uasset filter=lfs diff=lfs merge=lfs -text
+*.umap filter=lfs diff=lfs merge=lfs -text

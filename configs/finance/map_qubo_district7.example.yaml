@@ -1,0 +1,27 @@
+# map_aware_qubo_config.v1 is intentionally flat so the CLI needs no YAML dependency.
+# This file contains computation defaults, not approved District 7 economic values.
+schema_version: map_aware_qubo_config.v1
+run_id: "DISTRICT7-MAP-QUBO-DRAFT-001"
+profile: "data/processed/map_economics/DISTRICT7/map_economic_profile.v1.json"
+output: "artifacts/runs/public_finance/DISTRICT7-MAP-QUBO-DRAFT-001/map_qubo_manifest.json"
+
+# Replace zero with the reviewed capital envelope before running a decision analysis.
+budget_vnd: 0
+
+# These factors must come from an explicit horizon/discount-rate sensitivity case.
+# 1.0 is only a one-year, undiscounted plumbing example; it is not a policy assumption.
+benefit_present_value_factor: 1.0
+operating_cost_present_value_factor: 1.0
+capital_cost_weight: 1.0
+risk_mode: conservative
+
+# Capital costs are rounded upward and the budget downward to these units.
+budget_unit_vnd: 1000000
+objective_scale_vnd: 1000000
+
+# null selects a documented safe lower bound derived from all favorable objective terms.
+budget_penalty: null
+penalty_margin: 1.05
+
+# Exact subset enumeration is a verification solver, not a full-map production solver.
+max_exact_candidates: 22

@@ -29,31 +29,31 @@ The proposed architecture has three coordinated model layers, plus an optional v
 for sensor realism:
 
 1. **Observation / sensor layer**: SUMO state adapters for RL/debug, with optional YOLO/CV sensing
-   that estimates traffic state from Godot-rendered camera frames.
+   that estimates traffic state from Unreal-rendered camera frames.
 2. **Traffic-control layer**: SUMO/SUMO-RL environment with fixed-time, rule-based, and shared
    multi-agent RL controllers with optional temporal memory.
 3. **Public-finance optimizer layer**: budget-constrained selection of intersections using exact,
    greedy, robust, and future QUBO/quantum-compatible formulations.
-4. **Synthetic visual sensor layer**: a Godot 3D render workspace that will turn SUMO/SUMO-RL
+4. **Synthetic visual sensor layer**: an Unreal Engine render workspace that will turn SUMO/SUMO-RL
    vehicle trajectories into camera-like frames, YOLO labels, weather/noise variants, and demo
    video.
 
-The current repository is a technical scaffold with a working SUMO backend and SUMO-to-Godot bridge
-path. It contains the
-simulation architecture, SUMO export/run/parse flow, preliminary fixed-time and rule-based
-baselines, frontend/Godot contracts, Drive-backed data/artifact workflow, and notebook entrypoints.
-It does **not** yet contain a final trained RL policy, final YOLO model, polished Godot demo UI,
+The current repository is a technical scaffold with a working SUMO backend and a renderer-neutral
+trace bridge. It contains the simulation architecture, SUMO export/run/parse flow, preliminary
+fixed-time and rule-based baselines, legacy Godot and active Unreal adapter work, Drive-backed
+data/artifact workflow, and notebook entrypoints. It does **not** yet contain a final trained RL
+policy, final YOLO model, polished Unreal demo UI,
 production camera dataset exporter, or approved real-world finance assumptions.
 
 Current real-map work starts from a SUMO `.net.xml` source plus a semantic overlay. For Quận 7, the
 road geometry stays in DVC-tracked SUMO artifacts while Git stores only the project descriptor,
-overlay, demand config, and QA notes. Godot replays from the same SUMO net so vehicles and roads stay
-in one coordinate system.
+overlay, demand config, and QA notes. Unreal replays from the same SUMO net and versioned traces so
+vehicles and roads stay in one coordinate system.
 
 Render integration is organized as a **SUMO-backed render bridge**: SUMO/Python produce versioned
-geometry, vehicle trace, traffic-light, event, overlay, and sensor artifacts; Godot is the current
-reference renderer that consumes those artifacts. This keeps the backend renderer-agnostic so future
-Unity/Unreal/CARLA adapters can be explored without rewriting the simulation core.
+geometry, vehicle trace, traffic-light, event, overlay, and sensor artifacts. Unreal Engine is the
+active renderer target; the existing Godot project is retained as a legacy parity reference during
+migration. This keeps the backend renderer-agnostic without rewriting the simulation core.
 
 ## Research framing
 
@@ -104,7 +104,7 @@ of claiming that one trained policy is universally optimal.
         |                    |                     |
         |                    v                     v
 +-------+---------+  +-------------------------+  +-------------------------+
-| Traffic control |  |  Metrics and traces     |  | Godot render/replay     |
+| Traffic control |  |  Metrics and traces     |  | Unreal render/replay    |
 | fixed/rule/RL   |  |  wait, queue, delay     |  | camera frames/video     |
 +-----------------+  +-----------+-------------+  +-----------+-------------+
                                  |                            |
@@ -130,7 +130,7 @@ SUMO/SUMO-RL world
 vehicle trajectory + signal trace
         |
         v
-Godot 3D synthetic camera renderer
+Unreal synthetic camera renderer
         |
         +--> camera frames/video
         +--> YOLO labels
@@ -165,7 +165,7 @@ So CV and optical visibility are treated as a **sensor layer**, not as the main 
 This keeps the architecture honest: CV is useful when the system does not have direct access to
 perfect simulator state, not when it merely re-detects UI icons that the simulator generated.
 
-### Godot 3D synthetic visual sensor layer
+### Unreal Engine synthetic visual sensor layer
 
 The preferred project-specific CV path is not to train YOLO on an unrelated public traffic-camera
 dataset and then ask it to understand a synthetic mini-city. That creates a domain mismatch:
@@ -174,16 +174,16 @@ dataset and then ask it to understand a synthetic mini-city. That creates a doma
 real street-camera images != rendered simulation district images
 ```
 
-Instead, the project can add **Godot 3D as a renderer**, not as the main simulator. SUMO/SUMO-RL
+Instead, the project uses **Unreal Engine as a renderer**, not as the main simulator. SUMO/SUMO-RL
 remains responsible for traffic dynamics, vehicle trajectories, signal phases, RL training, metrics,
-and public-finance evaluation. Godot receives exported simulation state and renders camera-like
+and public-finance evaluation. Unreal receives exported simulation state and renders camera-like
 frames from the same district:
 
 ```text
 OSM/SUMO net + semantic overlay
   -> SUMO/SUMO-RL simulation
   -> vehicle trajectories + signal states
-  -> Godot 3D camera renderer
+  -> Unreal camera renderer
   -> synthetic frames/video + YOLO labels
   -> YOLO sensor model
   -> sensor estimates compared with SUMO ground truth
@@ -194,10 +194,10 @@ while SUMO provides ground truth for measuring sensor error. The RL controller d
 from pixels in v1; it can train from geometry-derived partial observations and later compare against
 detector-based observations.
 
-Godot 3D is scoped as a lightweight scene-first synthetic renderer:
+Unreal Engine is scoped as a source-controlled synthetic renderer:
 
 - low-poly public-service district, not photorealistic open-world simulation;
-- reusable Godot scenes for world objects, vehicles, cameras, traffic lights, and UI panels;
+- reusable actors/components for roads, vehicles, cameras, traffic lights, and semantic overlays;
 - fixed traffic cameras near hospitals, schools, industrial gates, bottlenecks, and arterial roads;
 - vehicle assets for motorbike, car, bus, truck, ambulance, and worker shuttle;
 - day/night/rain/structured-occlusion/noise variants for domain randomization;
@@ -205,11 +205,11 @@ Godot 3D is scoped as a lightweight scene-first synthetic renderer:
 - automatic YOLO label export from known object positions;
 - generated frames, videos, labels, and model artifacts stored in Google Drive, not Git.
 
-Godot must not silently replace SUMO-RL. It is a visual/sensor layer that consumes simulation traces.
-The `render/` folder is the Godot project. It is organized as a scene-first app with `scenes/`,
-`scripts/`, `resources/`, `imported_assets/`, and ignored local `outputs/`. If the project uses
-Godot AI MCP tooling, that tooling is an implementation accelerator only; the repository should
-remain understandable and runnable without requiring an agent-specific MCP session.
+Unreal must not replace SUMO-RL. It is a visual/sensor layer that consumes simulation traces. The
+`render_unreal/` folder contains the Unreal C++ project and bridge plugin; generated editor/build
+state stays ignored. The official experimental Unreal MCP and editor toolsets are development
+accelerators only, not runtime frame transport or a required production dependency. The legacy
+`render/` Godot project remains available for contract-parity checks during migration.
 
 ## The three model layers
 
@@ -223,7 +223,7 @@ Purpose:
 
 Possible inputs:
 
-- Godot-rendered synthetic traffic-camera frames generated from SUMO/SUMO-RL trajectories;
+- Unreal-rendered synthetic traffic-camera frames generated from SUMO/SUMO-RL trajectories;
 - optional public traffic images/videos for future external validation;
 - future real-world camera clips if permissions are clear.
 
@@ -240,8 +240,8 @@ Current status:
 - `requirements-colab.txt` includes `ultralytics` and OpenCV for cloud training.
 - Local default `uv sync` does not install YOLO yet.
 - No real CV dataset or trained YOLO model is claimed.
-- Godot replay and camera-rig scaffolding exists under `render/`; production depth/instance
-  visibility export is not implemented yet.
+- The Unreal source/plugin scaffold exists under `render_unreal/`; the legacy Godot replay remains
+  under `render/`. Production depth/instance visibility export is not yet claimed.
 
 ### 2. SUMO-RL traffic-control model
 
@@ -320,6 +320,13 @@ Optimization approaches:
 Current status:
 
 - exact/greedy/QUBO scaffolding exists.
+- `map_economic_profile.v1` supports building/zone OD valuations, provenance, uncertainty and
+  separate structural/calibration/demand coverage. Generate the current-map draft with
+  `scripts/data/prepare_map_economic_profile.py`.
+- `scripts/finance/solve_map_qubo.py` builds an OD-aware QUBO with explicit marginal benefits,
+  signed pair effects, conservative budget slack and a small-instance exact verifier.
+- `--map-economic-profile` enables the incremental economic callback in the RL entrypoint;
+  map identity, reviewed coverage and hard safety constraints remain training gates.
 - It still needs real traffic metrics and Economics-approved finance assumptions.
 
 ## Data and artifact workflow
@@ -346,7 +353,7 @@ DVC stores version pointers and checksums for:
 
 - OSM extracts;
 - SUMO networks, routes, traces, tripinfo, and edge/lane outputs;
-- Godot synthetic CV datasets;
+- Unreal synthetic CV datasets;
 - training runs;
 - model checkpoints.
 
@@ -435,11 +442,12 @@ data/catalog/             # dataset/run/model-card templates
 docs/02_ARCHITECTURE/DVC_DATA_MANAGEMENT.md
 docs/README.md            # canonical documentation index and reading order
 docs/01_PROJECT_BRIEF/    # product direction and public-finance problem framing
-docs/02_ARCHITECTURE/     # SUMO-RL, data workflow, sensors, Godot renderer contracts
+docs/02_ARCHITECTURE/     # SUMO-RL, data workflow, sensors, renderer contracts
 docs/03_COMPETITION/      # AI Quantum HVTC competition facts
 frontend/                 # future React contract and mock-data layer
 notebooks/                # Colab/Kaggle entrypoints
-render/                   # Godot scene-first visual replay and synthetic sensor app
+render/                   # legacy Godot visual replay kept for migration parity
+render_unreal/            # active Unreal C++ replay/synthetic-sensor adapter
 simulation_projects/      # map-intake workspace and DVC pointers for external map artifacts
 tests/                    # unit, integration, smoke, fixtures
 ```
@@ -548,8 +556,8 @@ The current scaffold does not claim:
 
 - a final trained RL policy;
 - a final trained YOLO detector;
-- a polished Godot 3D demo renderer or generated synthetic camera dataset;
-- a completed Godot district scene or asset library;
+- a polished Unreal demo renderer or generated production synthetic camera dataset;
+- a completed Unreal district scene or asset library;
 - a polished, realistic SUMO city map;
 - a strong adaptive baseline that reliably beats fixed-time under all scenarios;
 - real-world causal traffic savings;
@@ -562,7 +570,7 @@ It does claim:
 - a disciplined architecture for connecting traffic AI to public-finance decisions;
 - a reproducible repository structure;
 - a Drive-backed data/model/output workflow;
-- an honest separation between simulation ground truth, Godot-rendered camera views, and YOLO
+- an honest separation between simulation ground truth, Unreal-rendered camera views, and YOLO
   sensing;
 - a clear path toward classical and quantum-compatible investment optimization.
 
@@ -579,9 +587,9 @@ It does claim:
 - Geometry-based optical visibility may provide the first partial-observation sensor before YOLO is
   trained. Vehicle height and camera calibration must be explicit before making occlusion claims.
 - Do not use unrelated public camera datasets as proof that YOLO understands the synthetic district.
-- Do not use flat UI icons as proof of a real CV model; prefer a controlled Godot 3D synthetic
+- Do not use flat UI icons as proof of a real CV model; prefer a controlled Unreal synthetic
   camera layer if CV becomes part of the demo.
-- Do not let Godot replace SUMO-RL as the traffic/RL environment without a new integrator decision.
+- Do not let Unreal replace SUMO-RL as the traffic/RL environment without a new integrator decision.
 - Do not claim real-world causal savings from simulation alone.
 - Compare RL against fixed-time and rule-based baselines.
 - Public-finance assumptions must be sourced, estimated, or clearly marked as placeholders.
