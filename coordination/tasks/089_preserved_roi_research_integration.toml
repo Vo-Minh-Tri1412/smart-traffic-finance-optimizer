@@ -1,0 +1,32 @@
+id = "TASK-089"
+owner = "integrator"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "84436ff454791ae95cc54f94e10ab1d2358b88dc"
+allowed_paths = [
+  ".gitignore",
+  "docs/README.md",
+  "tests/unit/map_economics/test_example_objective_alignment.py",
+  "coordination/tasks/089_preserved_roi_research_integration.toml",
+  "configs/economics/district7_map_economic_assumptions.v1.example.json",
+  "docs/02_ARCHITECTURE/MAP_ECONOMIC_DATA_MODEL.md",
+  "docs/04_STATUS/IMPLEMENTATION_STATUS.md",
+]
+dependencies = ["TASK-086", "TASK-087", "TASK-088", "TASK-090", "TASK-091"]
+acceptance_commands = [
+  "uv run pytest tests/unit/map_economics tests/unit/public_finance/test_map_qubo.py tests/unit/rl/test_map_economic_reward.py tests/integration/unreal -q",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/089_preserved_roi_research_integration.toml --skip-diff",
+]
+status = "handoff"
+
+[handoff]
+summary = "Preserve the user-confirmed existing ROI, integrate economic/travel source research and authorized native UE prerequisite verification."
+validation = [
+  "2026-09-18 full repository pytest: 184 passed, one existing Starlette/httpx deprecation warning; Ruff clean; mypy passed 90 package source files.",
+  "All task manifests passed shape validation; native UE build and four automation tests passed per TASK-086.",
+  "Net48 SDK and TargetingPack confirmed by vswhere; v4.8 reference assemblies present.",
+  "Retained ROI economic profile regenerated under artifacts/map_economics/20260917 with neutral RL/QUBO multipliers; calibration remains 0% and reviewed OD unavailable.",
+  "WorldPop archive and reproducible facility inventory verified under TASK-090; research metadata tracked without committing raw downloaded data.",
+  "Editor-generated machine-specific settings excluded from commit.",
+]
+risks = ["ROI approval is not economic calibration or observed OD approval."]
+next_steps = ["Review facility gates/capacity and explicit synthetic demand priors; implement complete network cost accounting before calibrated RL/QUBO claims."]

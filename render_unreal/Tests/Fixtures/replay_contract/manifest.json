@@ -1,0 +1,7 @@
+{
+  "schema_version": "render_run_manifest.v1",
+  "run_id": "unit_fixture_not_production_map",
+  "geometry_manifest": "geometry.json",
+  "vehicle_trace": "trace.jsonl",
+  "renderer": "unreal"
+}

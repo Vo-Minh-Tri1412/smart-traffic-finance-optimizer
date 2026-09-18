@@ -10,7 +10,15 @@ The current artifact is deliberately **draft-only**. The prepared overlay contai
 but those polygons are not all confirmed physical buildings. Its approximate bounding box also
 contains names that may fall outside District 7. Consequently, the code calls them prepared-map
 entities, preserves `entity_kind` and source tags, and blocks District 7-specific production claims
-until the boundary and economic calibration are reviewed.
+until the boundary and economic calibration are reviewed. On 2026-09-16 the user explicitly
+confirmed keeping the existing prepared ROI unchanged. The example now records `reviewed_roi`,
+not `verified_district`: no geometry, entities or geographic extent are changed. This resolves the
+scope choice only; economic assumptions remain draft and reviewed OD remains unavailable.
+
+The 2026-09-17 example baseline sets every essential-service and economic-flow multiplier to
+exactly 1.0. These are neutral modelling choices, not calibrated evidence. This avoids giving RL
+unsupported building-tag premiums that the QUBO adapter does not apply. Distinct OD value-of-time,
+occupancy and measured marginal time loss may still differentiate trips after calibration.
 
 ## Authority boundaries
 
@@ -263,7 +271,7 @@ and uncertainty range.
 
 Before map-specific policy claims:
 
-1. validate the administrative boundary/ROI and remove or relabel out-of-scope entities;
+1. preserve the user-approved existing ROI; validate an administrative boundary only if making district-specific claims;
 2. verify which polygons represent buildings, campuses, land use, or split geometry;
 3. review building-to-edge anchors and define named corridors;
 4. create measured or reviewed synthetic OD volumes with route IDs and time windows;

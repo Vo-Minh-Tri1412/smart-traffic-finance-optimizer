@@ -1,0 +1,33 @@
+id = "TASK-086"
+owner = "ue_finish"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "84436ff454791ae95cc54f94e10ab1d2358b88dc"
+allowed_paths = [
+  "coordination/tasks/086_unreal_native_verification.toml",
+  "render_unreal/",
+  "scripts/render/unreal_",
+  "tests/integration/unreal/",
+  "docs/02_ARCHITECTURE/UNREAL_RENDER_MIGRATION_PLAN.md",
+]
+dependencies = ["TASK-082"]
+acceptance_commands = [
+  "uv run pytest tests/integration/unreal -q",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/086_unreal_native_verification.toml --skip-diff",
+]
+status = "handoff"
+
+[handoff]
+summary = "Compile the existing UE adapter after authorized prerequisite setup and verify native replay contracts and live editor MCP."
+validation = [
+  "2026-09-17 UE5.8.2 TrafficRenderEditor Win64 Development MaxParallelActions2 build succeeded exit0 in98.73s; three adapter DLLs linked.",
+  "Native TrafficRender.Bridge suite4/4 succeeded with0 warnings/errors under NullRHI, editor exit0; Saved/Automation/index.json.",
+  "Retained real net geometry88163 lanes236434 segments17866 junctions; trace explicitly synthetic two-frame fixture, not real demand.",
+  "MCP observed loopback127.0.0.1:8001; initialize200 initialized202 tools/list200, protocol2025-11-25, three discovery tools.",
+  "uv run pytest tests/integration/unreal -q:8 passed; task validator passed.",
+  "2026-09-18 vswhere requiring Net48 SDK and TargetingPack returned the existing Build Tools installation; v4.8 reference assemblies confirmed present.",
+]
+risks = [
+  "NullRHI does not prove GPU image output, visual parity, interactive replay or sensor-export support.",
+  "Test editor exited normally; MCP endpoint requires editor restart. No Codex client connection or tool action was claimed.",
+]
+next_steps = ["Verify sensor/RGB parity separately; current native tests intentionally use NullRHI."]

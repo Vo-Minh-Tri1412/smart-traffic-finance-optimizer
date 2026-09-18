@@ -13,11 +13,12 @@ The detected engine is `D:\Starter Game\UE_5.8` (5.8.2). Build from repository r
 & 'D:\Starter Game\UE_5.8\Engine\Build\BatchFiles\Build.bat' TrafficRenderEditor Win64 Development "-Project=$PWD\render_unreal\TrafficRender.uproject" -WaitMutex -NoHotReloadFromIDE
 ```
 
-The 2026-09-16 build attempt stops in UBT rules before C++ compilation because the
-host lacks the .NET Framework SDK required by `SwarmInterface`. Install the
-`.NET Framework 4.8 SDK` component through the existing Visual Studio Build Tools
-installation, then rerun this command. A .NET runtime alone does not supply this SDK.
-No installer or machine configuration change is performed by this repository.
+The 2026-09-17 build succeeded with `-MaxParallelActions=2` (98.73 seconds),
+UE 5.8.2, MSVC 14.44 and Windows SDK 10.0.26100. The earlier missing NetFxSDK
+blocker is resolved: the 4.8 SDK is registered on this host. On 2026-09-18, `vswhere`
+confirmed both `Microsoft.Net.Component.4.8.SDK` and `Microsoft.Net.Component.4.8.TargetingPack`
+in the existing Build Tools installation; the v4.8 reference-assembly directory is present.
+A .NET runtime alone does not supply the SDK.
 
 After a successful build, run the native contract tests:
 
@@ -25,8 +26,23 @@ After a successful build, run the native contract tests:
 & 'D:\Starter Game\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' "$PWD\render_unreal\TrafficRender.uproject" -unattended -NullRHI '-ExecCmds=Automation RunTests TrafficRender.Bridge' '-TestExit=Automation Test Queue Empty' "-ReportExportPath=$PWD\render_unreal\Saved\Automation"
 ```
 
-These native tests have not yet run on this host. The engine-independent artifact
-validator is executable now:
+On 2026-09-17 all four native tests passed under `-NullRHI`, editor exit code 0:
+contract self-test, replay interpolation, artifact fixture replay, and prepared-net
+geometry. To opt into the retained real-network geometry check, append:
+
+```powershell
+"-TrafficRenderManifest=$PWD\render_unreal\Tests\Fixtures\retained_net_geometry\manifest.json"
+```
+
+That check requires the existing DVC/local SUMO network. It uses a two-frame
+synthetic fixture trace, **not observed or calibrated map traffic**. The verified
+network produced 88,163 lane meshes, 236,434 segments and 17,866 junction records.
+The report is `Saved/Automation/index.json`, with `prepared_run_geometry.json`.
+Without the argument `PreparedRun` reports that the optional check was not requested.
+NullRHI verifies native parsing/geometry and replay mathematics, not RGB quality,
+GPU performance, full interactive replay or sensor-image parity.
+
+The engine-independent artifact validator is also executable:
 
 ```powershell
 uv run python scripts/render/unreal_contract_smoke.py --manifest <prepared-render-run.json>
@@ -50,6 +66,11 @@ Launch the editor from repository root:
 
 MCP is configured for loopback port 8001 at `/mcp`; it becomes available only after
 the editor loads successfully. It is an editor control surface, not trace streaming.
+On 2026-09-17 its socket was verified at `127.0.0.1:8001`: protocol `2025-11-25`
+initialize returned HTTP 200, initialized notification 202 and tools/list 200 with
+`list_toolsets`, `describe_toolset` and `call_tool`. The test editor then exited
+normally, so restart an editor session to use the endpoint. This does not claim
+that a Codex MCP connection was installed or that toolset actions were exercised.
 The project uses 100 centimetres per SUMO metre and subtracts the geometry origin.
 Vehicle trace positions are front-bumper centres; replay shifts by half vehicle
 length before placing each proxy. No lateral displacement is applied twice.

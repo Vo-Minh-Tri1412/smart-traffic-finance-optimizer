@@ -36,16 +36,27 @@ and the shared `camera_calibration.v1` artifact.
 
 Verified by source inspection and the Python smoke path: schema IDs, strict required fields, origin
 and unit policy, front-bumper centering formula, deterministic interpolation algorithm, and editor
-test registration. The Unreal Build Tool invocation was attempted against UE 5.8.2 but is currently
-blocked before compilation by the host's missing NetFxSDK (`SwarmInterface` rules error). Therefore
-binary compilation and an in-editor replay are **not yet verified** in this environment.
+test registration. On 2026-09-17 the NetFxSDK blocker was resolved and UE 5.8.2
+compiled all three adapter DLLs successfully (MSVC 14.44, Windows SDK 10.0.26100,
+two parallel actions, 98.73 seconds). Native automation passed all four tests,
+with zero test warnings/errors and editor exit code 0 under NullRHI.
 
 The 2026-09-16 continuation repeated that build and confirmed the same missing SDK.
 Eight Python contract tests now pass, including non-finite/coerced coordinates,
 duplicate vehicle IDs and missing network rejection. Source review corrected the
 native self-test's expected northbound coordinates and bounds vehicle actor lifetime
 by the current visible set. Native automation includes trajectory/heading interpolation
-and coordinate round-trip tests, but those remain unexecuted until compilation works.
+and coordinate round-trip tests; these now pass, together with the artifact replay fixture.
+The prepared-network test built the retained real SUMO network: 88,163 lanes,
+236,434 mesh segments and 17,866 junction records. Its trace is a two-frame synthetic
+fixture, not map-demand evidence. NullRHI does not verify visible rendering, frame
+rate, sensor-image quality, or complete interactive replay. The optional check can
+be reproduced using `Tests/Fixtures/retained_net_geometry/manifest.json`.
+Live MCP initialize and tools/list probes returned HTTP 200 on the observed
+`127.0.0.1:8001` listener (protocol 2025-11-25), and initialized returned 202.
+The endpoint stopped when the test editor exited normally; no persistent client
+connection or tool action is claimed. On 2026-09-18, both Net48 SDK and TargetingPack
+components were confirmed by `vswhere`, with v4.8 reference assemblies present.
 Reproducible build, native-test, editor-launch and project-local MCP instructions are
 in `render_unreal/README.md`; `render_unreal/codex-mcp.example.toml` is an opt-in example.
 

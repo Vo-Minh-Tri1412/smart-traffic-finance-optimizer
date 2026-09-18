@@ -38,6 +38,10 @@ architecture/contract decision.
 8. [Unreal render migration plan](02_ARCHITECTURE/UNREAL_RENDER_MIGRATION_PLAN.md)
 9. [Map economic data model](02_ARCHITECTURE/MAP_ECONOMIC_DATA_MODEL.md)
 10. [Map-aware QUBO](02_ARCHITECTURE/MAP_AWARE_QUBO.md)
+11. [RL/QUBO objective rationale](02_ARCHITECTURE/RL_QUBO_OBJECTIVE_RATIONALE.md)
+12. [Economic source review](02_ARCHITECTURE/MAP_ECONOMIC_SOURCE_RESEARCH.md)
+13. [Retained-ROI travel source review](02_ARCHITECTURE/CURRENT_ROI_TRAVEL_SOURCE_REVIEW.md)
+14. [Demand dataset design and reproducible inventory](02_ARCHITECTURE/CURRENT_ROI_DEMAND_DATASET_DESIGN.md)
 
 Use the remaining architecture documents for their bounded domain: map intake, legacy Godot parity,
 multi-agent memory, QUBO coupling, data artifacts and DVC.

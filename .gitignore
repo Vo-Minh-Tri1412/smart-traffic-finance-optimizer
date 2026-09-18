@@ -46,6 +46,8 @@ data/**
 !data/catalog/*.template.csv
 !data/catalog/*.template.md
 !data/catalog/*.template.json
+!data/catalog/map_economic_sources.research.v1.json
+!data/catalog/current_roi_demand_sources.v1.csv
 
 # Godot editor cache and generated render outputs stay out of Git.
 render/.godot/

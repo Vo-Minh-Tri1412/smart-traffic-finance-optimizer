@@ -1,0 +1,21 @@
+id = "TASK-087"
+owner = "data-economics"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "84436ff454791ae95cc54f94e10ab1d2358b88dc"
+allowed_paths = [
+  "coordination/tasks/087_map_economic_source_research.toml",
+  "data/catalog/map_economic_sources.research.v1.json",
+  "docs/02_ARCHITECTURE/MAP_ECONOMIC_SOURCE_RESEARCH.md",
+]
+dependencies = ["083_map_economic_data_reward_v1"]
+acceptance_commands = [
+  "uv run python -m json.tool data/catalog/map_economic_sources.research.v1.json",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/087_map_economic_source_research.toml",
+]
+status = "handoff"
+
+[handoff]
+summary = "Review primary economic sources for the retained map ROI; record years, units and transfer limitations without inventing calibration."
+validation = ["JSON syntax checked; task manifest validated; primary JICA/WB text reviewed; NSO indexed evidence and access limitations explicitly marked."]
+risks = ["Citywide statistics and historical appraisal assumptions do not directly measure building-to-building values."]
+next_steps = ["Verify NSO PDF table page and units visually; derive explicit price transfers before calibrating VOT; obtain directed OD-purpose-volume data."]

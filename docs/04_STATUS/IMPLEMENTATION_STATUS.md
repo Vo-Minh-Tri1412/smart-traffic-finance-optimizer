@@ -37,9 +37,13 @@ Git.
 
 The active renderer migration is implemented as a UE 5.8 C++ project in `render_unreal/`, with
 manifest/trace loaders, coordinate conversion, replay proxies, lane geometry, camera calibration,
-and editor automation scaffolding. Godot remains the legacy parity reference. Native UE compilation
-is blocked before C++ compilation by missing host NetFxSDK required by SwarmInterface. Python
-contract checks do not establish successful editor replay or rendered-image parity. Depth/instance
+and editor automation scaffolding. Godot remains the legacy parity reference. On 2026-09-17 native
+UE compilation succeeded after NetFxSDK became available; four native automation tests passed.
+The unchanged real SUMO net built 88,163 lanes in a geometry-only test using a clearly labelled
+synthetic two-frame trace, not observed demand. MCP initialize and tool discovery succeeded at
+127.0.0.1:8001 during that test session; the editor then exited normally. These checks do not
+establish rendered-image parity. On 2026-09-18, `vswhere` confirmed both .NET 4.8 SDK and Targeting
+Pack components, and the v4.8 reference assemblies are present. Depth/instance
 capture, traffic-light and semantic visual layers, and bounded ROI streaming remain incomplete.
 See [Unreal migration](../02_ARCHITECTURE/UNREAL_RENDER_MIGRATION_PLAN.md).
 
@@ -48,6 +52,19 @@ economic evidence. The materializer preserves the current map and distinguishes 
 coverage from sourced economic calibration. The supplied numeric configuration is an assumption
 register; reviewed OD demand and measured investment effects are still missing. See
 [map-economic model](../02_ARCHITECTURE/MAP_ECONOMIC_DATA_MODEL.md).
+
+The existing ROI is explicitly user-approved, not an administratively verified district. The
+2026-09-17 baseline sets both service/flow multipliers to 1 to avoid unsourced RL-only premiums.
+[Objective rationale](../02_ARCHITECTURE/RL_QUBO_OBJECTIVE_RATIONALE.md) distinguishes the implemented
+local reward from the proposed complete network-cost evaluator and QUBO marginal-benefit protocol.
+
+[Demand dataset design](../02_ARCHITECTURE/CURRENT_ROI_DEMAND_DATASET_DESIGN.md) preserves the original
+purpose/time priors and separates II/IE/EI/EE boundary trips. The runnable inventory groups 2,588
+geometry entities into 340 candidate source parents (252 multi-piece), without inventing facility
+capacity, gates or OD counts. A downloaded, hashed WorldPop 2020 population grid supplies a historical
+spatial prior only. This is not yet a calibrated SUMO trip dataset. Economic and travel source
+registries retain table/year/unit, reuse and transfer limitations; source discovery has not increased
+the profile's 0% source-backed calibration coverage.
 
 The opt-in SUMO-RL economic callback uses incremental time loss and the profile's OD valuation and
 occupancy. It exposes sampled local cost independently of learning normalization. These samples omit

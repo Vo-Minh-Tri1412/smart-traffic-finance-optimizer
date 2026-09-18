@@ -1,0 +1,31 @@
+id = "TASK-088"
+owner = "integrator"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "84436ff454791ae95cc54f94e10ab1d2358b88dc"
+allowed_paths = [
+  "docs/02_ARCHITECTURE/CURRENT_ROI_TRAVEL_SOURCE_REVIEW.md",
+  "coordination/tasks/088_current_roi_travel_sources.toml",
+]
+dependencies = ["TASK-083", "TASK-084"]
+acceptance_commands = [
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/088_current_roi_travel_sources.toml --changed-file docs/02_ARCHITECTURE/CURRENT_ROI_TRAVEL_SOURCE_REVIEW.md --changed-file coordination/tasks/088_current_roi_travel_sources.toml",
+]
+status = "handoff"
+
+[handoff]
+summary = "Verified primary operator, JICA and municipal travel sources against the unchanged ROI; recorded source grain, vintage, access/license limits and an actionable acquisition/calibration path."
+validation = [
+  "Read current map project, synthetic demand configuration and map economics contract.",
+  "Directly opened operator routes 38/139, municipal source/terms pages and JICA appendix; recorded failed 403/CAPTCHA/PDF rendering access honestly.",
+  "Verified current overlay contains seven geometry pieces sharing the Tan Thuan 2 source way; documented parent-facility deduplication requirement.",
+]
+risks = [
+  "No verified contemporary building-level OD dataset or public downloadable GTFS found in reviewed sources.",
+  "Historical survey parameters and published 2024 bus schedules require current local calibration.",
+  "Municipal camera content is not licensed as open training data; no content downloaded or redistributed.",
+]
+next_steps = [
+  "Register source metadata and acquire permitted current route/count/OD exports.",
+  "Review parent facilities and gates before allocating demand to split polygons.",
+  "Preserve exact ROI and external entry/exit connectors during route matching and demand calibration.",
+]
