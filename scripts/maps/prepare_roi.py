@@ -21,7 +21,7 @@ from ai_quantum_hvtc.simulation.maps.roi import (  # noqa: E402
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Prepare a generic map ROI: OSM tag zoning, road review, and Godot/SUMO sync artifacts."
+            "Prepare a generic map ROI: OSM tag zoning, road review, and SUMO render artifacts."
         )
     )
     parser.add_argument("--config", required=True, help="Path to ROI config JSON.")
@@ -84,7 +84,7 @@ def main() -> int:
     print(f"[OK] ROI prepared: {config.roi_id}")
     print(f"  semantic_overlay={paths.semantic_overlay}")
     print(f"  road_review={paths.road_review}")
-    print(f"  godot_preview={paths.godot_preview}")
+    print(f"  render_preview={paths.render_preview}")
     print(f"  qa_json={paths.qa_json}")
     if paths.prepared_net:
         print(f"  prepared_net={paths.prepared_net}")

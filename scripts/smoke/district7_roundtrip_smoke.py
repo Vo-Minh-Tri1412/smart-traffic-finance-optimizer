@@ -27,8 +27,7 @@ from ai_quantum_hvtc.simulation.maps import (  # noqa: E402
     load_sumo_project,
 )
 from ai_quantum_hvtc.simulation.maps.source import SumoMapSourceError  # noqa: E402
-from scripts.render.godot_sumo_trace_replay_smoke import main as godot_replay_main  # noqa: E402
-from scripts.render.godot_synthetic_cv_smoke import find_godot_executable  # noqa: E402
+from scripts.render.unreal_contract_smoke import run as validate_render_contract  # noqa: E402
 
 DEFAULT_PROJECT = PROJECT_ROOT / "simulation_projects" / "map_intake" / "district7.project.json"
 
@@ -37,17 +36,16 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
             "Run the District 7 OSM/SUMO-first smoke pipeline: DVC data check, overlay demand, "
-            "existing SUMO net run, trace export, optional Godot replay, and QA report."
+            "existing SUMO net run, trace export, Unreal input-contract validation "
+            "(no rendering), and QA report."
         )
     )
     parser.add_argument("--project", default=str(DEFAULT_PROJECT))
     parser.add_argument("--scenario", default=None)
     parser.add_argument("--controller", default="fixed_time")
     parser.add_argument("--output-root", required=True)
-    parser.add_argument("--godot-exe", default=None)
     parser.add_argument("--max-frames", type=int, default=120)
     parser.add_argument("--no-dvc-pull", action="store_true")
-    parser.add_argument("--require-godot", action="store_true")
     return parser
 
 
@@ -107,16 +105,15 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[FAIL] District 7 roundtrip failed: {exc}")
         return 1
 
-    godot_status = _run_godot_replay(
+    render_status = _validate_render_inputs(
         trace_path=trace_path,
         net_path=project.source.net_path,
         overlay_path=project.overlay_path,
-        output_root=output_root / "godot_replay",
+        output_root=output_root / "render_contract",
+        net_index=net_index,
         max_frames=args.max_frames,
-        godot_exe_arg=args.godot_exe,
-        require_godot=args.require_godot,
     )
-    if godot_status["status"] == "failed":
+    if render_status["status"] == "failed":
         _write_qa(
             output_root=output_root,
             project_id=project.project_id,
@@ -124,7 +121,7 @@ def main(argv: list[str] | None = None) -> int:
             net_index=net_index,
             demand=demand,
             result=_compact_result(result.to_dict()),
-            godot_status=godot_status,
+            render_status=render_status,
         )
         return 1
 
@@ -135,50 +132,57 @@ def main(argv: list[str] | None = None) -> int:
         net_index=net_index,
         demand=demand,
         result=_compact_result(result.to_dict()),
-        godot_status=godot_status,
+        render_status=render_status,
     )
-    print(f"[OK] District 7 SUMO/Godot roundtrip QA written: {qa_path}")
+    print(f"[OK] District 7 SUMO/Unreal-contract roundtrip QA written: {qa_path}")
     return 0
 
 
-def _run_godot_replay(
+def _validate_render_inputs(
     *,
     trace_path: Path,
     net_path: Path,
     overlay_path: Path,
     output_root: Path,
+    net_index: Any,
     max_frames: int,
-    godot_exe_arg: str | None,
-    require_godot: bool,
 ) -> dict[str, Any]:
-    godot_exe = find_godot_executable(godot_exe_arg)
-    if godot_exe is None:
-        if require_godot:
-            return {"status": "failed", "reason": "Godot executable not found"}
-        return {"status": "skipped", "reason": "Godot executable not found"}
-    code = godot_replay_main(
-        [
-            "--trace",
-            str(trace_path),
-            "--net",
-            str(net_path),
-            "--overlay",
-            str(overlay_path),
-            "--spec",
-            str(PROJECT_ROOT / "tests" / "fixtures" / "specs" / "toy_public_district_v1.json"),
-            "--output-root",
-            str(output_root),
-            "--max-frames",
-            str(max_frames),
-            "--godot-exe",
-            str(godot_exe),
-        ]
-    )
-    summary_path = output_root / "replay_summary.json"
-    summary = _load_json(summary_path) if summary_path.is_file() else {}
-    if code != 0:
-        return {"status": "failed", "exit_code": code, "summary": summary}
-    return {"status": "ok", "summary": summary}
+    """Validate adapter inputs without launching or claiming an Unreal render."""
+    output_root.mkdir(parents=True, exist_ok=True)
+    geometry = {
+        "schema_version": "geometry_manifest.v1",
+        "coordinate_system": "sumo_xy_meters",
+        "geometry_source": "sumo_net_xml",
+        "net_xml": str(net_path.resolve()),
+        "bounds": dict(zip(
+            ("min_x", "min_y", "max_x", "max_y"),
+            (*net_index.bounds_min, *net_index.bounds_max),
+            strict=True,
+        )),
+        "local_origin": {"x": net_index.bounds_min[0], "y": net_index.bounds_min[1]},
+    }
+    manifest = {
+        "schema_version": "render_run_manifest.v1",
+        "run_id": "district7-roundtrip",
+        "geometry_manifest": "geometry_manifest.json",
+        "vehicle_trace": str(trace_path.resolve()),
+        "semantic_overlay": str(overlay_path.resolve()),
+        "renderer": "unreal",
+    }
+    try:
+        for name, payload in (("geometry_manifest.json", geometry),
+                              ("render_run_manifest.json", manifest)):
+            (output_root / name).write_text(
+                json.dumps(payload, indent=2) + "\n", encoding="utf-8"
+            )
+        report = validate_render_contract(
+            output_root / "render_run_manifest.json",
+            output_root / "render_contract_qa.json",
+            max_frames,
+        )
+    except (OSError, ValueError, KeyError) as exc:
+        return {"status": "failed", "render_executed": False, "reason": str(exc)}
+    return {"status": "ok", "render_executed": False, "summary": report}
 
 
 def _dvc_pull(path: Path | None) -> None:
@@ -204,7 +208,7 @@ def _write_qa(
     net_index: Any,
     demand: Any,
     result: dict[str, Any],
-    godot_status: dict[str, Any],
+    render_status: dict[str, Any],
 ) -> Path:
     payload = {
         "project_id": project_id,
@@ -224,7 +228,7 @@ def _write_qa(
             "routes": str(demand.routes),
         },
         "simulation": result,
-        "godot_replay": godot_status,
+        "render_contract": render_status,
         "caveat": "District 7 geometry is real OSM/SUMO; demand overlay is synthetic v1.",
     }
     qa_json = output_root / "district7_roundtrip_qa.json"
@@ -244,12 +248,7 @@ def _compact_result(result: dict[str, Any]) -> dict[str, Any]:
 
 
 def _qa_markdown(payload: dict[str, Any]) -> str:
-    godot = payload["godot_replay"]
-    replay_summary = godot.get("summary", {}) if isinstance(godot, dict) else {}
-    zone_overlay = replay_summary.get("zone_overlay", {})
-    zone_visual_count = (
-        zone_overlay.get("spawned_zone_count", "n/a") if isinstance(zone_overlay, dict) else "n/a"
-    )
+    contract = payload["render_contract"]
     return "\n".join(
         [
             f"# District 7 roundtrip QA — {payload['scenario_id']}",
@@ -262,9 +261,8 @@ def _qa_markdown(payload: dict[str, Any]) -> str:
             f"- Routed trips: {payload['demand']['routed_trips']}",
             f"- Total vehicles observed: {payload['simulation']['total_vehicles']}",
             f"- Throughput: {payload['simulation']['throughput']}",
-            f"- Godot replay status: `{godot.get('status', 'unknown')}`",
-            f"- Off-lane vehicles: {replay_summary.get('off_lane_vehicle_count', 'n/a')}",
-            f"- Zone visuals: {zone_visual_count}",
+            f"- Unreal input contract: `{contract.get('status', 'unknown')}`",
+            "- Unreal render executed: no (contract validation only)",
             "",
             "## Caveat",
             "",

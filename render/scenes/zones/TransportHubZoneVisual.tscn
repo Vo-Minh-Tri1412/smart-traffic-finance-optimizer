@@ -1,9 +1,0 @@
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="PackedScene" path="res://scenes/zones/ZoneVisualBase.tscn" id="1_base"]
-
-[node name="TransportHubZoneVisual" instance=ExtResource("1_base")]
-default_zone_type = "transport_hub"
-default_zone_color = Color(0.32, 0.62, 0.92, 0.34)
-default_ground_size = Vector3(6.6, 0.08, 5.4)
-building_spacing = 1.55

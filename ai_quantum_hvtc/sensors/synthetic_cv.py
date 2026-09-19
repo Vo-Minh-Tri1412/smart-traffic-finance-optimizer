@@ -101,12 +101,12 @@ def init_synthetic_yolo_dataset(
             "dataset_id": dataset_id,
             "stream": "cv_yolo",
             "format": "ultralytics_yolo_detection",
-            "source_type": "godot_synthetic_camera",
+            "source_type": "synthetic_camera",
             "status": "template_only",
             "class_names": list(class_names),
             "notes": (
                 "This is the project-specific synthetic visual-sensor dataset contract. "
-                "Generated frames and labels should come from Godot-rendered SUMO/SUMO-RL traces."
+                "Generated frames and labels should come from Unreal-rendered SUMO/SUMO-RL traces."
             ),
         },
     )
@@ -117,31 +117,23 @@ def init_synthetic_yolo_dataset(
             "dataset_id": dataset_id,
             "source_run_id": source_run_id,
             "source_engine": "sumo_sumo_rl",
-            "renderer": "godot_3d",
+            "renderer": "unreal",
             "label_format": "yolo_detection",
             "image_size": [640, 640],
             "weather_profiles": ["clear_day"],
             "lighting_profiles": ["day"],
             "camera_ids": [],
             "status": "template_only",
-            "caveat": "No real frames are included until Godot render export is run.",
+            "caveat": "Template only; Unreal frame export is not implemented by this initializer.",
         },
     )
     write_json(
         paths.camera_config,
         {
             "version": "v0.1",
-            "coordinate_system": "sumo_xy_to_godot_xz",
-            "cameras": [
-                {
-                    "camera_id": "CAM_I06_HOSPITAL_GATE",
-                    "intersection_id": "I06",
-                    "purpose": "hospital emergency access visual sensor",
-                    "position": {"x": 0.0, "y": 8.0, "z": 0.0},
-                    "rotation_degrees": {"x": -25.0, "y": 0.0, "z": 0.0},
-                    "fov_degrees": 60.0,
-                }
-            ],
+            "coordinate_system": "sumo_xy_meters_z_up",
+            "cameras": [],
+            "notes": "Configure map-specific cameras using camera_calibration.v1 before capture.",
         },
     )
     return paths

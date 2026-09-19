@@ -28,11 +28,11 @@ def test_init_synthetic_yolo_dataset_creates_contract_files(tmp_path) -> None:
 
     manifest = json.loads(paths.dataset_manifest.read_text(encoding="utf-8"))
     assert manifest["dataset_id"] == "SYNTH-CV-TEST"
-    assert manifest["source_type"] == "godot_synthetic_camera"
+    assert manifest["source_type"] == "synthetic_camera"
 
     render_manifest = json.loads(paths.render_manifest.read_text(encoding="utf-8"))
     assert render_manifest["source_run_id"] == "SUMO-RUN-001"
-    assert render_manifest["renderer"] == "godot_3d"
+    assert render_manifest["renderer"] == "unreal"
 
 
 def test_validate_template_dataset_is_ok_with_empty_dataset_warning(tmp_path) -> None:

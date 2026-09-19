@@ -253,16 +253,16 @@ _PIPELINE_STAGES: tuple[PipelineStage, ...] = (
     ),
     PipelineStage(
         id="render",
-        name="Render Godot",
+        name="Render Unreal Engine",
         layer="Render",
         status="partial",
         summary=(
-            "Godot 4.6 replay trace SUMO và dựng cảnh scene-first; xuất frame/video là "
+            "UE replay trace SUMO; pipeline xuất frame/video còn cần triển khai ở "
             "nhánh render/sensor, không phải simulator."
         ),
         inputs=["vehicle trace", "SUMO net", "semantic overlay"],
         outputs=["frames/video", "(synthetic CV dataset — kế hoạch)"],
-        modules=["render/ (Godot project)"],
+        modules=["render_unreal/ (Unreal project)"],
     ),
     PipelineStage(
         id="data_workflow",
@@ -431,7 +431,7 @@ _DATA_STREAMS: tuple[DataStream, ...] = (
         id="yolo",
         name="Synthetic CV / YOLO",
         status="planned",
-        summary="Frame/nhãn render từ Godot + model YOLO — chưa sinh dataset thật.",
+        summary="Frame/nhãn render từ Unreal Engine + model YOLO — chưa sinh dataset thật.",
         location="Drive: 03_Training_Runs/yolo",
     ),
     DataStream(
