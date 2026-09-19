@@ -1,151 +1,52 @@
-# SUMO-backed Render Bridge Framework
+# SUMO-backed render bridge framework
 
-This is the canonical architecture for connecting SUMO/SUMO-RL traffic simulation to visual
-renderers, synthetic sensors, and demo surfaces.
+SUMO/SUMO-RL owns traffic. Unreal is the sole active renderer; no alternate renderer runtime is
+maintained in this checkout. The bridge remains renderer-neutral and uses versioned artifacts.
 
-The project is not trying to replace SUMO. The project is building a bridge framework around SUMO:
-traffic simulation, public-finance scoring, and visual/sensor replay all share one normalized set of
-contracts.
+## Authority and flow
 
-## Why this framework exists
-
-Traffic-simulation render projects tend to repeat the same problem: SUMO knows the traffic, while a
-game engine knows how to show a city. Strong open-source patterns point in the same direction:
-
-- [SUMO2Unity](https://github.com/SimuTraffX-Lab/SUMO2Unity) imports SUMO networks into Unity and
-  exchanges vehicle trajectory and signal timing data.
-- [Sumonity](https://github.com/TUM-VT/Sumonity) uses a Unity bridge/prefab pattern and keeps SUMO
-  as the microscopic traffic model.
-- [CARLA SUMO co-simulation](https://carla.readthedocs.io/en/latest/adv_sumo/) explicitly decides
-  which simulator owns traffic lights and synchronized state.
-- [SumoUE4](https://github.com/iwer/SumoUE4) highlights the need to separate SUMO data from visual
-  representation.
-
-The local framework follows those patterns without copying their code. Unreal is the active
-renderer; Godot is the legacy parity reference. The contracts remain renderer-independent.
-The [UE asset pipeline](UNREAL_ASSET_PIPELINE.md) and
-[delivery plan](SYSTEM_DELIVERY_PLAN.md) define the next implementation, not current capability.
-
-## Authority ownership
-
-Only one layer owns each kind of truth.
+SUMO net + demand + controller → simulation → geometry/vehicle/TLS/event artifacts →
+Unreal replay and optional sensor export. Economics consumes simulation outcomes, not rendered pixels.
+Semantic overlays own zone/facility meaning, never a replacement road network.
 
 | Layer | Owns | Must not own |
 |---|---|---|
-| SUMO/SUMO-RL | routes, vehicle motion, queues, traffic-light phases, traffic-event effects | visual assets, camera framing, finance decisions |
-| Python bridge | scenario config, SUMO execution, output parsing, normalized traces, metrics, finance scoring | hand-authored visual choices |
-| Semantic overlay | zone meaning, public-finance labels, demand anchors, candidate investment metadata | road/lane geometry truth |
-| Unreal renderer | assets, materials, calibrated camera rigs, replay UI, visual zones and planned sensor exports | traffic physics or finance decisions |
-| Legacy Godot / other adapters | parity reference or alternate visual/sensor implementation | changing bridge contracts ad hoc |
+| SUMO | Routes, motion, queues, TLS and event effects | Art assets and finance choices |
+| Python bridge | Run preparation, parsing, schema validation, manifests | Hand-placed visual geometry |
+| Data/Economics | OD evidence, valuations, intervention effects | Renderer traffic physics |
+| Unreal | Assets, replay, camera and planned sensor exports | Traffic or finance decisions |
 
-If ownership is ambiguous, prefer SUMO for traffic state and the active renderer for visual state.
+Use prepared real-map artifacts; toy fixtures are only validation inputs. Never redraw the road
+network just to make a screenshot. A visual window is not a change to the simulation domain.
 
-## End-to-end flow
+## Implementation and extension points
 
-```text
-SUMO/SUMO-RL
-  -> net.xml / routes / tripinfo / edge data / FCD / TLS / events
-  -> Python bridge contracts
-  -> render adapter contract
-  -> Unreal adapter (Godot retained for parity)
-  -> visual replay / optical visibility / camera frames / labels / demo UI
-```
+Current UE module: TrafficRenderRuntime, with geometry/manifest loaders, coordinate conversion,
+playback clock, replay subsystem/controller, canonical cuboid vehicles and lane mesh ingestion.
+TrafficRenderEditor provides native automation tests. RGB parity, detailed assets, TLS/semantic
+visual layers, physical sensor export and bounded streaming remain implementation work.
 
-For real maps:
+Next providers: geometry, vehicle trace, TLS state, semantic overlay, events, asset catalog,
+road styles and sensor export. UE-native Data Assets configure visual resources; shared artifacts
+remain JSON/XML/JSONL. See [asset pipeline](UNREAL_ASSET_PIPELINE.md) and
+[migration status](UNREAL_RENDER_MIGRATION_PLAN.md).
 
-```text
-OSM/SUMO map
-  -> ROI selection
-  -> road classification
-  -> auto micro-zoning
-  -> semantic overlay
-  -> prepared SUMO net
-  -> Unreal visual overlay and replay
-```
+## Contract boundary
 
-Renderer editing must happen on prepared real-map artifacts: SUMO geometry, semantic overlay, render
-manifest, and visual catalogs. Standalone toy authoring scenes are not part of the production path.
+Use geometry_manifest.v1, vehicle_trace.v2, traffic_light_trace.v1, semantic_overlay.v2,
+event_trace.v1, camera_calibration.v1, visibility_trace.v1, render_run_manifest.v1 and
+sensor_dataset_manifest.v1. [Contract definitions](RENDER_BRIDGE_CONTRACTS.md) own their semantics.
+The Python geometry visibility producer is separate from a future UE RGB/depth/instance pass.
+An unsupported schema fails explicitly; optional declared-but-missing artifacts produce warnings.
 
-## Render bridge layers
+## Quality evidence
 
-The bridge is a conceptual module even when the first implementation is split across existing
-scripts.
+Report loaded/rendered lanes and junctions, frame counts, spawned/fallback/dropped vehicles,
+zone fallback counts, off-lane distances, TLS sync, schema warnings and measured runtime performance.
+Do not infer correctness from a screenshot or NullRHI test alone. Dataset exports additionally need
+camera/time/instance alignment and visibility evidence. Assets must not alter physical proxy size.
 
-```text
-SumoRenderBridge
-├── GeometryProvider          # SUMO net geometry, bounds, lane widths, junction polygons
-├── VehicleTraceProvider      # vehicle-level trace frames from FCD
-├── TrafficLightStateProvider # TLS phase/state trace
-├── SemanticOverlayProvider   # zones, demand anchors, candidate investment metadata
-├── EventProvider             # crashes, closures, road works, temporary speed changes
-├── RoadVisualProvider        # road style catalog and LOD choices
-├── AssetProvider             # vehicle/zone/road visual catalogs
-└── SensorExportProvider      # camera frames, labels, masks, manifests
-```
-
-The bridge should expose one run summary so smoke tests and demo scripts can decide whether the
-visual integration is trustworthy.
-
-## Legacy Godot implementation mapping
-
-The mappings below describe reusable concepts and the legacy implementation, not completed UE
-features. Consult the Unreal migration plan for its verified implementation status.
-
-| Framework role | Current Godot/Python implementation |
-|---|---|
-| Geometry provider | `SumoNetGeometryData`, `DistrictReplayWorld` |
-| Vehicle trace provider | `TraceReplayData`, `TraceFrameData`, `TraceVehicleState` |
-| Replay timing | `TracePlaybackClock`, `TraceInterpolator` |
-| Vehicle visuals | `VehicleAssetCatalog.tres`, registry, factory, pool |
-| Zone visuals | `semantic_overlay.json`, `ZoneAssetCatalog.tres`, `SemanticOverlayRenderer` |
-| Road visuals | `RoadSceneBuilder`, `RoadVisualRoot.tscn`, `LaneVisualBase.tscn`, `RoadStyleCatalog.tres` |
-| Sensors | `DetectionCamera3D`, camera/label catalogs, optical visibility adapter, smoke dataset writer |
-| Quality report | replay summary today; render bridge QA report is the canonical next layer |
-
-## Integration quality report
-
-Every meaningful SUMO-to-render smoke should produce a report with at least:
-
-- loaded lane/junction counts;
-- rendered lane/junction counts;
-- loaded frames and spawned vehicles;
-- dropped or fallback vehicle counts;
-- zone rendered and fallback counts;
-- `off_lane_vehicle_count` and max off-lane distance;
-- traffic-light sync count when TLS trace is present;
-- schema versions and unsupported-version warnings;
-- average replay FPS when visual runtime can measure it.
-
-The report matters because visual correctness must be testable, not only inspected by eye.
-
-## What should be replaced or downgraded
-
-- Do not let `Main.tscn` become a pile of hard-coded paths and manually wired nodes. It should
-  configure a bridge object or a render run manifest.
-- Do not render large real maps by instantiating every lane, building, and node as a separate
-  editable object. Use SUMO geometry for truth, semantic overlay for meaning, and LOD/batching for
-  preview.
-- Do not put traffic logic inside Godot. Events may be visualized in Godot, but their traffic effect
-  belongs in SUMO/Python.
-- Do not create standalone toy map scenes as product maps. Any future editor preview must be backed
-  by real SUMO geometry, semantic overlay data, or a clearly named test fixture.
-
-## Extension strategy
-
-Godot remains the legacy parity reference. Unreal and any future adapters consume the same bridge
-contracts rather than forking the backend.
-
-Recommended adapter boundary:
-
-```text
-render_run_manifest.v1
-  -> geometry_manifest.v1
-  -> vehicle_trace.v2
-  -> traffic_light_trace.v1
-  -> semantic_overlay.v2
-  -> event_trace.v1
-  -> visibility_trace.v1
-  -> sensor_dataset_manifest.v1
-```
-
-If a future engine cannot consume those artifacts, fix the adapter, not the SUMO backend.
+Use tile geometry, pooling and camera-local loading rather than one editable actor per map element.
+Sensor completeness is independent of presentation LOD. Events affect traffic only in SUMO.
+MCP is optional editor tooling, not a trace transport. The [delivery plan](SYSTEM_DELIVERY_PLAN.md)
+defines the accepted order, research gates and demonstration scope.

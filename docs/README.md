@@ -28,6 +28,11 @@ architecture/contract decision.
 
 ### Design or change an interface
 
+Start with the accepted [System delivery plan](02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md) for the
+unchanged-map, eight-candidate research pilot and module acceptance gates. It records a plan,
+not completed implementation. UE art configuration is specified in
+[Unreal asset pipeline](02_ARCHITECTURE/UNREAL_ASSET_PIPELINE.md).
+
 1. [Simulation backend architecture](02_ARCHITECTURE/SIMULATION_BACKEND_ARCHITECTURE.md)
 2. [SUMO-backed render bridge framework](02_ARCHITECTURE/SUMO_RENDER_BRIDGE_FRAMEWORK.md)
 3. [Render bridge contracts](02_ARCHITECTURE/RENDER_BRIDGE_CONTRACTS.md)
@@ -43,7 +48,7 @@ architecture/contract decision.
 13. [Retained-ROI travel source review](02_ARCHITECTURE/CURRENT_ROI_TRAVEL_SOURCE_REVIEW.md)
 14. [Demand dataset design and reproducible inventory](02_ARCHITECTURE/CURRENT_ROI_DEMAND_DATASET_DESIGN.md)
 
-Use the remaining architecture documents for their bounded domain: map intake, legacy Godot parity,
+Use the remaining architecture documents for their bounded domain: map intake, Unreal rendering,
 multi-agent memory, QUBO coupling, data artifacts and DVC.
 
 ### Check what is true now

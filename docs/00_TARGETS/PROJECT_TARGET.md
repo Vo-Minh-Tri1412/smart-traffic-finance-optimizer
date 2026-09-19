@@ -23,7 +23,7 @@ assumptions.
 ## Durable decisions
 
 - SUMO/SUMO-RL owns traffic dynamics, signal legality, routes, queues and operational metrics.
-- Godot is a renderer, replay client and synthetic sensor-data producer; it does not replace SUMO
+- Unreal is the renderer, replay client and planned synthetic sensor-data producer; it does not replace SUMO
   as the traffic simulator.
 - The renderer consumes the same prepared SUMO map and traces as the simulation. It must not invent
   a separate toy road network for production claims.

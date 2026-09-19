@@ -13,8 +13,7 @@ dependencies. These are planned changes; the verified scaffold below has not gai
 `render_unreal/TrafficRender.uproject` is a renderer/sensor adapter, not a game. SUMO remains
 authoritative for routes, vehicle motion, queues, traffic-light phases and traffic-event effects.
 Unreal consumes prepared artifacts and may render geometry, replay vehicles, calibrated camera
-outputs and sensor labels; it must not recalculate traffic or finance decisions. Godot remains the
-legacy reference/fallback adapter. No CatRoom assets or gameplay assumptions are used.
+outputs and sensor labels; it must not recalculate traffic or finance decisions. The previous renderer has been removed; shared source assets are in `render_assets/`. No unrelated assets or gameplay assumptions are used.
 
 The adapter preserves these contracts exactly:
 

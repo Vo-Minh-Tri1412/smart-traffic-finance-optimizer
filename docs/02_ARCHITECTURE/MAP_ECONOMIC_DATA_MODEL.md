@@ -58,7 +58,7 @@ SUMO net + semantic overlay       reviewed economic sources / assumptions
 - The profile supplies economic interpretation and provenance; it does not alter SUMO geometry.
 - The raw monetary ledger is separate from RL normalization and clipping.
 - QUBO may consume `profile.to_dict()` and join on `candidate_id` plus `od_pair_id`.
-- Unreal/Godot render state is not an economic source of truth.
+- Unreal render state is not an economic source of truth.
 
 ## Profile structure
 

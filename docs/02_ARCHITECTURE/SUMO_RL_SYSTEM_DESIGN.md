@@ -8,7 +8,7 @@ The 2026-09-19 inventory found 169 TLS controllers; these are not yet 169 valida
 The small package fixture and the one-intersection SUMO smoke test remain
 CI/runtime checks only; they are not the research environment or final demo claim.
 
-The active renderer is Unreal; Godot is the legacy parity reference. Both consume the SUMO net,
+The active renderer is Unreal. It consumes the SUMO net,
 semantic overlay and DVC/Drive artifacts. A renderer must not replace SUMO traffic dynamics.
 
 ## Accepted next implementation (2026-09-19)
@@ -161,7 +161,7 @@ At approximately 100–160 signals, the project should use:
 - scenario and seed randomization;
 - centralized training/decentralized execution or graph policies when local policies cannot
   coordinate;
-- LOD and camera-window rendering so Godot does not instantiate the whole map unnecessarily.
+- LOD and camera-window rendering so Unreal does not instantiate the whole map unnecessarily.
 
 The number of signals alone is not evidence of a stable policy. Claims require network-level metrics,
 per-signal metrics, unseen demand scenarios and multiple seeds.

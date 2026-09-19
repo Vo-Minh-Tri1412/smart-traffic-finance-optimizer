@@ -25,10 +25,10 @@ acceptance_commands = [
   "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/093_system_delivery_plan_docs.toml",
   "uv run python -m ai_quantum_hvtc doctor",
 ]
-status = "in_progress"
+status = "done"
 
 [handoff]
 summary = "Persist the user-selected whole-system delivery plan and update module architecture docs only; no runtime implementation or calibration approval."
-validation = []
+validation = ["Module architecture docs reviewed against current code; implementation milestones remain planned.", "Doctor passed with optional legacy governance warnings; documentation whitespace checks passed."]
 risks = ["TASK-092 demo script/config changes pre-exist and must remain outside these documentation commits."]
 next_steps = ["Implement M0 first, then UE and demand work in parallel after separate implementation tasks."]

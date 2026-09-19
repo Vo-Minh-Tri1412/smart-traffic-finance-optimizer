@@ -6,10 +6,10 @@ claim that the production sensor already exists.
 
 ## Canonical virtual camera
 
-`DetectionCamera3D` is the project’s canonical virtual traffic camera. Its physical calibration is
+The project’s canonical virtual traffic camera is renderer-neutral. Its physical calibration is
 stored in a renderer-neutral `camera_calibration.v1` document. The V1 RL sensor evaluates this
-calibration headlessly against SUMO vehicle geometry; Godot imports the same calibration for replay
-parity and later image capture.
+calibration headlessly against SUMO vehicle geometry; Unreal capture must use the same calibration.
+Native calibration validation exists; image-capture parity remains to be implemented.
 
 For every configured camera frame, the camera should be able to produce:
 
@@ -69,9 +69,9 @@ vector with temporal memory.
 
 ## Non-negotiable constraints
 
-- One metre in the prepared SUMO map and Godot world must retain a declared, stable relationship.
+- One metre in the prepared SUMO map and Unreal world (100 centimetres per SUMO metre) must retain a declared, stable relationship.
 - Vehicle length, width, height and ground offset must be canonical data, not implicit mesh values.
-- The headless geometry camera cannot read player-camera LOD. The future Godot depth/instance pass
+- The headless geometry camera cannot read player-camera LOD. The planned Unreal depth/instance pass
   must similarly retain every object capable of affecting the configured sensor view.
 - The capture interval, decision interval and aggregation rule are recorded in the training
   manifest.

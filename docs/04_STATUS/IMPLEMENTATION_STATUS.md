@@ -7,11 +7,12 @@ Git.
 ## Confirmed foundations
 
 - SUMO is the traffic simulator and the bridge/replay path consumes prepared net and trace artifacts.
-- The Godot project has scene-native road, vehicle, zone, traffic-light and camera scaffolding.
+- Unreal has a native geometry/trace adapter and canonical cuboid replay; asset-driven visuals
+  remain planned. Shared source models/textures are retained in `render_assets/`.
 - The training scaffold supports shared multi-agent mode, a frame-stack baseline and optional
   RecurrentPPO mode. This is scaffolding, not a validated Quận 7 policy claim.
-- Synthetic dataset layout, camera and label catalogs, a sensor dataset writer and smoke export path
-  exist.
+- Renderer-neutral synthetic dataset layout/validation and a geometry visibility producer exist.
+  Removing the old renderer also retires its image smoke path; UE RGB/depth/instance export is pending.
 - Canonical vehicle height/ground-clearance profiles, `vehicle_geometry_catalog.v1`, and a SUMO
   `geometry_sensor` profile now exist. The profile uses a 0.2-second simulation step, one-second FCD
   capture and 0.4m Sublane resolution without changing demand, reward or economics.
@@ -24,20 +25,18 @@ Git.
 - Reward profile, demand/flow calibration, scenario set and evaluation economics remain subject to
   project-owner approval.
 - Full-ROI multi-agent training, baseline comparison and cloud-scale validation are unfinished.
-- The current sensor smoke path is not a calibrated depth/instance visibility pass. It must not be
-  used as proof of physical occlusion or a final YOLO dataset.
+- Dataset templates are not calibrated RGB/depth/instance captures or a final YOLO dataset.
 - Road elevation is explicitly propagated when present; the current District 7 flat-map fallback is
   labelled `flat_assumption`. Bridges/ramps still need elevation-calibrated map data before physical
   elevation claims.
-- Godot imports the shared camera calibration and receives hidden physical vehicle proxies, but it
-  does not yet perform a depth/instance visibility pass.
+- The UE sensor integration still needs calibrated RGB/depth/instance capture and visual QA.
 - No trained RL policy, trained YOLO detector or final public-finance result should be claimed.
 
 ## Unreal and map-economic implementation (2026-09-16)
 
 The active renderer migration is implemented as a UE 5.8 C++ project in `render_unreal/`, with
 manifest/trace loaders, coordinate conversion, replay proxies, lane geometry, camera calibration,
-and editor automation scaffolding. Godot remains the legacy parity reference. On 2026-09-17 native
+and editor automation scaffolding. The previous renderer has been retired. On 2026-09-17 native
 UE compilation succeeded after NetFxSDK became available; four native automation tests passed.
 The unchanged real SUMO net built 88,163 lanes in a geometry-only test using a clearly labelled
 synthetic two-frame trace, not observed demand. MCP initialize and tool discovery succeeded at
@@ -78,6 +77,16 @@ supports signed adverse effects and conservative uncertainty cases. No calibrate
 ranking is claimed. See [map-aware QUBO](../02_ARCHITECTURE/MAP_AWARE_QUBO.md) and tasks 082–085.
 
 ## Active dependency order
+
+The accepted [system delivery plan](../02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md) records the
+2026-09-19 decisions: unchanged 169-TLS source net, 8-candidate pilot, free resources, editable UE
+assets, labelled synthetic demand, network-wide accounting and geometry before YOLO. This is a
+plan, not evidence that M0-M6 are implemented. The existing-net runner is still fixed-time-only;
+its parser's bus occupancy/error counters and the fixture-default dashboard require later work.
+
+The UE demo screenshot is an illustrative staged scene, not a validated reconstruction of the map.
+Legacy runtime/scripts/tests/docs have been removed; old task manifests remain historical audit
+records, not current instructions. See TASK-094 for cleanup verification and recoverability.
 
 ```text
 map and physical render alignment
