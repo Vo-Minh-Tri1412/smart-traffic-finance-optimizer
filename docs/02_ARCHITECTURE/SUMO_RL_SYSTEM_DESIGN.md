@@ -3,12 +3,47 @@
 ## Scope and target
 
 SUMO is the official traffic simulator and SUMO-RL is the official signal-control environment.
-The current project target is the full Quận 7 OSM/SUMO map or a reviewed ROI of roughly 100
-signalized intersections. The small package fixture and the one-intersection SUMO smoke test remain
+The selected target is the unchanged prepared ROI, not an administratively verified district.
+The 2026-09-19 inventory found 169 TLS controllers; these are not yet 169 validated RL agents.
+The small package fixture and the one-intersection SUMO smoke test remain
 CI/runtime checks only; they are not the research environment or final demo claim.
 
-The latest map/render work uses the SUMO net, semantic overlay, DVC/Drive artifacts and Godot LOD
-replay path. A renderer must not replace SUMO traffic dynamics.
+The active renderer is Unreal; Godot is the legacy parity reference. Both consume the SUMO net,
+semantic overlay and DVC/Drive artifacts. A renderer must not replace SUMO traffic dynamics.
+
+## Accepted next implementation (2026-09-19)
+
+Follow [System delivery plan](SYSTEM_DELIVERY_PLAN.md) and the accepted full-network objective in
+[objective rationale](RL_QUBO_OBJECTIVE_RATIONALE.md). The scaffold below is not a completed
+existing-net training path. In particular, the current training exporter rebuilds a spec network;
+the new path must accept the retained project/net/routes directly without rebuilding that net.
+
+- Extend existing-net runs beyond fixed-time to generic movement-aware rule-based and RL control.
+  Derive movement/phase mappings from actual TLS connections rather than four-arm assumptions.
+- Validate minimum-green and transition/clearance programs per TLS. Unsupported/unreviewed TLS
+  remain baseline-controlled. Reject/hold invalid padded actions and log intervention; gates alone
+  are not runtime safety. Emergency overrides must respect clearance as well.
+- Add one complete demand/cost ledger per environment, including insertion queues and departure/
+  arrival events. Remove fixed bus occupancy and fabricated zero error counters from result parsing.
+- Start with 8 eligible connected pilot candidates selected using development baseline person-delay;
+  deterministic highest-delay seed, connected expansion by delay and ID tie-break. If fewer than 8
+  connected eligible signals exist, report the smaller set rather than inventing connectivity.
+  Freeze IDs before test. The rest of the full network still runs the baseline.
+- Use one mask-conditioned shared policy; compare memoryless PPO, four-snapshot frame stack and
+  RecurrentPPO. Preserve per-agent recurrent state and reset it at environment/episode boundaries.
+- Online geometry visibility consumes current SUMO state, not a prerecorded baseline trace during
+  counterfactual training. Keep oracle and partial-observation runs distinct; no hidden IDs/counts,
+  route purpose, future state or financial rank in camera observations.
+- Record simulator/capture/decision intervals. Existing `geometry_sensor` defaults are 0.2 s SUMO
+  steps, 1 s FCD and 0.4 m sublane resolution; policy decision interval is separate configuration.
+  All controller comparisons must use the same simulation settings.
+- Use existing train/validation/test demand seeds and disjoint coefficient-fit seeds for QUBO.
+  Select checkpoints on validation only. Freeze checkpoint/observation/reward before mask fitting.
+  Headless SUMO training does not require Unreal or MCP. Use free compute and resumable artifacts.
+
+Synthetic research requires an explicit mode and reviewed assumption register, not a blanket
+override of safety/route/accounting checks. It cannot pass the real-world production claim gate.
+Completion means reproducible comparison and honest failure reporting, not guaranteed RL superiority.
 
 ## End-to-end architecture
 

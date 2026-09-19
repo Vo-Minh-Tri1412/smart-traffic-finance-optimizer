@@ -1,5 +1,52 @@
 # Reward RL và mục tiêu QUBO cho ROI hiện tại
 
+## Thiết kế kế tiếp đã chốt (2026-09-19), chưa thay callback runtime
+
+[Kế hoạch toàn hệ thống](SYSTEM_DELIVERY_PLAN.md) chọn ledger toàn mạng và shared reward làm
+mục tiêu chính kế tiếp. Callback incremental cục bộ được kiểm toán ở mục 2 vẫn là code hiện tại
+và sẽ giữ làm ablation; không gọi ledger cục bộ đó là tổng cost toàn mạng.
+
+Với demand, route và occupancy cố định giữa các phương án, đặt `T_v` là thời gian từ khởi hành
+dự định đến khi đến đích (bao gồm chờ chèn vào mạng), `T0_v` là mốc tham chiếu cố định của chuyến:
+
+```text
+A = sum_v n_v * w_v * T_v / 3600
+C = A - sum_v n_v * w_v * T0_v / 3600
+r_shared(t) = -(A_accrued(t+dt) - A_accrued(t)) / S
+```
+
+`A_accrued` tính thời gian đã phát sinh từ intended departure đến thời điểm hiện tại hoặc arrival,
+chỉ cho demand đã đến giờ khởi hành. Một ledger duy nhất cho mỗi environment thu chi phí, không
+thu lại một lần cho mỗi signal. Mỗi agent dùng cùng team reward; không cộng các bản sao reward
+agent để báo VND. `n_v`, `w_v` được nối từ trip registry/valuation, không suy từ ảnh hoặc nhãn xe.
+
+Khi tất cả chuyến hoàn thành, tổng reward chưa discount tỷ lệ với `-A`; `C` khác `A` bởi hằng số
+không phụ thuộc policy. Vì vậy không cần thưởng arrival tùy ý. Scale `S` phải cố định trong một
+experiment, fit/chọn từ tập phát triển và ghi manifest; không normalize lại riêng cho từng mask.
+Đánh giá bằng `C`/person-delay không clip, không bằng discounted return. Discount/clipping có thể
+làm lệch tối ưu theo tổng cost và phải được báo; tính tương đương nêu trên không áp dụng cho chúng.
+
+Ở horizon hữu hạn, không lấy thời gian đã phát sinh của unfinished trips làm full-trip cost.
+Ledger giữ pending/running/arrived/error/teleport, chạy drain-out có giới hạn và báo lower bound,
+unserved demand. Không được tuyên bố tiết kiệm dựa trên tập arrived bị chọn lọc. Nếu transit có
+passenger records thì dùng một quy tắc hạch toán nhất quán, không cộng trùng với occupancy xe.
+
+Đây là lựa chọn thay thế cho đề xuất `departDelay + timeLoss` ở mục 3 làm **primary evaluator**;
+hai trường đó vẫn là chẩn đoán có ích. Mốc tham chiếu cần giữ cố định theo route, speed assumptions
+và scheduled stops. Không thay mốc theo tuyến mà policy tự chọn; v1 chưa nghiên cứu induced demand.
+
+Lý do: chi phí bao phủ cả queue trước khi chèn và xe ngoài lane của agent; agent không được lợi
+nhờ đẩy nghẽn khỏi vùng đo. Trade-off là credit assignment của team reward khó hơn; đo bằng ablation
+với local reward, không tự thêm một tổ hợp queue/speed/priority weights để che kết quả không tốt.
+
+Guardrails bắt buộc: legality/clearance thực thi ở action layer; phục vụ cùng demand; báo person-delay,
+phân vị cao và tiếp cận thiết yếu theo nhóm bên cạnh VND. Không gắn nhãn portfolio được khuyến nghị
+nếu vi phạm tiêu chí nhóm đã chốt trước test; thiếu mẫu phải báo chưa đánh giá. Không tự đặt ngưỡng
+phúc lợi xã hội từ placeholder cấu hình. Các kênh reliability/cargo/emissions/schedule chưa có nguồn
+không được bật mặc định. Safety không được đổi lấy monetary reward.
+
+## Kiểm toán implementation và lập luận nền (2026-09-17)
+
 Ngày rà soát: 2026-09-17. Phạm vi là map hiện tại đã được người dùng giữ nguyên, không phải
 khẳng định ranh giới hành chính Quận 7. Đây là thiết kế mục tiêu và kiểm toán code, **không phải
 báo cáo model đã huấn luyện, dữ liệu OD đã hiệu chỉnh hoặc lợi ích kinh tế đã được kiểm chứng**.
