@@ -1,5 +1,27 @@
 # Map Economic Data Model v1
 
+## Accepted extension, not a calibration update (2026-09-19)
+
+[System delivery plan](SYSTEM_DELIVERY_PLAN.md) permits explicitly labelled synthetic research
+while source collection continues. It does not approve existing numeric placeholders, change
+profile status, raise calibration coverage or relax the production gate.
+
+The planned demand dataset supplies explicit trip/OD/purpose/time/occupancy joins; the network
+ledger and QUBO must share the same versioned valuations. Remove the existing-net parser's fixed
+20-person bus assumption in a later implementation task. Do not count both occupancy-weighted
+vehicle time and the same passenger records. Keep physical vehicle labels separate from economic
+purpose: a camera cannot establish a trip's destination, commodity value or work purpose by class.
+
+The full-network evaluator and shared RL objective will follow the accepted extension in
+[objective rationale](RL_QUBO_OBJECTIVE_RATIONALE.md); the incremental API described below remains
+the current implementation. Reliability/cargo/emissions/deadline channels remain disabled until
+their definitions, evidence and non-double-counting rules are supplied. Disabled means unmodelled,
+not a measured zero impact. Baseline service/flow multipliers remain 1.
+
+Annualization requires an explicit representative calendar and scenario weights; present-value
+factors, capex and opex require provenance or declared research assumptions. No default 365-day
+conversion or current-price claim may be inferred from a short simulation or historical source.
+
 ## Decision
 
 `map_economic_profile.v1` is the renderer-independent, SUMO-compatible contract that connects

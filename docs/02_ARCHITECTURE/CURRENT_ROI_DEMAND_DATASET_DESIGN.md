@@ -1,5 +1,41 @@
 # Dataset nhu cầu đi lại cho ROI hiện tại
 
+## Quyết định triển khai được chốt ngày 2026-09-19
+
+Theo [kế hoạch toàn hệ thống](SYSTEM_DELIVERY_PLAN.md), tiếp tục tìm nguồn nhưng cho phép
+nghiên cứu bằng demand synthetic minh bạch khi chưa có OD hiện hành đạt yêu cầu. Đây không phải
+phê duyệt các giá trị số đang bỏ trống hoặc chứng nhận dataset đã hiệu chỉnh.
+
+- Giữ nguyên net/overlay và hash; pilot 8 nút điều khiển không phải cắt mạng xuống 8 nút.
+- Hoàn thiện parent-facility registry trước khi phân bổ capacity/trips. Neutral không tự sinh xe.
+- Gate phải có hướng, mode và kiểm tra connectivity; không nâng nearest-edge thành cổng đã duyệt.
+- Tách capacity, trip rate, lịch hoạt động, mode share, occupancy và source/evidence thành bảng.
+- Giữ 11 mục đích, bin 15 phút và tour/leg liên kết; xử lý lượt về qua nửa đêm, xe rỗng và đưa đón.
+- Bảo toàn II/IE/EI/EE; lưu riêng external endpoint và connector trong mô phỏng.
+- Low/base/high thay đổi tham số được công bố, không tune tổng xe để tạo một mức tắc mong muốn.
+- Mỗi nguồn số có locator, năm, đơn vị, phạm vi, license và phép chuyển đổi. WorldPop chỉ là prior.
+
+Giao diện dataset cần cung cấp: scenario/day/seed, trip/tour/leg IDs, facility hoặc external-zone
+nguồn/đích, gate, purpose, intended departure/desired arrival, mode, persons/occupancy, ordered route,
+valuation ID, parameter version và evidence status. Đây là hợp đồng dự kiến, chưa là schema runtime
+đã đăng ký. Validator phải kiểm tra uniqueness, referential integrity, tổng người/xe/chuyến và
+requested/inserted/arrived/unroutable/unfinished; không loại chuyến lỗi khỏi mẫu số một cách im lặng.
+
+Giữ train seeds 11/23/37, validation 53/71, test 101/131/167; tách thêm tập fit hệ số QUBO khỏi test.
+Các split còn phải hold out ngày/profile/sự kiện, không chỉ khác seed. Không xáo trộn frame/trip
+của cùng một ngày vào cả train và test.
+
+Chế độ `research_synthetic` dự kiến cho phép thí nghiệm có giả định được ghi nhận nhưng vẫn bắt buộc
+route/safety/accounting gates. Nó không biến `assumption_only` thành `available_reviewed`, không đổi
+source-backed coverage và không vượt `assert_production_ready`. Các tham số volume/occupancy còn
+thiếu phải được lập thành assumption register trước khi sinh tập chạy, không điền ngầm trong code.
+
+Nghiệm thu M2: seed tái lập được, không nhân capacity theo mảnh polygon, đủ phân loại biên (zero có
+lý do), route hợp lệ và mọi chuyến dự định có thể nối sang ledger đánh giá. Báo cáo nguồn phải phân
+biệt thông tin quan sát, suy luận chuyển giao và giả định; chưa được kết luận lợi ích thực tế.
+
+## Bằng chứng và thiết kế nền (2026-09-17)
+
 Ngày kiểm chứng: 2026-09-17. Giữ nguyên net và overlay đang dùng; không thay bằng
 ranh giới hành chính Quận 7. Đây là thiết kế có inventory chạy được, **chưa phải
 dataset OD đã hiệu chỉnh và chưa phải route dataset hoàn chỉnh để train chính thức**.
