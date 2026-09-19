@@ -21,8 +21,10 @@ game engine knows how to show a city. Strong open-source patterns point in the s
 - [SumoUE4](https://github.com/iwer/SumoUE4) highlights the need to separate SUMO data from visual
   representation.
 
-The local framework follows those patterns without copying their code. Godot is the current
-reference renderer, but the contracts should be renderer-independent.
+The local framework follows those patterns without copying their code. Unreal is the active
+renderer; Godot is the legacy parity reference. The contracts remain renderer-independent.
+The [UE asset pipeline](UNREAL_ASSET_PIPELINE.md) and
+[delivery plan](SYSTEM_DELIVERY_PLAN.md) define the next implementation, not current capability.
 
 ## Authority ownership
 
@@ -33,10 +35,10 @@ Only one layer owns each kind of truth.
 | SUMO/SUMO-RL | routes, vehicle motion, queues, traffic-light phases, traffic-event effects | visual assets, camera framing, finance decisions |
 | Python bridge | scenario config, SUMO execution, output parsing, normalized traces, metrics, finance scoring | hand-authored visual choices |
 | Semantic overlay | zone meaning, public-finance labels, demand anchors, candidate investment metadata | road/lane geometry truth |
-| Godot renderer | assets, materials, calibrated camera rigs, replay UI, visual zones, optical visibility and synthetic frame export | traffic physics or RL state |
-| Future Unity/Unreal/CARLA adapters | alternate visual/sensor implementation | changing bridge contracts ad hoc |
+| Unreal renderer | assets, materials, calibrated camera rigs, replay UI, visual zones and planned sensor exports | traffic physics or finance decisions |
+| Legacy Godot / other adapters | parity reference or alternate visual/sensor implementation | changing bridge contracts ad hoc |
 
-If ownership is ambiguous, prefer SUMO for traffic state and Godot for visual state.
+If ownership is ambiguous, prefer SUMO for traffic state and the active renderer for visual state.
 
 ## End-to-end flow
 
@@ -45,7 +47,7 @@ SUMO/SUMO-RL
   -> net.xml / routes / tripinfo / edge data / FCD / TLS / events
   -> Python bridge contracts
   -> render adapter contract
-  -> Godot reference renderer
+  -> Unreal adapter (Godot retained for parity)
   -> visual replay / optical visibility / camera frames / labels / demo UI
 ```
 
@@ -58,10 +60,10 @@ OSM/SUMO map
   -> auto micro-zoning
   -> semantic overlay
   -> prepared SUMO net
-  -> Godot visual overlay and replay
+  -> Unreal visual overlay and replay
 ```
 
-Godot editing must happen on prepared real-map artifacts: SUMO geometry, semantic overlay, render
+Renderer editing must happen on prepared real-map artifacts: SUMO geometry, semantic overlay, render
 manifest, and visual catalogs. Standalone toy authoring scenes are not part of the production path.
 
 ## Render bridge layers
@@ -84,7 +86,10 @@ SumoRenderBridge
 The bridge should expose one run summary so smoke tests and demo scripts can decide whether the
 visual integration is trustworthy.
 
-## Current implementation mapping
+## Legacy Godot implementation mapping
+
+The mappings below describe reusable concepts and the legacy implementation, not completed UE
+features. Consult the Unreal migration plan for its verified implementation status.
 
 | Framework role | Current Godot/Python implementation |
 |---|---|
@@ -127,7 +132,7 @@ The report matters because visual correctness must be testable, not only inspect
 
 ## Extension strategy
 
-Godot remains the reference renderer. Future Unity/Unreal/CARLA work should consume the same bridge
+Godot remains the legacy parity reference. Unreal and any future adapters consume the same bridge
 contracts rather than forking the backend.
 
 Recommended adapter boundary:

@@ -1,5 +1,13 @@
 # Unreal render adapter migration plan
 
+## Accepted next delivery (2026-09-19)
+
+The user selected semi-realistic interactive rendering on the existing machine, free resources,
+native editable asset catalogs and a first demo corner on the unchanged map. The new
+[asset pipeline design](UNREAL_ASSET_PIPELINE.md) specifies components, profiles, replacement tests,
+streaming and sensor boundaries. [System delivery plan](SYSTEM_DELIVERY_PLAN.md) owns milestone
+dependencies. These are planned changes; the verified scaffold below has not gained them yet.
+
 ## Boundary and authority
 
 `render_unreal/TrafficRender.uproject` is a renderer/sensor adapter, not a game. SUMO remains
