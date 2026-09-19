@@ -1,0 +1,14 @@
+id = "TASK-094"
+owner = "integrator"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "29af2d6"
+allowed_paths = ["coordination/tasks/094_remove_legacy_renderer.toml", "coordination/tasks/093_system_delivery_plan_docs.toml", "docs/", "README.md", "render/", "render_assets/", "render_unreal/README.md", ".gitignore", "ai_quantum_hvtc/", "scripts/", "tests/", "frontend/", "data/README.md", "simulation_projects/"]
+dependencies = ["TASK-093"]
+acceptance_commands = ["uv run pytest", "uv run python -m ai_quantum_hvtc doctor", "git diff --cached --check"]
+status = "done"
+
+[handoff]
+summary = "User-authorized removal of the legacy renderer, preserving shared visual assets and updating active documentation and neutral consumers; implementation milestones remain planned."
+validation = ["Full pytest suite passed; two new roundtrip contract tests passed separately.", "Ruff passed for updated runtime/template/contract files.", "Doctor passed with optional legacy governance warnings.", "72 moved GLB/PNG source assets verified byte-identical to base Git objects.", "Active documentation relative links and scoped whitespace checks passed.", "TASK-093 validated at ae3cbae before renderer cleanup commits."]
+risks = ["Historical task manifests remain audit records, not active runnable instructions.", "Uncommitted UE demo/config work is preserved and excluded from release commits."]
+next_steps = ["Implement approved M0 gates before treating UE capture, calibrated demand or shared RL reward as complete."]

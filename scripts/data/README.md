@@ -1,51 +1,23 @@
 # Data scripts
 
-These scripts prepare or validate dataset folders for the three project streams:
+Dataset preparation/validation covers cv_yolo, rl_sumo and public_finance. Templates and inventory
+tools do not establish calibrated data or a trained model.
 
-- `cv_yolo`: image/video/annotation datasets for YOLO-based traffic sensing.
-- `rl_sumo`: SUMO/SUMO-RL scenario inputs and generated simulation artifacts.
-- `public_finance`: cost, budget, public-value, and sensitivity tables.
-
-The scripts are intentionally light in this scaffold. They define expected folders and manifest
-shapes before real datasets exist.
-
-## Synthetic CV dataset
-
-`prepare_synthetic_cv_dataset.py` defines the Godot-rendered YOLO dataset contract:
+## Synthetic image dataset template
 
 ```powershell
-uv run python scripts/data/prepare_synthetic_cv_dataset.py `
-  --dataset-id SYNTH-CV-GODOT-V0 `
-  --output-root data/processed/cv_yolo `
-  --init-template `
-  --validate
+uv run python scripts/data/prepare_synthetic_cv_dataset.py --dataset-id SYNTH-CV-UE-V0 --output-root data/processed/cv_yolo --init-template --validate
 ```
 
-Generated images, labels, videos, and render logs must stay out of Git. Push processed dataset
-folders to the Drive Data Hub with:
+This initializes metadata/layout; it does not render images. The UE RGB/depth/instance exporter is
+planned. See [sensor contract](../../docs/02_ARCHITECTURE/SYNTHETIC_VISUAL_SENSOR_DATASET.md).
 
-```powershell
-uv run python scripts/cloud/drive_desktop_sync.py `
-  --drive-root "<Data Hub local path>" `
-  push-dataset `
-  --stream cv_yolo `
-  --dataset-id SYNTH-CV-GODOT-V0 `
-  --source data/processed/cv_yolo/SYNTH-CV-GODOT-V0
-```
+Use scripts/cloud/drive_desktop_sync.py push-dataset with stream cv_yolo, dataset ID and source
+directory for a dry-run copy plan before --apply. Generated datasets/images/models stay in DVC/Drive,
+not Git.
 
-Add `--apply` only after the dry-run copy plan is correct.
-
-## Godot synthetic CV smoke
-
-After the template contract exists, run one tiny Godot export to prove the pipeline can create real
-PNG frames and YOLO labels:
-
-```powershell
-uv run python scripts/render/godot_synthetic_cv_smoke.py `
-  --dataset-id SYNTH-CV-GODOT-SMOKE `
-  --output-root data/processed/cv_yolo `
-  --force
-```
-
-This is a smoke dataset, not a training dataset. It exists to verify the data shape before we build
-the full SUMO trace → Godot 3D render → YOLO dataset exporter.
+prepare_demand_inventory.py groups candidate facility parents and historical population priors.
+prepare_map_economic_profile.py joins map entities and explicit economic assumptions. Neither
+invents observed OD counts, entrance gates or measured intervention benefits. Follow
+[retained demand design](../../docs/02_ARCHITECTURE/CURRENT_ROI_DEMAND_DATASET_DESIGN.md) and
+[delivery plan](../../docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md).

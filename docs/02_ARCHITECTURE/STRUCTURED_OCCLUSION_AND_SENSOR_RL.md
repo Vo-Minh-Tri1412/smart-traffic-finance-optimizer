@@ -4,8 +4,8 @@
 
 The project may train the traffic-control RL policy before a YOLO model exists. The first visual
 sensor should be a deterministic, headless geometry-based partial-observation layer driven by SUMO
-traces and a shared calibrated-camera contract. Godot imports the same calibration for parity and
-later RGB/depth capture. YOLO is optional at this stage and is introduced later to model
+traces and a shared calibrated-camera contract. Planned Unreal RGB/depth capture must use that same
+calibration. YOLO is optional at this stage and is introduced later to model
 detector-specific errors or to validate the synthetic sensor pipeline.
 
 This keeps the traffic simulator, visual sensor, and policy layers separate:
@@ -61,9 +61,9 @@ The render bridge should eventually produce one visibility record per vehicle an
 ```
 
 The exact values may be approximate, but the ordering must be physically consistent. The V1 engine
-uses a deterministic software depth/instance buffer over vehicle cuboids. A later Godot pass should
-use RGB plus depth and instance/object-ID buffers; the current Godot smoke path uses projected
-rectangles and is not yet an occlusion-quality dataset.
+uses a deterministic software depth/instance buffer over vehicle cuboids. The planned Unreal pass
+must use synchronized RGB, depth and instance/object-ID buffers; projected rectangles alone are not
+an occlusion-quality dataset.
 
 ### Required geometry fields
 
@@ -74,8 +74,8 @@ rectangles and is not yet an occlusion-quality dataset.
 - Road/lane elevation when bridges, ramps or overpasses are in the ROI.
 - Vehicle ground offset and visual-asset scale.
 
-`body_height` in the current Godot vehicle script is a render placement value, not a canonical
-vehicle roof height. A future schema must distinguish vehicle dimensions from ground/world offsets.
+Canonical vehicle height and ground/world offsets are distinct fields in vehicle_trace.v2.
+An imported visual mesh must not silently redefine the physical dimensions used by the sensor.
 
 ## Structured sensor noise
 

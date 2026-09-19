@@ -1,5 +1,12 @@
 # Smart Traffic Public Finance Optimizer
 
+The accepted [system delivery plan](docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md) and
+[Unreal asset pipeline](docs/02_ARCHITECTURE/UNREAL_ASSET_PIPELINE.md) define the next implementation.
+The user-selected source map stays unchanged (169 TLS in the inspected net); the initial investment
+pilot uses 8 eligible signals while the full network runs. Plans and synthetic research assumptions
+are not completed capabilities or real-world economic results. The retired renderer is no longer a
+fallback; see [current status](docs/04_STATUS/IMPLEMENTATION_STATUS.md).
+
 AI Quantum HVTC challenge project for **smart traffic control** and **public-finance
 investment prioritization**.
 
@@ -40,7 +47,7 @@ for sensor realism:
 
 The current repository is a technical scaffold with a working SUMO backend and a renderer-neutral
 trace bridge. It contains the simulation architecture, SUMO export/run/parse flow, preliminary
-fixed-time and rule-based baselines, legacy Godot and active Unreal adapter work, Drive-backed
+fixed-time and rule-based baselines, active Unreal adapter work, Drive-backed
 data/artifact workflow, and notebook entrypoints. It does **not** yet contain a final trained RL
 policy, final YOLO model, polished Unreal demo UI,
 production camera dataset exporter, or approved real-world finance assumptions.
@@ -52,8 +59,8 @@ vehicles and roads stay in one coordinate system.
 
 Render integration is organized as a **SUMO-backed render bridge**: SUMO/Python produce versioned
 geometry, vehicle trace, traffic-light, event, overlay, and sensor artifacts. Unreal Engine is the
-active renderer target; the existing Godot project is retained as a legacy parity reference during
-migration. This keeps the backend renderer-agnostic without rewriting the simulation core.
+active renderer target. The previous renderer has been removed; shared visual sources live in
+`render_assets/`. This keeps the backend renderer-agnostic without rewriting the simulation core.
 
 ## Research framing
 
@@ -196,7 +203,7 @@ detector-based observations.
 
 Unreal Engine is scoped as a source-controlled synthetic renderer:
 
-- low-poly public-service district, not photorealistic open-world simulation;
+- semi-realistic UE demo on the retained map, within the RTX 3050 4 GB budget;
 - reusable actors/components for roads, vehicles, cameras, traffic lights, and semantic overlays;
 - fixed traffic cameras near hospitals, schools, industrial gates, bottlenecks, and arterial roads;
 - vehicle assets for motorbike, car, bus, truck, ambulance, and worker shuttle;
@@ -209,7 +216,7 @@ Unreal must not replace SUMO-RL. It is a visual/sensor layer that consumes simul
 `render_unreal/` folder contains the Unreal C++ project and bridge plugin; generated editor/build
 state stays ignored. The official experimental Unreal MCP and editor toolsets are development
 accelerators only, not runtime frame transport or a required production dependency. The legacy
-`render/` Godot project remains available for contract-parity checks during migration.
+renderer project has been retired; contract tests remain engine-neutral or Unreal-specific.
 
 ## The three model layers
 
@@ -240,8 +247,8 @@ Current status:
 - `requirements-colab.txt` includes `ultralytics` and OpenCV for cloud training.
 - Local default `uv sync` does not install YOLO yet.
 - No real CV dataset or trained YOLO model is claimed.
-- The Unreal source/plugin scaffold exists under `render_unreal/`; the legacy Godot replay remains
-  under `render/`. Production depth/instance visibility export is not yet claimed.
+- The Unreal source/plugin scaffold exists under `render_unreal/`; source assets live under
+  `render_assets/`. Production depth/instance visibility export is not yet claimed.
 
 ### 2. SUMO-RL traffic-control model
 
@@ -446,7 +453,7 @@ docs/02_ARCHITECTURE/     # SUMO-RL, data workflow, sensors, renderer contracts
 docs/03_COMPETITION/      # AI Quantum HVTC competition facts
 frontend/                 # future React contract and mock-data layer
 notebooks/                # Colab/Kaggle entrypoints
-render/                   # legacy Godot visual replay kept for migration parity
+render_assets/             # shared visual source models and textures for UE import
 render_unreal/            # active Unreal C++ replay/synthetic-sensor adapter
 simulation_projects/      # map-intake workspace and DVC pointers for external map artifacts
 tests/                    # unit, integration, smoke, fixtures

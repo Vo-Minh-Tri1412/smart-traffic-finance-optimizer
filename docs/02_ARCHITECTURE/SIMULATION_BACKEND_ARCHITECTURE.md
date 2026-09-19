@@ -25,7 +25,7 @@ district_spec.json or OSM/SUMO map source
   -> tripinfo / edge_data / fcd outputs
   -> SimulationResult metrics
   -> simulation_trace.jsonl
-  -> Godot replay / React dashboard / public-finance scoring
+  -> Unreal replay / React dashboard / public-finance scoring
 ```
 
 Python does not replace SUMO. Python prepares or accepts SUMO inputs, calls SUMO, parses SUMO
@@ -36,8 +36,8 @@ into versioned contracts such as vehicle traces, traffic-light traces, event tra
 overlays, and render run manifests. Renderers consume those contracts; they should not call into
 private Python internals.
 
-For OSM-based maps, do not manually redraw the entire road network in Godot. Use SUMO geometry as
-the road/lane source of truth and use Godot for rendering, semantic annotation, assets, cameras, and
+For OSM-based maps, do not manually redraw the entire road network in Unreal. Use SUMO geometry as
+the road/lane source of truth and use Unreal for rendering, semantic annotation, assets, cameras, and
 dataset generation.
 
 ## Quận 7 OSM/SUMO-first path
@@ -51,7 +51,7 @@ district7.project.json
   -> synthetic demand/routes
   -> SUMO run-sumo-net
   -> FCD trace
-  -> Godot replay from the same .net.xml
+  -> Unreal replay from the same .net.xml
 ```
 
 The committed project descriptor and overlay are small metadata files. The actual OSM/SUMO artifacts
@@ -196,7 +196,7 @@ Current trace schema:
 simulation_trace_frame.v1
 ```
 
-Vehicle-level trace frames are produced from SUMO FCD output and consumed by Godot replay. Aggregate
+Vehicle-level trace frames are produced from SUMO FCD output and consumed by Unreal replay. Aggregate
 frames are allowed for dashboard or validation backend views, but not for full vehicle replay.
 
 Render bridge work should use the names in `RENDER_BRIDGE_SCHEMA_VERSIONS`:
@@ -218,10 +218,10 @@ The word "dataset" means different things in each model layer:
 | Layer | Dataset/source | Notes |
 |---|---|---|
 | RL/control | SUMO/SUMO-RL rollouts | observation, action, reward, next observation, done, metrics, seed, scenario |
-| CV/YOLO sensor | Godot-rendered camera frames driven by SUMO traces | image, label, camera config, render preset, frame id |
+| CV/YOLO sensor | Unreal-rendered camera frames driven by SUMO traces | image, label, camera config, render preset, frame id |
 | Public finance/QUBO | scenario metrics + candidate costs/value assumptions | investment candidates, budget, public-value score, constraints |
 
-Godot is not the RL simulator. A learned CV model is optional for the first RL experiment: a
+Unreal is not the RL simulator. A learned CV model is optional for the first RL experiment: a
 geometry-based optical visibility adapter can produce partial observations from SUMO traces before
 YOLO exists. SUMO traces remain the bridge between traffic dynamics and rendered camera frames.
 

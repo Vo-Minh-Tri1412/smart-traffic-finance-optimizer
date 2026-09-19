@@ -7,9 +7,9 @@
   "license_or_permission": "unknown|public|team-created|permission-recorded",
   "created_by": "[Điền]",
   "created_date": "YYYY-MM-DD",
-  "intended_use": "Godot authoring seed before SUMO simulation",
+  "intended_use": "SUMO geometry and semantic input for Unreal replay",
   "geographic_basis": "real district|synthetic district|hybrid",
-  "coordinate_system": "unknown|WGS84|SUMO meters|Godot meters|other",
+  "coordinate_system": "unknown|WGS84|SUMO meters|Unreal centimeters|other",
   "expected_scale": {
     "intersection_count": null,
     "road_count": null,

@@ -10,7 +10,7 @@ full OSM/SUMO map
 → road classification / review flags
 → generated semantic overlay
 → prepared SUMO ROI net when requested
-→ generated Godot preview data
+→ generated renderer-neutral preview data
 → QA report
 ```
 
@@ -28,7 +28,7 @@ full OSM/SUMO map
   anchoring, and public-finance interpretation instead of leaving them as invisible points.
 - Small roads inside zones are flagged first; they are not deleted automatically.
 - SUMO remains the source of truth for road/lane geometry.
-- Godot renders roads from the prepared SUMO geometry and renders buildings symbolically from zone
+- The planned Unreal visual layer renders roads from the prepared SUMO geometry and renders buildings symbolically from zone
   assets, not from thousands of real OSM buildings.
 
 ## Zone taxonomy v1
@@ -93,7 +93,7 @@ The generated files are:
 
 - `semantic_overlay.generated.json`
 - `road_review.generated.json`
-- `godot_preview.generated.json`
+- `render_preview.generated.json`
 - `qa_report.json`
 - `qa_report.md`
 - `<roi>.prepared.net.xml` when `--clip-sumo-net` is used

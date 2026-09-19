@@ -98,7 +98,7 @@ Use DVC for large or generated artifacts:
 
 - raw OSM extracts;
 - SUMO `.net.xml`, `.rou.xml`, `.sumocfg`, tripinfo, edge/lane outputs, FCD traces;
-- Godot-generated frame datasets and YOLO labels;
+- Unreal-generated frame datasets and YOLO labels;
 - training run outputs from Colab/Kaggle/local;
 - model checkpoints and exported weights;
 - large videos or rendered demo captures.

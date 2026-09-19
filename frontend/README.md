@@ -1,21 +1,13 @@
-# Frontend Architecture Placeholder
+# Research dashboard
 
-This folder prepares the future React simulator UI without adding Node/Vite dependencies yet.
+React/Vite/TypeScript frontend for the FastAPI service in ai_quantum_hvtc/dashboard.
+Run npm install (or npm ci with the lockfile), npm run dev for development, and npm run build to
+produce dist/. The dev server proxies /api; the backend can serve the built frontend.
 
-The frontend should not run traffic physics. It should replay backend artifacts:
+Views cover district, replay, runs, comparison, finance and system state.
+contracts/ and mock-data/ remain fixtures for tests and explicit demo mode; they are not retained-map
+traffic or calibrated finance evidence. The current backend defaults to fixture/reference data.
+Official retained-map integration must disable seeding and use matching experiment/run artifacts.
 
-- `contracts/district_spec.schema.json`
-- `contracts/simulation_trace.schema.json`
-- `contracts/metrics_summary.schema.json`
-- `contracts/public_finance_summary.schema.json`
-- `mock-data/*.json`
-
-Target UI modules:
-
-- District map view
-- Traffic replay timeline
-- Scenario/controller comparison
-- Public-finance decision panel
-- Evidence and caveat panel
-
-SUMO/SUMO-RL remains the high-fidelity backend. The future React UI reads trace and summary files.
+See [UI architecture](docs/UI_ARCHITECTURE.md), [trace design](docs/TRACE_REPLAY_DESIGN.md) and
+[system delivery plan](../docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md).

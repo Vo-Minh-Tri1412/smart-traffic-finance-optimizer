@@ -2,8 +2,8 @@
 
 This document defines the artifact contracts between SUMO/Python and render adapters.
 
-JSON/XML are used when data crosses process or language boundaries. Godot `.tres` resources are used
-only for Godot-owned visual configuration.
+JSON/XML are used when data crosses process or language boundaries. UE-native Data Assets are the
+planned editing surface for renderer-only configuration; see [asset pipeline](UNREAL_ASSET_PIPELINE.md).
 
 ## Contract versions
 
@@ -19,9 +19,8 @@ only for Godot-owned visual configuration.
 | `sensor_dataset_manifest` | `sensor_dataset_manifest.v1` | render sensor exporter | Python training workflow | frames, labels, masks, camera config, provenance |
 
 `visibility_trace.v1` is produced by the deterministic Python geometry camera. It rasterizes
-canonical vehicle cuboids into a software depth/instance buffer and does not depend on Godot meshes
-or player-camera LOD. The Godot smoke path remains a projected-bounds plumbing test; it is not the
-visibility producer.
+canonical vehicle cuboids into a software depth/instance buffer and does not depend on Unreal meshes
+or presentation-camera LOD. This geometry producer is not a completed Unreal RGB/instance exporter.
 
 Existing `simulation_trace_frame.v1` remains supported for backward compatibility. New render bridge
 work should prefer `vehicle_trace.v2` naming for vehicle-level replay.
@@ -39,7 +38,7 @@ Minimum fields:
   "traffic_light_trace": "traffic_lights.jsonl",
   "semantic_overlay": "semantic_overlay.json",
   "event_trace": "events.jsonl",
-  "renderer": "godot",
+  "renderer": "unreal",
   "quality_report": "render_bridge_quality_report.json"
 }
 ```
@@ -110,7 +109,7 @@ front-bumper centre, so consumers must not treat it as the centre of the vehicle
 
 With the SUMO Sublane model, FCD `x,y` already includes the physical lateral displacement. The
 separate `pos_lat_m` is preserved and interpolated as lateral-motion state, but replay must **not**
-add it to `x,y` a second time. Godot fits each vehicle's fallback mesh or imported visual asset to
+add it to `x,y` a second time. The renderer must fit each fallback mesh or imported visual asset to
 the canonical `width_m × height_m × length_m` proxy after mapping that FCD pose.
 
 ## Camera-zone streaming
@@ -123,9 +122,9 @@ are not a blank fallback plane.
 
 ## `camera_calibration.v1`
 
-Camera calibration is JSON rather than a Godot `.tres` resource so Python geometry visibility and
-Godot receive the same physical source. It contains camera pose in `sumo_xy_meters_z_up`, intrinsics,
-image size, clipping planes, capture interval and target lanes. Godot converts this coordinate system
+Camera calibration is JSON so Python geometry visibility and
+Unreal receive the same physical source. It contains camera pose in `sumo_xy_meters_z_up`, intrinsics,
+image size, clipping planes, capture interval and target lanes. Unreal converts this coordinate system
 through the active SUMO world mapper; free-fly camera state is never used.
 
 `geometry_raster_size` may be lower than the future RGB resolution for fast RL visibility runs. The
@@ -201,7 +200,7 @@ Overlay owns meaning, not road geometry.
 }
 ```
 
-Godot uses `.tres` catalogs to decide how a `healthcare` zone looks.
+Planned UE Data Asset catalogs decide how a `healthcare` zone looks without changing its semantics.
 
 ## `event_trace.v1`
 
@@ -223,7 +222,7 @@ Events describe scenario state that may affect traffic in SUMO and visuals in re
 }
 ```
 
-Traffic effects belong to SUMO/Python. Godot may show cones, warnings, damaged vehicles, or camera
+Traffic effects belong to SUMO/Python. Unreal may show cones, warnings, damaged vehicles, or camera
 labels, but it does not decide route capacity.
 
 ## `sensor_dataset_manifest.v1`

@@ -1,183 +1,71 @@
-# Synthetic Visual Sensor Dataset and Optical Visibility Contract
+# Synthetic visual sensor dataset contract
 
-This document defines the first technical contract for the computer-vision layer.
-It is intentionally a contract, not a finished dataset. The project can train RL before YOLO by
-using a geometry-based optical visibility adapter. YOLO remains an optional detector layer for later
-detector-specific error modeling and validation.
+This specifies the intended Unreal RGB/depth/instance dataset and existing renderer-neutral dataset
+layout/validation. It does not claim a completed UE exporter or trained YOLO model.
+See [implementation status](../04_STATUS/IMPLEMENTATION_STATUS.md) and
+[delivery plan](SYSTEM_DELIVERY_PLAN.md).
 
-## Why this layer exists
+## Source and observation boundary
 
-The traffic simulator already knows the internal truth: vehicle ids, positions, routes, speeds,
-queues, and traffic-light states. A real camera does not know those values. It only sees pixels.
+SUMO run → versioned vehicle/TLS trace → calibrated UE camera → synchronized RGB/depth/instance →
+labels and visibility → optional detector → lane features with uncertainty → policy.
+Ground truth may generate labels/reward/evaluation, but a detector receives pixels and a camera-based
+policy receives observed features, never hidden IDs/counts or economic trip intent.
 
-For that reason, the visual sensor layer must follow one rule:
+Geometry visibility may train RL before YOLO. It consumes canonical dimensions and current SUMO
+state for closed-loop experiments. A prerecorded baseline trace cannot represent the traffic changed
+by another policy. Offline replay is appropriate for dataset generation and detector evaluation.
 
-> The CV model may use rendered camera frames, but it must not read hidden simulator state at
-> inference time.
+## Dataset layout and provenance
 
-During dataset generation, the renderer may use simulator truth to create labels. During model
-inference, YOLO only receives images. This makes the camera layer meaningful instead of a fake
-shortcut.
+Use data/processed/cv_yolo/<dataset_id>/ with images/train, images/val, labels/train, labels/val,
+data.yaml, dataset_manifest.json, render_manifest.json and camera configuration.
+Add depth/instance artifacts and per-frame metadata when the verified capture producer exists.
+Dataset IDs, train/validation/test run membership and source checksums must be stable.
 
-## Intended pipeline
+Record source SUMO run, map/demand hashes, renderer version, camera calibration, timestamp, image
+size, class mapping, asset snapshot, weather/preset, visibility method and known limitations.
+Split by run/day/scenario/camera, not adjacent random frames. Generated images/models stay out of
+Git and use the DVC/Drive data workflow.
 
-```text
-SUMO/SUMO-RL run
-  -> vehicle trajectories and traffic-light timeline
-  -> calibrated Godot 3D camera and visibility pass
-  -> visible/occluded lane features for geometry-only RL
-  -> optional RGB/depth/instance frames and YOLO labels
-  -> optional detector training/evaluation on Colab/Kaggle/cloud GPU
-  -> observed detections/counts and uncertainty
-  -> sensor observation contract used by the traffic system
-```
+## Labels and physical visibility
 
-The renderer is allowed to stay synthetic in early versions. Synthetic geometry is useful because it is
-aligned with the simulated district, can include weather/lighting perturbations, and avoids the
-awkward mismatch where a real-world dataset sees real cars while the demo city uses simple icons.
+Separate physical visual classes from simulation/economic roles. Vehicle-type metadata may include
+motorbike, car, bus, truck, ambulance, worker shuttle, taxi/ride-hailing and delivery bike, but the
+detector's class mapping must merge visually indistinguishable roles or mark them unknown.
+Do not label an unmarked car by an invisible passenger purpose.
 
-The first visibility model does not require a trained CV model. Camera pose, FOV, lane geometry and
-vehicle 3D dimensions can determine approximate depth ordering and visible fraction. This models
-structured bus/truck occlusion. It does not by itself model false positives, class confusion,
-rain/glare or motion-blur detector failures.
+The camera_calibration.v1 artifact owns pose, intrinsics, image size, clipping and capture interval.
+The sensor is not a free-fly camera. Use front-bumper-to-center conversion and canonical dimensions,
+ground clearance and available road elevation. Missing elevation stays a declared flat assumption.
 
-The Godot project is intentionally organized as a real app under `render/`, not as a loose asset
-folder. Simulation vehicle types should map to Godot scenes through the Godot-native vehicle asset
-catalog:
+Instance identities must be stable across pooling/seek and support more than 255 active identities.
+Use depth-correct visible masks; projected rectangles are not occlusion labels. Export amodal bounds
+separately if needed. Test bus/truck occlusion, image-edge truncation, fully hidden objects and empty
+frames. Presentation LOD must not discard sensor occluders. Noise comes after visibility.
 
-```text
-vehicle_type = "ambulance"
-  -> render/resources/catalogs/VehicleAssetCatalog.tres
-  -> res://scenes/vehicles/Ambulance.tscn
-  -> DetectionCamera captures rendered pixels
-  -> YOLO label exporter writes class id and bounding box
-```
+## Unreal capture design
 
-The old JSON asset manifest remains compatibility-only. Visual asset choices that only Godot needs
-belong in `.tres` catalogs so designers can edit them in the Inspector.
+UE-only camera/label/assets are configured through Data Assets and scene profiles, with exported
+read-only metadata snapshots. Sensor RGB and masks must agree on time and geometry; incompatible
+motion blur/antialiasing must not silently contaminate labels. Start with Editor batch capture;
+Movie Render Queue Object IDs are Editor-only, not promised in shipping builds.
+See [asset pipeline](UNREAL_ASSET_PIPELINE.md).
 
-## Dataset layout
+## Existing template tooling
 
-Each dataset lives under a dataset id, for example:
-
-```text
-data/processed/cv_yolo/SYNTH-CV-GODOT-V0/
-├── images/
-│   ├── train/
-│   └── val/
-├── labels/
-│   ├── train/
-│   └── val/
-├── data.yaml
-├── dataset_manifest.json
-├── render_manifest.json
-└── camera_config.template.json
-```
-
-Generated frames, labels, videos, and render logs are not committed to Git. The repo only commits
-scripts, contracts, fixtures, and documentation.
-
-## Default classes
-
-The initial YOLO class list is:
-
-- `motorbike`
-- `car`
-- `bus`
-- `truck`
-- `ambulance`
-- `worker_shuttle`
-- `taxi_ride_hailing`
-- `delivery_bike`
-
-This list is deliberately tied to the project’s district simulation rather than a generic COCO
-vehicle list. It preserves policy-relevant differences: emergency vehicles, public transport,
-logistics, industrial commute, and small urban vehicles.
-
-## What each manifest means
-
-`data.yaml` is the training-facing YOLO config.
-
-`dataset_manifest.json` records the dataset id, format, class names, and whether the folder is only
-a template or contains real generated frames.
-
-`render_manifest.json` records the renderer and source run: SUMO/SUMO-RL run id, Godot render id,
-camera ids, image size, weather profiles, and caveats.
-
-`camera_config.template.json` is the bridge between map design and visual sensing. It describes where
-cameras are placed and why they exist. Production camera entries must also record calibrated pose,
-FOV/intrinsics, image size, capture interval and the target approaches/intersections. Later, this
-should be generated from the district spec or render manifest rather than handwritten in isolation.
-
-## Drive workflow
-
-Local generated data should be pushed to the CS Data Hub through Google Drive Desktop:
+From repository root:
 
 ```powershell
-uv run python scripts/cloud/drive_desktop_sync.py `
-  --drive-root "<local Data Hub path>" `
-  push-dataset `
-  --stream cv_yolo `
-  --dataset-id SYNTH-CV-GODOT-V0 `
-  --source data/processed/cv_yolo/SYNTH-CV-GODOT-V0
+uv run python scripts/data/prepare_synthetic_cv_dataset.py --dataset-id SYNTH-CV-UE-V0 --output-root data/processed/cv_yolo --init-template --validate
+uv run python scripts/data/prepare_synthetic_cv_dataset.py --dataset-root data/processed/cv_yolo/SYNTH-CV-UE-V0 --validate
 ```
 
-The command is dry-run by default. Add `--apply` only after the copy plan looks correct.
+Template validation is not rendering. An empty template can pass with a warning; it is not a
+training-ready dataset. Actual frames require image/label pairing, bounds, provenance and visual QA.
+Use scripts/cloud/drive_desktop_sync.py push-dataset in dry-run mode before --apply, with the
+configured Data Hub, stream cv_yolo, dataset ID and source directory.
 
-## Validation commands
-
-Create a smoke template:
-
-```powershell
-uv run python scripts/data/prepare_synthetic_cv_dataset.py `
-  --dataset-id SYNTH-CV-SMOKE `
-  --output-root data/processed/cv_yolo `
-  --init-template `
-  --force
-```
-
-Validate it:
-
-```powershell
-uv run python scripts/data/prepare_synthetic_cv_dataset.py `
-  --dataset-root data/processed/cv_yolo/SYNTH-CV-SMOKE `
-  --validate
-```
-
-The validator accepts an empty template as a warning-only state. Once real frames exist, it checks
-image/label pairing and YOLO label ranges.
-
-## Contract boundary
-
-- It does not train YOLO.
-- It does not export a final large-ROI RGB/depth/instance dataset yet.
-- It does not replace SUMO/SUMO-RL.
-- It does not claim synthetic data is equivalent to real traffic-camera footage.
-- It does not yet provide a canonical `height_m`/road-elevation contract for vehicles.
-
-The original smoke exporter only proves the PNG/label plumbing. The newer sensor smoke path is the
-architecture target:
-
-```text
-SUMO trace replay in Godot
-  -> DetectionCamera3D rigs from CameraRigCatalog.tres
-  -> RGB viewport frame
-  -> ObjectIdRegistry + mask-pass interface
-  -> YOLO labels + object-id mask image + sensor_frame_manifest.jsonl
-```
-
-The current object-id mask smoke uses projected Godot replay vehicle nodes to produce an object-id
-mask artifact. It is intentionally shaped like the future material/object-id render pass, but it is
-not a depth-correct occlusion labeler. The production pass must use depth/instance visibility or an
-equivalent deterministic geometry algorithm before the dataset is used for sensor claims.
-
-Godot-only sensor configuration is stored as `.tres` resources:
-
-- `CameraRigCatalog.tres`: editable multi-camera rigs, roles, splits, FOV, and image size.
-- `LabelMappingCatalog.tres`: project vehicle types mapped to YOLO class ids/names.
-
-Cross-system outputs remain JSON/JSONL/YAML because Python, Colab/Kaggle, Drive, and review scripts
-need to read them.
-
-For the verified implementation state and remaining physical-visibility work, read
-[Implementation Status](../04_STATUS/IMPLEMENTATION_STATUS.md).
+The old renderer image smoke command has been retired. UE depth/instance capture, dataset-scale QA,
+YOLO training and detector-error calibration remain future work. No real-camera equivalence or
+closed-loop detector-control result is implied by creating a dataset folder.

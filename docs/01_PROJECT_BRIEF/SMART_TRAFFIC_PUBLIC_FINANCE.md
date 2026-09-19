@@ -59,7 +59,7 @@ Lead/CS owns:
 - SUMO/SUMO-RL environment setup
 - fixed-time and rule-based baseline controllers
 - SUMO metric, trace, and report export
-- Godot/render technical pipeline
+- Unreal/render technical pipeline
 - RL training/evaluation scripts
 - reproducible metrics and reports
 - public-value scoring implementation
@@ -94,6 +94,6 @@ Near-term success means:
 
 - SUMO backend can run fixed-time and rule-based baselines on the district spec.
 - Baseline reports are readable by Economics without opening code.
-- Godot can replay a SUMO trace with placeholder scenes.
+- Unreal can replay a SUMO trace; polished catalog-based assets remain a delivery milestone.
 - Economics can fill cost/scenario templates without coding.
 - CS and Economics agree on reward/public-value v0 before RL claims.

@@ -1,24 +1,18 @@
 # Render asset intake
 
-## Current road asset pipeline
+Unreal is the active renderer. Shared source GLB/PNG assets live in render_assets/ at repository root.
+They are not yet a complete native UE catalog. The current replay actor still uses canonical
+cuboid proxies; [asset pipeline](../02_ARCHITECTURE/UNREAL_ASSET_PIPELINE.md) describes planned
+Data Assets, attachment slots, physical validation and scene profiles.
 
-Roadside assets are registered as `RoadsidePropEntry` resources with a target size in metres. Godot
-measures the instantiated GLB bounds, scales it to that physical envelope, and places it outside the
-visual lane surface. The initial catalog uses the available directional sign, large/small trees and
-planter assets. Traffic signals remain a separate calibrated layer.
+## Needed assets
 
-## Assets still needed from the asset search
+- P0: sidewalk/curb straight, corner and curb-ramp modules.
+- P0: simple and arterial street-light poles; signal heads with separately controllable lenses.
+- P0: bus-stop shelter, sign, bench and route board; the reserved source folder is empty.
+- P1: guardrails, bollards, separators, utility cabinets and urban furniture.
 
-These are visual improvements, not blockers for road geometry or zone placement:
-
-1. **P0 — sidewalk/curb modules:** straight, corner, curb-ramp and drainage variants.
-2. **P0 — street lights:** a simple pole, a double-arm arterial pole and a short residential pole.
-3. **P0 — bus-stop kit:** shelter, pole/sign, bench and route board. The current `bus_stops/`
-   asset folder is empty.
-4. **P1 — road safety kit:** guardrail, bollard, lane separator/delineator and non-construction
-   barrier.
-5. **P1 — urban furniture:** bin, bench, utility cabinet and parking sign.
-
-Each GLB should have a documented real-world envelope (`width_m`, `height_m`, `depth_m`) and a
-ground-aligned origin where possible. It can then be added to `RoadStyleCatalog.tres` without
-changing road-placement code.
+Each asset needs source/license, real envelope, forward axis, ground pivot, material/texture slots
+and LOD choices. Register it in the future UE catalog rather than branching placement code on paths.
+Imported buildings are illustrative unless footprints/heights are validated; they do not establish
+facility capacity or economic value. Preserve source bytes and attribution during import.

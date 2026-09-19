@@ -4,7 +4,7 @@ This folder is organized by operational responsibility.
 
 - `admin/`: repository governance and manifest validation.
 - `smoke/`: local smoke checks for installed tools such as SUMO/SUMO-RL, including the Quận 7
-  SUMO-net/Godot replay roundtrip.
+  SUMO-net/Unreal-contract roundtrip.
 - `data/`: dataset preparation and validation helpers. These scripts may write into ignored
   local data folders or Google Drive Desktop folders, never into tracked dataset files.
 - `artifacts/`: training-run and artifact folder scaffolding.

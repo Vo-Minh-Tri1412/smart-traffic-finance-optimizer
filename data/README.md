@@ -19,7 +19,7 @@ Use DVC for:
 
 - raw OSM extracts;
 - SUMO network/routes/traces/tripinfo outputs;
-- Godot synthetic CV datasets;
+- Unreal synthetic CV datasets (planned capture);
 - Colab/Kaggle training outputs;
 - model checkpoints and exported weights.
 
