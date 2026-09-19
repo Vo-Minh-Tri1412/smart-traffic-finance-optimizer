@@ -1,5 +1,50 @@
 # Map-aware public-investment QUBO v1
 
+## Accepted measurement protocol (2026-09-19; not implemented experiments)
+
+[System delivery plan](SYSTEM_DELIVERY_PLAN.md) starts with 8 eligible candidates on the unchanged
+full network. Non-upgraded signals retain the same fixed-time baseline. The shared mask-conditioned
+RL checkpoint, observation contract, demand, routing assumptions and cost evaluator are frozen
+before coefficient measurement. Training a different amount for each mask is not this protocol.
+
+For each scenario/seed measure the empty mask, 8 singleton masks and all 28 pairs: **37 configurations**.
+Use the same intended demand in each paired comparison, including adverse outcomes outside each
+candidate's own approaches. Candidate selection uses development baseline results, never final test.
+If the validated pilot has fewer than 8 candidates, use `1 + n + n*(n-1)/2` and report actual scope.
+
+Planned default seed allocation: RL train 11/23/37; RL validation 53/71; coefficient fit 211/223/237;
+surrogate validation 251/263; final test 101/131/167. Hold out day/profile/incident configurations as
+well as seeds. Generate and freeze a deterministic list of up to 16 budget-feasible masks with at
+least 3 upgrades for surrogate validation; none enters singleton/pair coefficient fitting. Report
+when fewer distinct masks are feasible rather than filling the set with duplicates.
+
+Use the same network cost `F` as the RL evaluator, annualized only with explicit calendar weights:
+
+```text
+B_i = F(0) - F(i)
+I_ij = F(i) + F(j) - F(i,j) - F(0)
+```
+
+Every term carries run IDs, hashes, checkpoint, valuation and scenario/seed provenance. Preserve
+negative effects and compare predicted versus measured held-out portfolio benefit. Parameter bounds
+are not statistical confidence intervals; report paired-run variation separately.
+
+Verify the 8-node pilot by exact solve, compare greedy and a seeded CPU QUBO heuristic, and report
+feasibility/energy. Beyond the exact solver's cap, use bounded heuristic runs without optimality or
+quantum-advantage claims. Missing unmeasured pair coefficients in larger pilots remain a documented
+model limitation, not evidence of zero interaction.
+
+Re-evaluate selected portfolios on final test scenarios after validation and tuning are frozen.
+Budget feasibility alone does not imply fairness: apply service/access acceptance checks after
+SUMO re-evaluation; do not label a failing or under-evidenced portfolio recommended. If the surrogate
+is inaccurate, report that failure and retain directly measured classical comparisons rather than
+publishing an unsupported full-map rank. Larger candidate sets follow pilot validation, not exhaustive
+RL retraining over all masks.
+
+Capex/opex, price year, calendar and discount/horizon inputs require evidence or explicitly labelled
+research assumptions. Their absence does not authorize a hidden default. No actual recommendation,
+measured investment effect or trained policy is created by saving this protocol.
+
 ## Decision boundary
 
 This QUBO chooses a portfolio of intersections or corridors under a capital budget. It consumes

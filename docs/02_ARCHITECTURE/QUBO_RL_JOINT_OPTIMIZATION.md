@@ -1,5 +1,18 @@
 # QUBO and RL Joint Optimization
 
+## Selected first protocol (2026-09-19)
+
+The first delivery now selects **frozen shared mask-conditioned policy evaluation**, not retraining
+per mask and not online alternating optimization. Begin with 8 eligible signals while all traffic
+continues on the unchanged 169-TLS source network. The checkpoint and evaluator stay fixed throughout
+singleton/pair fitting and held-out testing. See [measurement protocol](MAP_AWARE_QUBO.md) for the
+37 configurations, seed separation and portfolio validation, and
+[System delivery plan](SYSTEM_DELIVERY_PLAN.md) for dependency gates.
+
+The broader alternating loop below remains future research, not a required first-delivery feature.
+If later fine-tuning a selected mask, treat it as a separate experiment with a new checkpoint and
+evaluation record; do not reuse old coefficient provenance as if the policy had not changed.
+
 ## Decision
 
 QUBO and RL should be linked through a bilevel or alternating workflow, not collapsed into one
