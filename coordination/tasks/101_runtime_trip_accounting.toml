@@ -1,0 +1,47 @@
+id = "TASK-101"
+owner = "integrator"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "4d32368f5b9221b61c9da2864c1876d1d287c10f"
+allowed_paths = [
+  "coordination/tasks/101_runtime_trip_accounting.toml",
+  "ai_quantum_hvtc/experiments/runtime_accounting.py",
+  "ai_quantum_hvtc/experiments/executor.py",
+  "ai_quantum_hvtc/experiments/cli.py",
+  "ai_quantum_hvtc/simulation/engines/sumo/existing_net.py",
+  "tests/unit/experiments/test_runtime_accounting.py",
+  "tests/unit/experiments/test_executor.py",
+  "tests/unit/experiments/test_cli.py",
+  "tests/integration/sumo/test_existing_sumo_net_runner.py",
+  "docs/04_STATUS/IMPLEMENTATION_STATUS.md",
+  "docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md",
+]
+dependencies = ["TASK-098", "TASK-099", "TASK-100"]
+acceptance_commands = [
+  "uv run pytest tests/unit/experiments/test_runtime_accounting.py tests/unit/experiments/test_executor.py tests/unit/experiments/test_cli.py -q",
+  "uv run pytest tests/integration/sumo/test_existing_sumo_net_runner.py::test_debug_experiment_runs_real_sumo_and_freezes_output_identity -q",
+  "uv run ruff check ai_quantum_hvtc/experiments/runtime_accounting.py ai_quantum_hvtc/experiments/executor.py ai_quantum_hvtc/experiments/cli.py ai_quantum_hvtc/simulation/engines/sumo/existing_net.py tests/unit/experiments/test_runtime_accounting.py tests/unit/experiments/test_executor.py tests/unit/experiments/test_cli.py tests/integration/sumo/test_existing_sumo_net_runner.py",
+  "uv run mypy --follow-imports=silent ai_quantum_hvtc/experiments/runtime_accounting.py ai_quantum_hvtc/experiments/executor.py ai_quantum_hvtc/experiments/cli.py ai_quantum_hvtc/simulation/engines/sumo/existing_net.py",
+  "git diff --check -- ai_quantum_hvtc/simulation/engines/sumo/existing_net.py tests/integration/sumo/test_existing_sumo_net_runner.py docs/04_STATUS/IMPLEMENTATION_STATUS.md docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md",
+  "uv run python -c 'from pathlib import Path; paths = [Path(\"ai_quantum_hvtc/experiments/runtime_accounting.py\"), Path(\"ai_quantum_hvtc/experiments/executor.py\"), Path(\"ai_quantum_hvtc/experiments/cli.py\"), Path(\"tests/unit/experiments/test_runtime_accounting.py\"), Path(\"tests/unit/experiments/test_executor.py\"), Path(\"tests/unit/experiments/test_cli.py\"), Path(\"coordination/tasks/101_runtime_trip_accounting.toml\")]; bad = [(str(p), n) for p in paths for n, line in enumerate(p.read_text(encoding=\"utf-8\").splitlines(), 1) if line.endswith((\" \", \"\\t\"))]; print(\"trailing whitespace:\", bad); raise SystemExit(bool(bad))'",
+]
+status = "done"
+
+[handoff]
+summary = "Persist an identity-bound runtime_trip_accounting.v1 artifact for managed debug runs, with optional frozen TASK-100 ledger input, exact routed-ID validation, fail-closed TripInfo joining, and separate whole-simulation Summary/Statistic counters. No-ledger runs explicitly report per-trip demand accounting unavailable; dynamic route flows cannot be reconciled exactly and fail closed. This does not enable research or safety claims."
+validation = [
+  "Focused experiments unit tests passed: 21 passed.",
+  "Real-SUMO managed debug integration passed: 1 passed; test demonstrates one arrived vehicle, output identity/hash verification, and an unfinished TripInfo row that remains unverified when local SUMO emits vaporized=\"end\".",
+  "Scoped Ruff passed for the listed implementation, tests, and integration file.",
+  "Scoped mypy passed with --follow-imports=silent for runtime_accounting.py, executor.py, cli.py, and SUMO existing_net.py.",
+  "Scoped git diff --check passed for tracked files; a trailing-whitespace scan passed for the new/untracked source, unit tests, and task manifest.",
+]
+risks = [
+  "Accounting covers requested vehicle trips and whole-simulation vehicle/event counters; it does not estimate people or occupancy and does not validate action safety.",
+  "When no intended ledger is supplied, per-trip accounting remains unavailable; route IDs never create a demand ledger.",
+  "Dynamic route flows are rejected because exact requested-trip IDs cannot be enumerated from that route-input form.",
+  "On local SUMO 1.27.1, unfinished-at-end TripInfo emits vaporized=\"end\" instead of the documented boolean form; this is retained as unverified rather than guessed as unfinished.",
+  "Retained-map intended/served-demand and route-failure ledger plus runtime-safety evidence are still missing. Research gate remains closed and M0 remains in progress.",
+]
+next_steps = [
+  "Build retained-map intended/served-demand and route-failure evidence, then satisfy runtime-safety requirements before research execution.",
+]

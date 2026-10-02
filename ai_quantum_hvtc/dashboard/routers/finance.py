@@ -5,6 +5,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from ai_quantum_hvtc.public_finance.scoring import UnavailableMetricsError
+
 from ..context import DashboardContext, get_context
 from ..schemas import (
     CandidateScoreModel,
@@ -43,6 +45,8 @@ def optimize(request: FinanceOptimizeRequest, ctx: Ctx) -> FinanceOptimizeRespon
             algorithm=request.algorithm,
             include_qubo=request.include_qubo,
         )
+    except UnavailableMetricsError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     except RunStoreError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except DashboardServiceError as exc:

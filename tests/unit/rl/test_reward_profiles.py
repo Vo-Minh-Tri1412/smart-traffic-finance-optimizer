@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -73,6 +74,50 @@ def test_training_blockers_keep_draft_and_pending_hard_constraints_from_training
 
     assert any("requires 'approved'" in blocker for blocker in blockers)
     assert any("hard constraints require" in blocker for blocker in blockers)
+
+
+def test_action_filter_constraint_cannot_be_acknowledged_or_disabled() -> None:
+    spec = load_district_spec(SPEC_PATH)
+    profile = replace(
+        load_reward_profile(PROFILE_PATH),
+        hard_constraints_block_training=False,
+    )
+
+    blockers = training_blockers(
+        profile,
+        spec,
+        allow_draft_reward=True,
+        acknowledge_pending_hard_constraints=True,
+    )
+
+    assert any(
+        "action-filter/override layer" in blocker
+        and "emergency_vehicle_preemption" in blocker
+        for blocker in blockers
+    )
+
+
+def test_unknown_constraint_enforcement_cannot_be_acknowledged() -> None:
+    spec = load_district_spec(SPEC_PATH)
+    profile = load_reward_profile(PROFILE_PATH)
+    unknown_constraint = replace(
+        profile.hard_constraints[0],
+        enforcement="unknown_enforcement",
+    )
+    profile = replace(
+        profile,
+        hard_constraints=(unknown_constraint,),
+        hard_constraints_block_training=False,
+    )
+
+    blockers = training_blockers(
+        profile,
+        spec,
+        allow_draft_reward=True,
+        acknowledge_pending_hard_constraints=True,
+    )
+
+    assert any("unsupported value: unknown_enforcement" in blocker for blocker in blockers)
 
 
 def test_configured_reward_weights_priority_vehicles_more_heavily() -> None:

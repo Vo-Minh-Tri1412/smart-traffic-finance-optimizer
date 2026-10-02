@@ -1,0 +1,39 @@
+id = "TASK-104"
+owner = "integrator"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "4d32368f5b9221b61c9da2864c1876d1d287c10f"
+allowed_paths = [
+  "coordination/tasks/104_training_output_reservation.toml",
+  "scripts/training/rl_sumo_train.py",
+  "tests/integration/cli/test_rl_sumo_train_cli.py",
+  "docs/04_STATUS/IMPLEMENTATION_STATUS.md",
+  "docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md",
+]
+dependencies = ["TASK-102", "TASK-103"]
+acceptance_commands = [
+  "uv run pytest tests/integration/cli/test_rl_sumo_train_cli.py tests/unit/rl/test_action_guard.py tests/unit/rl/test_reward_profiles.py tests/integration/sumo/test_sumo_rl_action_guard.py -ra",
+  "uv run ruff check scripts/training/rl_sumo_train.py tests/integration/cli/test_rl_sumo_train_cli.py",
+  "uv run mypy --follow-imports=silent scripts/training/rl_sumo_train.py",
+  "git diff --check -- scripts/training/rl_sumo_train.py tests/integration/cli/test_rl_sumo_train_cli.py docs/04_STATUS/IMPLEMENTATION_STATUS.md docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md",
+  "uv run python -c 'import tomllib; from pathlib import Path; manifest = Path(\"coordination/tasks/104_training_output_reservation.toml\"); tomllib.loads(manifest.read_text(encoding=\"utf-8\")); paths = [manifest, Path(\"scripts/training/rl_sumo_train.py\"), Path(\"tests/integration/cli/test_rl_sumo_train_cli.py\"), Path(\"docs/04_STATUS/IMPLEMENTATION_STATUS.md\"), Path(\"docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md\")]; bad = [(str(p), n) for p in paths for n, line in enumerate(p.read_text(encoding=\"utf-8\").splitlines(), 1) if line.endswith((\" \", \"\\t\"))]; print(\"trailing whitespace:\", bad); raise SystemExit(bool(bad))'",
+]
+status = "done"
+
+[handoff]
+summary = "Atomically reserve the requested SUMO-RL training output directory only after local-runtime, reward-profile, hard-constraint, and map-economic blockers pass, and before exporting SUMO inputs or creating an environment/policy. Existing or partial directories fail without modification or resume; no cleanup occurs after a partial failure. Dry-run and blocked training remain write-free. This lifecycle change does not bypass TASK-102, change reward/profile semantics, or enable research."
+validation = [
+  "Focused pytest acceptance command passed: 35 passed, including CLI regressions proving dry-run and TASK-102 blockers write no output, duplicate partial output preserves a sentinel and stops before SUMO export, and a fresh output is reserved before export.",
+  "The real SUMO-RL packaged single-intersection action-guard test also passed in the focused suite; two upstream PettingZoo render_mode warnings were emitted.",
+  "Scoped Ruff passed for rl_sumo_train.py and the training CLI tests.",
+  "Scoped mypy passed with --follow-imports=silent for rl_sumo_train.py.",
+  "Scoped git diff --check passed for tracked training code, CLI tests, and owned docs.",
+  "Task TOML parsed successfully and trailing-whitespace scan passed for every allowed path.",
+]
+risks = [
+  "A failure after reservation intentionally leaves the partial directory in place; a retry must choose a new output directory.",
+  "The task prevents output overwrite but does not make model training scientifically valid or provide experiment-input hashes/verification.",
+  "TASK-102 still blocks actual training while emergency action filtering is pending. Research gate remains closed and M0 remains in progress.",
+]
+next_steps = [
+  "Keep actual training blocked until emergency runtime filtering/clearance and the remaining data/evaluation gates have independent evidence.",
+]

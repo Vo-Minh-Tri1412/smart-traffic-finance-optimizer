@@ -1,247 +1,63 @@
-# Simulation backend architecture
+# Simulation backend: hai đường chạy chưa hợp nhất
 
-This document is the canonical map for the Python simulation package. It explains what the
-simulation folders do, where SUMO actually runs, and which pieces are only validation helpers.
+Audit 2026-09-20. SUMO là nguồn traffic truth; reference backend chỉ là test double.
+Không thay net giữ nguyên bằng DistrictSpec fixture.
 
-## Status
-
-- SUMO is the official traffic simulation backend.
-- SUMO-RL is the intended RL environment path.
-- The reference backend is validation-only. It is not a simulator for final claims or demos.
-- `tests/fixtures/specs/toy_public_district_v1.json` is a synthetic fixture/test project, not the final
-  district choice.
-- The current direction is OSM/SUMO-first for the full Quận 7 map or a reviewed ROI of roughly 100
-  signalized intersections: SUMO `.net.xml` owns road/lane/junction geometry, while a semantic
-  overlay owns zones, flows, investment candidates, camera anchors and finance labels.
-
-## Main flow
-
-```text
-district_spec.json or OSM/SUMO map source
-  -> specs/domain validation or OSM/SUMO intake profile
-  -> routing and route-policy checks / external SUMO route generation
-  -> SUMO XML export or existing SUMO .net.xml
-  -> SUMO/netconvert runtime
-  -> tripinfo / edge_data / fcd outputs
-  -> SimulationResult metrics
-  -> simulation_trace.jsonl
-  -> Unreal replay / React dashboard / public-finance scoring
-```
-
-Python does not replace SUMO. Python prepares or accepts SUMO inputs, calls SUMO, parses SUMO
-outputs, and normalizes results for the rest of the project.
-
-For render integration, Python is the producer of bridge artifacts. It should normalize SUMO outputs
-into versioned contracts such as vehicle traces, traffic-light traces, event traces, semantic
-overlays, and render run manifests. Renderers consume those contracts; they should not call into
-private Python internals.
-
-For OSM-based maps, do not manually redraw the entire road network in Unreal. Use SUMO geometry as
-the road/lane source of truth and use Unreal for rendering, semantic annotation, assets, cameras, and
-dataset generation.
-
-## Quận 7 OSM/SUMO-first path
-
-Large real maps use a different source shape from the toy `district_spec` fixture:
-
-```text
-district7.project.json
-  -> SUMO .net.xml source
-  -> semantic_overlay.v1
-  -> synthetic demand/routes
-  -> SUMO run-sumo-net
-  -> FCD trace
-  -> Unreal replay from the same .net.xml
-```
-
-The committed project descriptor and overlay are small metadata files. The actual OSM/SUMO artifacts
-stay in DVC/Drive. The semantic overlay is intentionally separate from geometry: zones, public-value
-tags, demand anchors, and candidate traffic lights reference SUMO IDs instead of copying every road
-into JSON.
-
-Use `simulate validate-sumo-net` to check a descriptor or `.net.xml`, and `simulate run-sumo-net` to
-run an existing net with a route file.
-
-## Package map
-
-```text
-ai_quantum_hvtc/simulation/
-├── domain/       # typed objects for district specs
-├── specs/        # load and validate district_spec JSON
-├── routing/      # route policies and route constraints
-├── controllers/  # controller identities/contracts
-├── engines/      # execution backends
-│   ├── sumo/     # official SUMO adapter/export/run/parse path
-│   └── reference/# lightweight validation backend/test double only
-├── metrics/      # SimulationResult and normalized metrics
-├── traces/       # replay/dashboard trace contract
-└── cli.py        # simulate validate/run/compare command entrypoint
-```
-
-## What each layer owns
-
-### `domain/`
-
-Defines the Python representation of the district spec:
-
-- zones;
-- intersections;
-- roads;
-- vehicle types;
-- OD flows;
-- scenarios;
-- controllers;
-- investment candidates;
-- finance assumptions.
-
-This layer does not run traffic. It is the typed vocabulary that lets the rest of the package reason
-about the spec safely.
-
-### `specs/`
-
-Loads and validates `district_spec.json`.
-
-It should fail early when:
-
-- a road points to an unknown intersection;
-- a flow references an unknown zone;
-- a vehicle mix references an unknown vehicle type;
-- an investment candidate points to a missing intersection;
-- truck restrictions or route policies cannot be checked.
-
-### `routing/`
-
-Builds route choices for flows before SUMO receives routes.
-
-Examples:
-
-- shortest-time route;
-- congestion-aware placeholder route;
-- truck-legal route;
-- priority-fastest route for emergency vehicles.
-
-Routing is a helper for SUMO export and metrics attribution. It is not a traffic simulator.
-
-### `controllers/`
-
-Owns controller identities and contracts such as:
-
-- `fixed_time`;
-- `rule_based`;
-- `rl_policy`.
-
-The actual SUMO execution for these controllers belongs under `engines/sumo/`. For example, a
-rule-based controller may be implemented through SUMO/TraCI behavior while still sharing the common
-controller id.
-
-### `engines/sumo/`
-
-This is the official backend path.
-
-```text
-exporter.py  -> writes SUMO nodes/edges/routes/additional/config files
-runner.py    -> calls SUMO/netconvert and handles runtime checks
-parser.py    -> parses tripinfo, edge data, controller logs, and FCD trace
-adapter.py   -> wraps export/run/parse into one SimulationEngine implementation
-config.py    -> SUMO runtime configuration
-errors.py    -> clear SUMO runtime errors
-```
-
-SUMO owns the traffic dynamics: movement, queues, departures, arrivals, FCD positions, and network
-simulation. The Python adapter is deliberately small because it is a bridge to SUMO, not a custom
-traffic engine.
-
-### `engines/reference/`
-
-The reference backend is a lightweight validation/test double.
-
-It may be used for:
-
-- CI tests that should not depend on external SUMO binaries;
-- fast smoke checks of specs, metrics, and finance code;
-- deterministic toy validation.
-
-It must not be used for:
-
-- final demo claims;
-- traffic realism claims;
-- RL training claims;
-- public-finance conclusions.
-
-If docs mention the reference backend, they should call it validation-only.
-
-### `metrics/`
-
-Normalizes backend output into `SimulationResult`.
-
-Important metrics include:
-
-- total and average waiting time;
-- queue proxies;
-- throughput;
-- stopped vehicles;
-- emergency delay;
-- bus passenger delay;
-- truck/logistics delay;
-- per-intersection metrics;
-- controller intervention counts.
-
-### `traces/`
-
-Exports versioned trace frames for replay/dashboard consumers.
-
-Current trace schema:
-
-```text
-simulation_trace_frame.v1
-```
-
-Vehicle-level trace frames are produced from SUMO FCD output and consumed by Unreal replay. Aggregate
-frames are allowed for dashboard or validation backend views, but not for full vehicle replay.
-
-Render bridge work should use the names in `RENDER_BRIDGE_SCHEMA_VERSIONS`:
-
-```text
-geometry_manifest.v1
-vehicle_trace.v2
-traffic_light_trace.v1
-semantic_overlay.v2
-event_trace.v1
-render_run_manifest.v1
-sensor_dataset_manifest.v1
-```
-
-## Data meanings by model
-
-The word "dataset" means different things in each model layer:
-
-| Layer | Dataset/source | Notes |
+| Đường | Hiện có | Giới hạn |
 |---|---|---|
-| RL/control | SUMO/SUMO-RL rollouts | observation, action, reward, next observation, done, metrics, seed, scenario |
-| CV/YOLO sensor | Unreal-rendered camera frames driven by SUMO traces | image, label, camera config, render preset, frame id |
-| Public finance/QUBO | scenario metrics + candidate costs/value assumptions | investment candidates, budget, public-value score, constraints |
+| DistrictSpec → exporter → netconvert → SUMO | Fixture export, fixed/rule runner, training scaffold | Dựng net mới; không phải retained map |
+| district7.project.json → existing .net.xml → SUMO | Net index, validated polygon overlay, legacy demand/route tooling, fixed-time runner | Chưa có demand dataset trên polygon hiện tại; chưa rule/RL retained-net |
 
-Unreal is not the RL simulator. A learned CV model is optional for the first RL experiment: a
-geometry-based optical visibility adapter can produce partial observations from SUMO traces before
-YOLO exists. SUMO traces remain the bridge between traffic dynamics and rendered camera frames.
+M0 TASK-095: simulation/maps/overlay.py đọc cả roi_semantic_overlay.v2 và semantic_overlay.v1,
+không đổi schema hoặc suy ra cổng từ geometry. Validate descriptor thật pass; CLI báo demand missing,
+2.588 polygon chưa có anchor. Smoke dừng trước routing khi không có flows. Cấu trúc hợp lệ chưa
+chứng minh demand hành vi hoặc run nghiên cứu. Xem [audit A1](../04_STATUS/IMPLEMENTATION_STATUS.md).
 
-## Synthetic fixture policy
+## Ownership và package
 
-`tests/fixtures/specs/toy_public_district_v1.json` is a synthetic fixture used to keep tests reproducible.
-It is not the final demo district, not a real-world claim, and not a product direction.
+- simulation/domain, specs: typed DistrictSpec và validation.
+- simulation/maps: source index, overlay, demand, ROI utilities.
+- simulation/routing: route policies; không phải simulator.
+- simulation/engines/sumo: export/run/parse và existing_net runner.
+- simulation/engines/reference: deterministic validation-only.
+- simulation/metrics, traces: kết quả và replay artifacts.
+- simulation/controllers: ID/contracts không bảo đảm mọi backend hỗ trợ mọi controller.
 
-Use it only for:
+Parser hiện có waitingTime, TripInfo/FCD và aggregate metrics, nhưng bus occupancy=20,
+failed_route_count/reroute_count=0 hard-code; chưa đối soát mọi intended trip.
+Không dùng các trường đó như bộ đánh giá xã hội đã hoàn chỉnh.
 
-- smoke tests;
-- SUMO export/run/parse checks;
-- replay contract tests;
-- baseline/report fixture output;
-- dependency and adapter smoke checks before the large ROI.
+Legacy simulation_trace_frame.v1 phục vụ aggregate/dashboard; native UE dùng vehicle_trace.v2.
+Geometry/vehicle artifacts chạy được riêng; TLS/event/sensor schema registry không chứng minh
+mọi producer đã chạy trên map thật. [Bridge contracts](RENDER_BRIDGE_CONTRACTS.md) sở hữu wire format.
 
-Do not present it as the final city or district selected by the team.
+## Lệnh kiểm tra
 
-## Implementation status
+```powershell
+uv run python -m ai_quantum_hvtc simulate validate-sumo-net --project simulation_projects/map_intake/district7.project.json
+```
 
-Read [Implementation Status](../04_STATUS/IMPLEMENTATION_STATUS.md) for repository-wide gaps and
-approval dependencies before making large-ROI claims. This document owns the simulation boundary and
-backend contracts.
+Lệnh trên kiểm tra map/overlay và báo riêng trạng thái demand; không chứng minh pipeline đã sẵn sàng.
+Không bypass validation bằng fixture để báo demo chính thức.
+[RL design](SUMO_RL_SYSTEM_DESIGN.md) và [plan](SYSTEM_DELIVERY_PLAN.md) giữ phần cần triển khai.
+
+## Map snapshot trước thí nghiệm (M0, TASK-097)
+
+```powershell
+uv run python -m ai_quantum_hvtc simulate snapshot-sumo-project --project simulation_projects/map_intake/district7.project.json --out artifacts/tmp/m0_snapshot_097/project_snapshot.json
+uv run python -m ai_quantum_hvtc simulate verify-project-snapshot --project simulation_projects/map_intake/district7.project.json --snapshot artifacts/tmp/m0_snapshot_097/project_snapshot.json
+```
+
+Lệnh tạo từ chối ghi đè: chọn output mới nếu snapshot đã tồn tại. `sumo_project_snapshot.v1`
+giữ SHA256/byte size/path của descriptor, net, overlay và demand config; checksum toàn payload;
+inventory tlLogic theo TLS ID/programID, toàn bộ phase/param attributes và connections theo
+linkIndex với from/to/via lane IDs. Không tự tạo clearance hay gán nút eligible.
+Verifier tính lại hashes và inventory, chặn input thay đổi dù chỉ whitespace; cho phép rebind
+--project sang checkout khác chỉ khi byte sources giống hệt. Checksum phục vụ identity/corruption,
+không phải chữ ký bảo đảm authenticity hoặc một kho bất biến trước sửa tay.
+
+Retained map đã kiểm tra: 169 TLS/programs, 1.008 controlled connections, 649 phases, 0 signal
+indices thiếu movement. Có 7 nhóm internal lanes trùng XML index nhưng ID riêng; snapshot ghi
+`lane_index_ambiguities`, không sửa net. Connection from/to index mơ hồ bị chặn; via dùng lane ID.
+Tất cả `control_review_status=pending`: inventory không chứng minh safety, connectivity phục vụ
+demand hoặc 8 nút pilot. Đây mới là map snapshot, chưa là shared experiment/run manifest.

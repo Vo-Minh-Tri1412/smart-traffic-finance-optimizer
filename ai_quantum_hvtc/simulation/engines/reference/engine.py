@@ -120,6 +120,7 @@ class ReferenceGraphEngine(SimulationEngine):
                 if movement.vehicle_type.vehicle_type_id in {"BUS", "SCHOOL_BUS", "WORKER_SHUTTLE"}:
                     passenger_delay = delay * movement.vehicle_type.passenger_count
                     bus_passenger_delay_seconds += passenger_delay
+                    assert intersection_metric.bus_passenger_delay_seconds is not None
                     intersection_metric.bus_passenger_delay_seconds += passenger_delay
                 if movement.vehicle_type.vehicle_type_id in {"HEAVY_TRUCK", "LIGHT_TRUCK"}:
                     truck_delay_seconds += delay

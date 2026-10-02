@@ -21,6 +21,10 @@ network just to make a screenshot. A visual window is not a change to the simula
 
 ## Implementation and extension points
 
+Audit 2026-09-20: lane mesh hiện XY, chưa giữ road Z; vehicle elevation là contract riêng.
+Native counts bao gồm internal records, khác Python external-network index.
+Build/native tests gần nhất được ghi nhận 2026-09-17, chưa rerun trong audit.
+
 Current UE module: TrafficRenderRuntime, with geometry/manifest loaders, coordinate conversion,
 playback clock, replay subsystem/controller, canonical cuboid vehicles and lane mesh ingestion.
 TrafficRenderEditor provides native automation tests. RGB parity, detailed assets, TLS/semantic
@@ -29,7 +33,7 @@ visual layers, physical sensor export and bounded streaming remain implementatio
 Next providers: geometry, vehicle trace, TLS state, semantic overlay, events, asset catalog,
 road styles and sensor export. UE-native Data Assets configure visual resources; shared artifacts
 remain JSON/XML/JSONL. See [asset pipeline](UNREAL_ASSET_PIPELINE.md) and
-[migration status](UNREAL_RENDER_MIGRATION_PLAN.md).
+[native build/run](../../render_unreal/README.md).
 
 ## Contract boundary
 

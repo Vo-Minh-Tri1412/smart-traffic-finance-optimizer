@@ -13,6 +13,11 @@ class RewardProfileError(ValueError):
     """Raised when a reward profile is missing required fields or references."""
 
 
+_SUPPORTED_HARD_CONSTRAINT_ENFORCEMENTS = frozenset(
+    {"action_filter_required", "reward_penalty_only"}
+)
+
+
 class _TrafficSignalLike(Protocol):
     id: str
     lanes: list[str]
@@ -182,6 +187,11 @@ def validate_reward_profile_against_spec(
                     f"{trip_purpose}"
                 )
     for constraint in profile.hard_constraints:
+        if constraint.enforcement not in _SUPPORTED_HARD_CONSTRAINT_ENFORCEMENTS:
+            errors.append(
+                f"hard_constraints.{constraint.constraint_id}.enforcement has unsupported "
+                f"value: {constraint.enforcement}"
+            )
         for vehicle_type in constraint.vehicle_types:
             if vehicle_type not in known_vehicle_types:
                 errors.append(
@@ -214,12 +224,21 @@ def training_blockers(
         for constraint in profile.hard_constraints
         if constraint.enforcement != "reward_penalty_only" and constraint.status != "implemented"
     ]
-    if (
-        profile.hard_constraints_block_training
-        and pending_constraints
-        and not acknowledge_pending_hard_constraints
-    ):
-        ids = ", ".join(constraint.constraint_id for constraint in pending_constraints)
+    required_filter_constraints = [
+        constraint
+        for constraint in pending_constraints
+        if constraint.enforcement == "action_filter_required"
+    ]
+    acknowledgeable_constraints = [
+        constraint
+        for constraint in pending_constraints
+        if constraint.enforcement != "action_filter_required"
+    ]
+    blocking_constraints = required_filter_constraints.copy()
+    if profile.hard_constraints_block_training and not acknowledge_pending_hard_constraints:
+        blocking_constraints.extend(acknowledgeable_constraints)
+    if blocking_constraints:
+        ids = ", ".join(constraint.constraint_id for constraint in blocking_constraints)
         blockers.append(
             "hard constraints require an action-filter/override layer before training: " + ids
         )

@@ -1,56 +1,51 @@
-# Project Target
+# Mục tiêu dự án
 
-This is the durable product and research direction for the project. It describes what the team is
-trying to prove and build; it is not a progress report or task list.
+Quyết định hiện hành, cập nhật 2026-09-28. Đây là mục tiêu, không phải báo cáo hoàn thành.
 
-## North star
+Chốt lại 2026-10-02: ưu tiên trực tiếp SUMO → Unreal trên map hiện tại. Cấu hình hiển thị
+phải chỉnh bằng Unreal Editor qua native Data Asset/Blueprint; đổi mesh, material hoặc camera
+không yêu cầu sửa/build C++. C++ giữ transport và áp traffic truth. Kim chỉ nam được lưu trong
+AGENTS.md; đặc tả thực hiện là UNREAL_ASSET_PIPELINE.md. Không dùng cảnh dàn dựng làm bằng chứng
+simulation tích hợp. Các điều kiện demand/RL/QUBO không chặn mốc kết nối này.
 
-Evaluate traffic-control and investment choices for Quận 7 or a reviewed large ROI using one
-reproducible evidence chain:
+Ưu tiên triển khai hiện tại: hoàn thiện bản đồ OSM giữ lại → mạng và lần chạy SUMO → cảnh
+Unreal có thể chỉnh/sửa assets, LOD và kiểm tra hiệu năng → dashboard/UI đọc cùng map/run.
+Route `randomTrips` cũ chỉ dùng để thử xe và replay; demand hành vi làm sau nền map.
+RL và QUBO tạm hoãn, không chặn mốc thành phố và dashboard này. Các bài toán nghiên cứu dưới
+đây vẫn là mục tiêu dài hạn, chưa phải điều kiện nghiệm thu của giai đoạn đang làm.
 
-```text
-prepared map + demand scenarios
-  -> SUMO traffic dynamics and legal signal control
-  -> observed traffic state and uncertainty
-  -> controller evaluation across scenarios and seeds
-  -> public-value and budget decisions
-```
+## Bốn bài toán
 
-The desired outcome is not a visually impressive city alone. It is a defensible comparison of
-control and investment choices under explicit traffic, sensing, safety and public-value
-assumptions.
+1. Demand: mô hình người/hộ/cơ sở/doanh nghiệp và chuỗi hoạt động tạo chuyến đi, giờ xuất phát,
+   đích, phương tiện, đi chung và lượt về. Tỷ lệ theo building/giờ/loại xe là kết quả tổng hợp
+   hoặc ràng buộc hiệu chỉnh, không phải các tỷ lệ gán độc lập.
+2. RL: điều khiển tín hiệu theo trạng thái được phép quan sát, với safety thực thi tại runtime.
+3. QUBO: chọn danh mục đầu tư dưới ngân sách bằng tác động đo được của cùng bộ điều khiển.
+4. CV: hướng mở rộng tùy chọn, ước lượng observation từ ảnh và kiểm tra sai số closed-loop.
 
-## Durable decisions
+SUMO sở hữu chuyển động, tuyến, pha đèn và traffic state. Unreal hiển thị và hỗ trợ sensor,
+không phải một bài toán nghiên cứu độc lập. Không cần ảnh/CV để bắt đầu baseline oracle.
 
-- SUMO/SUMO-RL owns traffic dynamics, signal legality, routes, queues and operational metrics.
-- Unreal is the renderer, replay client and planned synthetic sensor-data producer; it does not replace SUMO
-  as the traffic simulator.
-- The renderer consumes the same prepared SUMO map and traces as the simulation. It must not invent
-  a separate toy road network for production claims.
-- A shared multi-agent policy is the intended large-ROI control direction. One independent policy
-  per signal is not the target architecture.
-- Public-finance optimization selects long-horizon upgrades under a budget. RL performs
-  short-horizon legal signal control. They are evaluated together but are not one monolithic model.
-- Camera-based claims must use an observation boundary. Hidden SUMO truth may create labels, reward
-  and evaluation metrics, but may not be passed to a camera-based policy as an observation.
-- Generated datasets, training runs, models, screenshots and local simulator outputs are artifacts,
-  not source code. Their provenance belongs in manifests and the implementation status record.
+## Phạm vi và bằng chứng
 
-## Evidence required for final claims
+Giữ nguyên net/overlay hiện tại; không đổi ROI để đạt số lượng nút hoặc tạo nghẽn đẹp.
+Pilot tối đa 8 eligible TLS trên mạng đầy đủ, các nút ngoài pilot giữ baseline.
+Không đồng nhất số TLS trong inventory với số agent đã kiểm chứng.
 
-- A reviewed map/ROI, demand scenarios, signal scope and multiple seeds.
-- Fixed-time and rule-based baselines on the same scenarios.
-- A declared observation mode: oracle, geometry visibility, detector or mixed.
-- Safety, throughput, delay, queue, spillback, emergency, transit, freight and fairness metrics as
-  applicable to the approved evaluation profile.
-- Explicit public-value/cost assumptions for budget claims.
+Đánh giá trên cùng demand và bộ định giá; tách chi phí toàn mạng khỏi reward normalization.
+Không lấy doanh thu building/tổng giá trị lô hàng làm phần tiết kiệm do đèn tạo ra.
+An toàn không được đánh đổi bằng monetary reward; phải báo mức phục vụ và phân phối tác động.
 
-## Reading boundaries
+Nguồn số phải truy được về dữ liệu hoặc giả định. Synthetic có thể nhất quán mà vẫn chưa đúng
+thực tế. Chưa có hiệu chỉnh thì chỉ kết luận trong kịch bản giả định, không khuyến nghị ngân sách thật.
+Không khẳng định RL tối ưu toàn cục, QUBO chính xác toàn mạng hoặc có ưu thế lượng tử.
 
-- Read [Implementation Status](../04_STATUS/IMPLEMENTATION_STATUS.md) for what works now, active
-  gaps and validation evidence.
-- Read [Optical Sensor Target](OPTICAL_SENSOR_TARGET.md) for the camera-based observation target.
-- Read `docs/02_ARCHITECTURE/` for current accepted interfaces and implementation contracts.
+## Thiết kế có thể thay đổi sau kiểm định
 
-Change this document only for a durable product or research decision. Do not use it to record a
-completed task, a local artifact path, or a temporary workaround.
+Shared policy và so PPO/frame-stack/RecurrentPPO là protocol pilot, không phải model đã thắng.
+Đầu tiên freeze checkpoint khi đo QUBO; không vừa thay policy vừa so hệ số đầu tư.
+Sensor geometry trước detector nếu triển khai nhánh CV. Graph policy, alternating optimization,
+raw-image RL và mở rộng đầu tư toàn mạng không là yêu cầu của đợt đầu.
+
+Xem [audit](../04_STATUS/IMPLEMENTATION_STATUS.md), [plan](../02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md)
+và [demand](../02_ARCHITECTURE/CURRENT_ROI_DEMAND_DATASET_DESIGN.md).

@@ -1,0 +1,38 @@
+id = "TASK-100"
+owner = "integrator"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "4d32368f5b9221b61c9da2864c1876d1d287c10f"
+allowed_paths = [
+  "coordination/tasks/100_intended_demand_ledger.toml",
+  "ai_quantum_hvtc/simulation/maps/demand.py",
+  "tests/unit/simulation/test_demand_ledger.py",
+  "tests/unit/simulation/test_sumo_net_source_overlay.py",
+  "docs/04_STATUS/IMPLEMENTATION_STATUS.md",
+  "docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md",
+]
+dependencies = ["TASK-099"]
+acceptance_commands = [
+  "uv run pytest tests/unit/simulation/test_demand_ledger.py tests/unit/simulation/test_sumo_net_source_overlay.py",
+  "uv run ruff check ai_quantum_hvtc/simulation/maps/demand.py tests/unit/simulation/test_demand_ledger.py tests/unit/simulation/test_sumo_net_source_overlay.py",
+  "uv run mypy --follow-imports=silent ai_quantum_hvtc/simulation/maps/demand.py",
+]
+status = "done"
+
+[handoff]
+summary = "Emit a versioned per-requested-vehicle-trip synthetic-demand ledger and reconcile route output by exact vehicle IDs only when each emitted vehicle contains a usable inline route; derive aggregate QA counts from ledger statuses. This does not create demand or claim calibrated field demand."
+validation = [
+  "Focused pytest acceptance command passed: 45 passed, including one real-duarouter trip-ID and route-shape plumbing smoke test.",
+  "Scoped Ruff acceptance command passed.",
+  "Scoped mypy command with --follow-imports=silent passed for demand.py.",
+  "Tests cover exact ID reconciliation, deterministic output/provenance, unrouted trips with unknown reasons, valid empty route output, and fail-closed missing/malformed/duplicate/unmatched identities or vehicles without nonempty inline route edges.",
+  "Router failures preserve the pre-routing intended ledger with routing_unverified rows and null reconciliation counts; no failure causes are inferred.",
+  "The real-duarouter smoke confirmed a generated trip ID is emitted unchanged as a vehicle ID with a nested route containing nonempty edges; this verifies plumbing only, not traffic or research behavior.",
+]
+risks = [
+  "The ledger records assumption-based synthetic requested vehicle trips from explicit overlay demand_flows; it is not calibrated field demand and does not estimate people or occupancy.",
+  "Route failures have no structured source in this generator, so unrouted trip reasons remain unknown.",
+  "The retained map still has no demand_flows; this task neither creates flows nor opens the research or runtime-safety gate.",
+]
+next_steps = [
+  "Build a separately evidenced intended-demand and route-failure ledger for the retained map, then satisfy runtime-safety gates before research execution.",
+]

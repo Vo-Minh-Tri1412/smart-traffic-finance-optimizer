@@ -1,8 +1,10 @@
 # Current ROI travel and OD source review
 
 Reviewed 2026-09-16. This is a source-access and applicability review, not a calibrated demand
-dataset. The user-selected ROI stays exactly `[106.690981, 10.692829, 106.788488, 10.779370]`
-(west, south, east, north; longitude/latitude). Do not replace it with an administrative boundary.
+dataset. The retained project/net defines the unchanged scope. The diagnostic bounding box is
+`[106.690981, 10.692829, 106.788488, 10.779370]` (west, south, east, north);
+it is not an instruction to recut the map or replace it with an administrative boundary.
+Source access/timetables below were not revalidated during the 2026-09-20 repository audit.
 
 The existing `district7_demand.v1.json` explicitly describes a 900-second synthetic policy scenario
 with placeholder demand. The economic profile currently has structural mapping but no reviewed OD

@@ -35,6 +35,10 @@ from ai_quantum_hvtc.simulation.maps import (
     load_sumo_net_index,
     load_sumo_project,
 )
+from ai_quantum_hvtc.simulation.maps.snapshot import (
+    verify_project_snapshot,
+    write_project_snapshot,
+)
 from ai_quantum_hvtc.simulation.maps.source import SumoMapSourceError
 from ai_quantum_hvtc.simulation.specs import load_district_spec
 
@@ -150,8 +154,9 @@ def _cmd_validate_sumo_net(args: argparse.Namespace) -> int:
             net_path = Path(args.sumo_net)
         net_index = load_sumo_net_index(net_path)
         overlay_status = "not_checked"
+        overlay = None
         if project is not None:
-            load_semantic_overlay(project.overlay_path, net_index)
+            overlay = load_semantic_overlay(project.overlay_path, net_index)
             overlay_status = "ok"
     except (OSError, SumoMapSourceError) as exc:
         print(f"[FAIL] {exc}")
@@ -165,6 +170,16 @@ def _cmd_validate_sumo_net(args: argparse.Namespace) -> int:
         "junction_count": net_index.junction_count,
         "traffic_light_count": net_index.traffic_light_count,
         "overlay_status": overlay_status,
+        "overlay_schema_version": overlay.schema_version if overlay else None,
+        "overlay_zone_count": len(overlay.zones) if overlay else None,
+        "overlay_unanchored_zone_count": (
+            sum(not zone.anchor_edges for zone in overlay.zones.values()) if overlay else None
+        ),
+        "demand_flow_count": len(overlay.demand_flows) if overlay else None,
+        "demand_status": (
+            "not_checked" if overlay is None else
+            "legacy_flows_unreviewed" if overlay.demand_flows else "missing"
+        ),
         "bounds_min": list(net_index.bounds_min),
         "bounds_max": list(net_index.bounds_max),
     }
@@ -224,6 +239,26 @@ def _cmd_run_sumo_net(args: argparse.Namespace) -> int:
             indent=2,
         )
     )
+    return 0
+
+
+def _cmd_project_snapshot(args: argparse.Namespace) -> int:
+    try:
+        snapshot = (
+            verify_project_snapshot(args.snapshot, args.project)
+            if args.command == "verify-project-snapshot"
+            else write_project_snapshot(args.project, args.out)
+        )
+    except (OSError, ValueError) as exc:
+        print(f"[FAIL] {exc}")
+        return 1
+    print(json.dumps({
+        "status": "ok", "project_id": snapshot["project_id"],
+        "content_sha256": snapshot["content_sha256"], "scope": snapshot["scope"],
+        "tls_count": snapshot["tls_inventory"]["tls_count"],
+        "program_count": snapshot["tls_inventory"]["program_count"],
+        "controlled_connection_count": snapshot["tls_inventory"]["controlled_connection_count"],
+    }, indent=2))
     return 0
 
 
@@ -358,6 +393,19 @@ def build_parser() -> argparse.ArgumentParser:
     validate_net_parser.add_argument("--project", default=None)
     validate_net_parser.add_argument("--sumo-net", default=None)
     validate_net_parser.set_defaults(func=_cmd_validate_sumo_net)
+
+    snapshot_parser = subparsers.add_parser(
+        "snapshot-sumo-project", help="Freeze input hashes and TLS inventory; no simulation."
+    )
+    snapshot_parser.add_argument("--project", required=True)
+    snapshot_parser.add_argument("--out", required=True)
+    snapshot_parser.set_defaults(func=_cmd_project_snapshot)
+    verify_snapshot_parser = subparsers.add_parser(
+        "verify-project-snapshot", help="Verify snapshot content and current project inputs."
+    )
+    verify_snapshot_parser.add_argument("--project", required=True)
+    verify_snapshot_parser.add_argument("--snapshot", required=True)
+    verify_snapshot_parser.set_defaults(func=_cmd_project_snapshot)
 
     run_parser = subparsers.add_parser("run", help="Run one scenario/controller.")
     run_parser.add_argument("--spec", required=True)

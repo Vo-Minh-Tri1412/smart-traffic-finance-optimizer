@@ -1,5 +1,16 @@
 # Map-aware public-investment QUBO v1
 
+Audit 2026-09-20: module này khác finance legacy đang được dashboard gọi.
+Legacy score cắt adverse savings và budget penalty không slack; không dùng làm kết quả map-aware.
+Chưa có measured coefficient dataset, mask experiment orchestrator hoặc portfolio replay.
+Shared checkpoint protocol dưới đây là mục tiêu, không phải model đã train.
+
+Reward research: [R0/R1 objective rationale, mục 8](RL_QUBO_OBJECTIVE_RATIONALE.md)
+đặc tả thêm lịch hoạt động và ràng buộc rủi ro. Khi so sánh R1, F lấy từ chi phí hành trình
+thô với calendar hợp lệ, không từ return, potential hoặc multiplier đối ngẫu.
+CVaR/mức phục vụ không tự có biểu diễn bậc hai: QUBO chỉ sinh danh mục ứng viên,
+cần rerun và kiểm tra ràng buộc trước khi khuyến nghị. Chưa triển khai phần mở rộng này.
+
 ## Accepted measurement protocol (2026-09-19; not implemented experiments)
 
 [System delivery plan](SYSTEM_DELIVERY_PLAN.md) starts with 8 eligible candidates on the unchanged

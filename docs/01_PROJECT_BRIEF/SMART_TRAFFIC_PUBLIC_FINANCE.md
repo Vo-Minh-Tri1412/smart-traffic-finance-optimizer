@@ -1,99 +1,41 @@
 # Smart Traffic Public Finance Optimizer
 
-## One-sentence idea
+## Câu hỏi nghiên cứu
 
-Use SUMO-RL to optimize traffic signal timing in simulated urban networks, then convert traffic
-outcomes into a public-value and budget-allocation decision layer for public infrastructure
-spending.
+Với nhu cầu đi lại có lập luận hành vi và ngân sách hữu hạn, nên điều khiển đèn thế nào,
+đầu tư tại đâu, và kết quả thay đổi ra sao khi quan sát giao thông không hoàn hảo?
 
-## Competition fit
+Bốn bài toán là Demand, RL, QUBO và CV tùy chọn. SUMO/Unreal là công cụ mô phỏng/hiển thị.
 
-Primary track: **AI for Public Policy and Public Finance**.
+## Demand làm cơ sở
 
-This is not a generic smart-traffic demo with an economics slide at the end. The project must answer
-a public-finance question inside the technical workflow:
+Người/hộ/doanh nghiệp thực hiện hoạt động tại cơ sở có lịch và sức chứa. Mô hình tạo tour
+nhất quán về thời gian, phương tiện và địa điểm; gom lại thành OD/lưu lượng theo giờ.
+Không suy dân số từ diện tích rồi tự gán tỷ lệ xe, không sinh lượt về độc lập với lượt đi.
+Phải mô hình cả dòng vào, ra và xuyên qua biên map.
 
-> With limited budget, which traffic signal interventions produce the highest social return?
+## Tối ưu kép
 
-That means the economics work defines the objective the system is evaluated against, not just the
-story used in the final presentation.
+RL tối ưu vận hành với action hợp lệ. QUBO tối ưu đầu tư bằng chênh lệch chi phí dưới những
+mask đã đo, trên cùng demand, checkpoint và giả định. Công thức chuẩn nằm trong
+[objective rationale](../02_ARCHITECTURE/RL_QUBO_OBJECTIVE_RATIONALE.md).
 
-## Product promise
+Lợi ích là chi phí tránh được so baseline. Tách cost của từng trip khỏi capex/opex danh mục;
+không cộng lại bus passenger cost đã nằm trong tổng, không clip tác động xấu thành zero.
+Giữ an toàn tại action layer và đánh giá tiếp cận/công bằng ngoài monetary score.
 
-The demo should help a public-sector analyst compare traffic-control policies and investment
-choices:
+## Nhánh CV
 
-- fixed-time traffic lights
-- simple rule-based adaptive control
-- SUMO-RL traffic signal control
-- shared multi-agent RL with optional frame-stack/LSTM memory for the large Quận 7/ROI network
-- budget-constrained rollout choices across intersections
+So oracle với quan sát hình học, sau đó với ảnh/detector nếu có dataset và QA.
+Không suy mục đích chuyến đi hoặc giá trị hàng hóa từ lớp xe nhìn thấy.
+CV là tùy chọn mở rộng, không chặn baseline Demand–RL–QUBO.
 
-The public-finance layer is a first-class technical layer. It should estimate:
+## Ranh giới hiện tại
 
-- vehicle waiting time saved
-- value of time saved
-- fuel/emission proxy saved, when assumptions are available
-- implementation and operating cost assumptions
-- net public value under each scenario
-- budget priority score by intersection or scenario
+Repository có các thành phần chạy được riêng, chưa có pipeline nghiên cứu đầu-cuối trên map.
+Fixture, template và demo là công cụ kiểm tra, không phải kết quả nghiên cứu.
+Trạng thái từng module và điều kiện còn thiếu nằm trong
+[audit](../04_STATUS/IMPLEMENTATION_STATUS.md).
 
-Core technical objective:
-
-```text
-public_value_score
-  = monetized/social benefit from reduced delay and queues
-  + optional fuel/emission benefit proxy
-  - implementation and operating cost assumptions
-  - fairness or service-level penalties
-```
-
-The RL policy may initially learn a traffic-safe reward such as reduced waiting time, but the product
-decision is made by the public-value score and budget-allocation layer. This keeps the MVP stable
-while ensuring the economic logic is part of the system, not decorative narration.
-
-## Team split
-
-Lead/CS owns:
-
-- SUMO/SUMO-RL environment setup
-- fixed-time and rule-based baseline controllers
-- SUMO metric, trace, and report export
-- Unreal/render technical pipeline
-- RL training/evaluation scripts
-- reproducible metrics and reports
-- public-value scoring implementation
-- budget allocation/ranking implementation
-- demo/dashboard implementation
-
-Economics/Public Finance owns:
-
-- value-of-time assumptions
-- cost categories and caveats
-- policy scenarios
-- public-value formula and sensitivity ranges
-- budget constraint logic
-- budget-priority narrative
-- judge-facing story and Q&A
-
-Reward and public-value are shared. Economics defines the policy meaning and assumptions; CS turns
-those definitions into executable config, formulas, tests, and reports.
-
-## Non-goals for now
-
-- YOLO is not a prerequisite for the first camera-partial-observation RL experiment; calibrated
-  geometry-based optical visibility may be used first.
-- No custom simulator as the main environment.
-- The package fixture is only a test input; the target is the full Quận 7 SUMO network or a reviewed
-  large ROI.
-- No claim that simulation results are real-world causal proof.
-
-## Success criteria
-
-Near-term success means:
-
-- SUMO backend can run fixed-time and rule-based baselines on the district spec.
-- Baseline reports are readable by Economics without opening code.
-- Unreal can replay a SUMO trace; polished catalog-based assets remain a delivery milestone.
-- Economics can fill cost/scenario templates without coding.
-- CS and Economics agree on reward/public-value v0 before RL claims.
+Track dự kiến: AI for Public Policy and Public Finance. Hồ sơ cuộc thi là tài liệu nguồn có ngày,
+không tự xác nhận deadline hiện hành. Không cần thay map để phù hợp câu chuyện thuyết trình.

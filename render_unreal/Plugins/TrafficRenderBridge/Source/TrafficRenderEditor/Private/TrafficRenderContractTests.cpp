@@ -1,10 +1,14 @@
 #include "Misc/AutomationTest.h"
 
 #include "TrafficRenderBridgeLibrary.h"
+#include "TrafficCityAssetCatalog.h"
+#include "TrafficCityVisualActor.h"
 #include "SumoCoordinateTransform.h"
 #include "TrafficVehicleTrace.h"
 #include "TrafficRenderManifest.h"
 #include "TrafficSumoGeometryActor.h"
+#include "ProceduralMeshComponent.h"
+#include "Engine/StaticMesh.h"
 #include "Editor.h"
 #include "Engine/World.h"
 #include "Misc/Paths.h"
@@ -101,6 +105,26 @@ bool FTrafficRenderArtifactTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("native rendered lane count"), Roads->RenderedLaneCount, 1);
     TestEqual(TEXT("native segment count"), Roads->RenderedSegmentCount, 2);
     TestEqual(TEXT("native junction count"), Roads->JunctionCount, 2);
+    TestEqual(TEXT("fixture geometry occupies one cullable road tile"), Roads->RenderedTileCount, 1);
+    TArray<UProceduralMeshComponent*> RoadComponents;
+    Roads->GetComponents<UProceduralMeshComponent>(RoadComponents);
+    UProceduralMeshComponent* Tile = nullptr;
+    for (UProceduralMeshComponent* Component : RoadComponents)
+    {
+        if (Component && Component->GetNumSections() > 0) Tile = Component;
+    }
+    if (TestNotNull(TEXT("fixture road tile mesh"), Tile))
+    {
+        const FProcMeshSection* Section = Tile->GetProcMeshSection(0);
+        if (TestNotNull(TEXT("fixture road tile section"), Section) && Section->ProcVertexBuffer.Num() >= 8)
+        {
+            TestTrue(TEXT("first segment starts at U=0"), FMath::IsNearlyZero(Section->ProcVertexBuffer[0].UV0.X));
+            TestTrue(TEXT("first 20m segment ends at U=10"), FMath::IsNearlyEqual(Section->ProcVertexBuffer[1].UV0.X, 10.0f));
+            TestTrue(TEXT("second segment continues at U=10"), FMath::IsNearlyEqual(Section->ProcVertexBuffer[4].UV0.X, 10.0f));
+            TestTrue(TEXT("second segment ends at U=20"), FMath::IsNearlyEqual(Section->ProcVertexBuffer[5].UV0.X, 20.0f));
+            TestTrue(TEXT("3.2m lane width maps to V=1.6"), FMath::IsNearlyEqual(Section->ProcVertexBuffer[2].UV0.Y, 1.6f));
+        }
+    }
     Roads->Destroy();
     return true;
 }
@@ -143,6 +167,7 @@ bool FTrafficRenderPreparedRunTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("all prepared network lane geometry loads"), bBuilt);
     if (!bBuilt) AddError(Error);
     TestTrue(TEXT("prepared network contains lane geometry"), Roads->RenderedLaneCount > 0);
+    TestTrue(TEXT("prepared network is divided into multiple road tiles"), Roads->RenderedTileCount > 1);
     const FString ReportDirectory = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Automation"));
     IFileManager::Get().MakeDirectory(*ReportDirectory, true);
     const FString Report = FPaths::Combine(ReportDirectory, TEXT("prepared_run_geometry.json"));
@@ -150,5 +175,48 @@ bool FTrafficRenderPreparedRunTest::RunTest(const FString& Parameters)
     AddInfo(FString::Printf(TEXT("Prepared run %s: %d frames loaded, %d lanes built; QA %s"),
         *Manifest.RunId, Trace.Frames.Num(), Roads->RenderedLaneCount, *Report));
     Roads->Destroy();
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FTrafficCityVisualPlacementTest,
+    "TrafficRender.Bridge.CityVisualPlacement",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FTrafficCityVisualPlacementTest::RunTest(const FString& Parameters)
+{
+    UWorld* World = GEditor ? GEditor->GetEditorWorldContext().World() : nullptr;
+    if (!TestNotNull(TEXT("editor world"), World)) return false;
+    UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+    if (!TestNotNull(TEXT("engine cube fixture mesh"), Cube)) return false;
+    UTrafficCityAssetCatalog* Catalog = NewObject<UTrafficCityAssetCatalog>(World);
+    if (!TestNotNull(TEXT("visual catalog"), Catalog)) return false;
+    FTrafficCityVisualStyle Building;
+    Building.ZoneType = TEXT("residential");
+    Building.Kind = TEXT("building");
+    Building.Mesh = Cube;
+    Building.AssetSource = TEXT("Unreal Engine fixture mesh");
+    Building.License = TEXT("engine fixture only");
+    Catalog->Styles.Add(Building);
+    FTrafficCityVisualStyle Landscape = Building;
+    Landscape.ZoneType = TEXT("neutral");
+    Landscape.Kind = TEXT("landscape");
+    Catalog->Styles.Add(Landscape);
+    FActorSpawnParameters Spawn;
+    Spawn.ObjectFlags |= RF_Transient;
+    ATrafficCityVisualActor* City = World->SpawnActor<ATrafficCityVisualActor>(Spawn);
+    if (!TestNotNull(TEXT("city visual actor"), City)) return false;
+    City->AssetCatalog = Catalog;
+    City->ExpectedNetSha256 = TEXT("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    City->ExpectedOverlaySha256 = TEXT("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+    FString Error;
+    const FString Path = FPaths::Combine(FPaths::ProjectDir(), TEXT("Tests/Fixtures/city_visual/placements.json"));
+    const bool bBuilt = City->BuildFromPlacementManifest(Path, Error);
+    TestTrue(TEXT("visual placements load with matching map hashes"), bBuilt);
+    if (!bBuilt) AddError(Error);
+    TestEqual(TEXT("one building instance"), City->RenderedBuildingCount, 1);
+    TestEqual(TEXT("one landscape instance"), City->RenderedLandscapeCount, 1);
+    TestEqual(TEXT("two instanced visual styles"), City->RenderedStyleCount, 2);
+    City->Destroy();
     return true;
 }

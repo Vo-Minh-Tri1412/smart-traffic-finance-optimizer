@@ -1,0 +1,39 @@
+id = "TASK-108"
+owner = "integrator"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "4d32368"
+allowed_paths = [
+  "AGENTS.md",
+  "docs/00_TARGETS/PROJECT_TARGET.md",
+  "docs/02_ARCHITECTURE/UNREAL_ASSET_PIPELINE.md",
+  "docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md",
+  "docs/04_STATUS/IMPLEMENTATION_STATUS.md",
+  "coordination/tasks/108_sumo_unreal_live_bridge.toml",
+  "scripts/render/run_sumo_unreal.py",
+  "scripts/render/bootstrap_live_traffic.py",
+  "scripts/render/check_live_profile_edit.py",
+  "render_unreal/Plugins/TrafficRenderBridge/Source/TrafficRenderRuntime/TrafficRenderRuntime.Build.cs",
+  "render_unreal/Plugins/TrafficRenderBridge/Source/TrafficRenderRuntime/Public/TrafficLiveController.h",
+  "render_unreal/Plugins/TrafficRenderBridge/Source/TrafficRenderRuntime/Public/TrafficLiveProfile.h",
+  "render_unreal/Plugins/TrafficRenderBridge/Source/TrafficRenderRuntime/Public/TrafficReplayVehicleActor.h",
+  "render_unreal/Plugins/TrafficRenderBridge/Source/TrafficRenderRuntime/Private/TrafficReplayVehicleActor.cpp",
+  "render_unreal/Plugins/TrafficRenderBridge/Source/TrafficRenderRuntime/Private/TrafficLiveController.cpp",
+  "render_unreal/Plugins/TrafficRenderBridge/Source/TrafficRenderRuntime/Private/TrafficRenderRuntime.cpp",
+  "tests/integration/sumo/test_live_unreal_bridge.py",
+  "render_unreal/README.md",
+  "render_unreal/Config/DefaultGame.ini",
+]
+dependencies = ["TASK-095"]
+acceptance_commands = [
+  "uv run pytest tests/integration/sumo/test_live_unreal_bridge.py -q",
+  "uv run ruff check scripts/render/run_sumo_unreal.py scripts/render/bootstrap_live_traffic.py tests/integration/sumo/test_live_unreal_bridge.py",
+  "UnrealBuildTool TrafficRenderEditor Win64 Development",
+  "uv run python scripts/render/run_sumo_unreal.py --duration 120 --speed 2 --record-seconds 12 --verify",
+]
+status = "done"
+
+[handoff]
+summary = "Live retained-map SUMO vehicles/TLS in an Unreal game viewport, configured by native catalog/placement/scene Data Assets and Blueprint hooks. Canonical physical proxy is separated from proportion-preserving visual parts. Guiding principles persisted in AGENTS.md."
+validation = ["Win64 native build succeeded", "12 scoped Python integration tests passed", "5 native bridge tests passed including retained-net geometry", "Ruff and mypy passed", "Final live GPU run 20261002-195628-970e2f: 1200 frames, 88163 lanes, 1008 heads, 668 TLS changes; pose and visual aspect/physical-envelope checks passed", "Editor profile edit swapped sedan to van and FOV 65 to 52 with unchanged native DLL hash and mtime"]
+risks = ["Existing random routes are visualization inputs, not calibrated demand."]
+next_steps = ["Building layer deferred by explicit user choice; current deliverable is vehicles and the live bridge."]

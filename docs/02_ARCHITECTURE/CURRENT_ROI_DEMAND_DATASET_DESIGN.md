@@ -1,5 +1,32 @@
 # Dataset nhu cầu đi lại cho ROI hiện tại
 
+## Mô hình hành vi bắt buộc (cập nhật 2026-09-20)
+
+Đơn vị sinh nhu cầu là người/hộ và hoạt động kinh tế; xe là tài nguyên thực hiện chuyến.
+Code hiện tại vẫn chia volume/mix theo giờ đều, **chưa triển khai mô hình dưới đây**.
+Project overlay còn lỗi tương thích schema (A1 trong báo cáo audit).
+
+1. Sinh dân số/hộ tổng hợp, home/work/school, tuổi/việc làm và quyền sử dụng xe từ nguồn
+   hoặc assumption có mẫu số. Không suy số cư dân trực tiếp từ mọi polygon.
+2. Chọn tham gia hoạt động có điều kiện: ví dụ P(đi làm hôm nay | nhóm người, loại ngày).
+   X% phải nói rõ là phần trăm của người, hộ, chuyến hay xe.
+3. Chọn nơi đến theo chức năng, capacity, khoảng cách và ràng buộc. Home/work/school thường xuyên
+   giữ nhất quán giữa ngày; gravity chỉ là một thành phần, không thay lịch hoạt động.
+4. Chọn giờ cần đến và thời lượng hoạt động; suy giờ đi từ thời gian di chuyển dự kiến và buffer.
+   Kiểm tra tính khả thi của toàn lịch, không lấy giờ đi/về độc lập.
+5. Chọn mode theo quyền dùng xe và lịch; đi chung/đưa đón nối các người vào cùng chuyến xe.
+   Không sinh một xe buýt cho mỗi người chọn transit.
+6. Nối tour/leg: nhà → trường → nơi làm → mua sắm → nhà; bảo toàn vị trí người và xe.
+   Có xe rỗng/reposition và carry-over qua nửa đêm; không ép mọi chuyến về trước hết cửa sổ.
+7. Freight dùng đội xe, đơn hàng, time windows; emergency dùng dispatch/sự kiện riêng.
+   Tách II/IE/EI/EE, external endpoint và boundary connector.
+
+Các tỷ lệ theo loại nhà/giờ/loại xe là **kết quả tổng hợp hoặc ràng buộc hiệu chỉnh**,
+không phải các phép chọn độc lập. Đối chiếu counts/OD/time/mode trên dữ liệu held-out,
+báo uncertainty và sensitivity; chưa có nguồn thì ghi giả định, không bịa xác suất.
+Registry dự kiến bổ sung person/household/vehicle/activity IDs (ID tổng hợp, không cần PII).
+Không tự đổi schema runtime trong lượt audit tài liệu.
+
 ## Quyết định triển khai được chốt ngày 2026-09-19
 
 Theo [kế hoạch toàn hệ thống](SYSTEM_DELIVERY_PLAN.md), tiếp tục tìm nguồn nhưng cho phép
@@ -43,7 +70,7 @@ SUMO sinh diễn biến giao thông từ nhu cầu đầu vào; SUMO không tự
 
 ## 1. Giữ lại lập luận ban đầu của dự án
 
-[Environment spec](PUBLIC_SERVICE_DISTRICT_ENVIRONMENT_SPEC.md) là hợp đồng gốc:
+Thiết kế hiện hành giữ nguyên tắc từ spec ban đầu (spec cũ đã được thay thế):
 mỗi chuyến phải bắt đầu từ nhu cầu của con người, dịch vụ hoặc cơ sở kinh tế.
 Chuỗi là `chức năng nơi chốn → mục đích → OD → phương tiện → tuyến → điều khiển → tác động`.
 Không thay mô hình này bằng xe ngẫu nhiên hoặc tỷ lệ xe chung cho cả map.

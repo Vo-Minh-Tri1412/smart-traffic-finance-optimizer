@@ -1,5 +1,23 @@
 # Map Economic Data Model v1
 
+M0 TASK-095, 2026-09-20: project loader đã đọc/validate roi_semantic_overlay.v2 và giữ provenance.
+Inventory/materializer vẫn đọc polygon theo đường riêng; inventory hợp lệ không chứng minh run được.
+Descriptor thật có 2.588 polygon chưa có anchor và không có demand_flows; generator dừng rõ ràng.
+Parent grouping và nearest-edge chỉ là ứng viên, chưa là cổng/capacity đã xác minh.
+
+## Map preparation: công cụ, không phải kế hoạch đổi map
+
+scripts/maps/prepare_roi.py hỗ trợ polygon ROI, zoning tags, neutral fill và road-review flags;
+--clip-sumo-net có thể tạo net khác. Không dùng để cắt lại map giữ nguyên trong pilot.
+POI point buffers là xấp xỉ vị trí, không phải footprint, capacity hoặc entrance thật.
+Neutral demand_enabled=false; không sinh demand từ vùng thiếu nhãn.
+Road flags phải review, không tự xoá đường. Taxonomy/IDs theo dữ liệu đã version, không tạo
+micro-zone rồi nhân population/job totals lên mọi mảnh.
+
+Dry-run utility: `uv run python scripts/maps/prepare_roi.py --config simulation_projects/map_intake/templates/roi_config.template.json --output-root artifacts/tmp/roi_template_smoke --dry-run`.
+Outputs: semantic_overlay.generated.json, road_review.generated.json, render_preview.generated.json,
+qa_report.json/md; net mới chỉ khi yêu cầu clipping. Không coi schemas utility là loader-compatible.
+
 ## Accepted extension, not a calibration update (2026-09-19)
 
 [System delivery plan](SYSTEM_DELIVERY_PLAN.md) permits explicitly labelled synthetic research

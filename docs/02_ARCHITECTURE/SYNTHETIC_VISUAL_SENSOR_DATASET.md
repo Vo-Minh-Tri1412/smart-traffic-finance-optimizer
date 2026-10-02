@@ -12,9 +12,28 @@ labels and visibility → optional detector → lane features with uncertainty �
 Ground truth may generate labels/reward/evaluation, but a detector receives pixels and a camera-based
 policy receives observed features, never hidden IDs/counts or economic trip intent.
 
-Geometry visibility may train RL before YOLO. It consumes canonical dimensions and current SUMO
-state for closed-loop experiments. A prerecorded baseline trace cannot represent the traffic changed
+Geometry visibility is currently an offline surrogate, not an integrated RL environment.
+A future online adapter must consume canonical dimensions and the current SUMO state. A prerecorded baseline trace cannot represent the traffic changed
 by another policy. Offline replay is appropriate for dataset generation and detector evaluation.
+
+## Geometry sensor và observation (hợp nhất sau audit 2026-09-20)
+
+CV là mở rộng tùy chọn; oracle baseline không bị chặn bởi capture hay YOLO.
+Geometry camera hiện rasterize canonical cuboids thành depth/instance buffer.
+Pose, FOV/intrinsics, near/far, image size, cadence và target lanes thuộc camera_calibration.v1.
+Đơn vị SUMO mét → UE centimet (100); x/y front bumper phải đổi về tâm cuboid.
+
+GeometryObservationAdapter hiện lấy class/lane từ truth, confidence bằng mean visible_fraction,
+unknown_count=0. Đây là surrogate chưa hiệu chỉnh, không phải detector/tracker.
+Exact hidden visibility chỉ dùng label/evaluation; camera policy không được nhận nó như
+confidence đo được từ ảnh. Cần tracker, queue/wait/downstream estimates, uncertainty và
+time-since-last-observed; phải công bố feature availability theo sensor mode.
+
+Occlusion phụ thuộc hình học/camera/depth; noise bổ sung sau visibility, có tương quan thời gian
+và lane/camera, không chỉ xoá xe ngẫu nhiên độc lập. Chưa có calibrated noise model.
+So memoryless, frame-stack 4 và recurrent theo RL protocol; không bắt buộc graph/CTDE.
+Báo detection/count/queue error, tracking continuity, control degradation và safety riêng.
+Camera cadence và control interval có aggregation rule rõ ràng.
 
 ## Dataset layout and provenance
 

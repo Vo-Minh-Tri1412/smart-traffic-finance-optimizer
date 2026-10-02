@@ -1,8 +1,10 @@
 # Observation Space v1
 
-This is the canonical local observation contract for the multi-agent traffic-signal policy. It is
-valid for the full Quận 7 SUMO network or a reviewed large ROI; the small fixture is only a schema
-and runtime test input.
+This is a proposed semantic feature inventory, not an implemented tensor contract (audit 2026-09-20).
+Training currently uses SUMO-RL default observation; no project observation_class is passed.
+Feature order, tensor shapes, normalization, masks and online sensor integration still need tests.
+The metadata constant in rl/contracts.py even lists public_finance_context; that is a legacy
+descriptor, not permission to leak finance scores or investment rank into policy observations.
 
 ## Controlled unit
 
@@ -38,7 +40,7 @@ These fields are required when the policy is evaluated as camera-based or partia
 | Field | Type | Meaning |
 |---|---|---|
 | `observation_confidence_by_approach` | numeric vector, 0..1 | Confidence in the approach estimate. |
-| `visible_fraction_by_approach` | numeric vector, 0..1 | Approximate fraction of relevant vehicles/area visible. |
+| `visible_fraction_by_approach` | numeric vector, 0..1 | Observable coverage/confidence proxy; exact hidden-vehicle fraction is evaluation-only. |
 | `time_since_last_observed_by_approach` | numeric vector | Age of the last reliable observation. |
 | `detector_unknown_count_by_approach` | numeric vector | Objects visible but not confidently classified. |
 | `sensor_mode` | categorical/one-hot | SUMO oracle, geometry visibility, detector or mixed. |
@@ -54,8 +56,8 @@ receiving hidden SUMO IDs or exact hidden counts.
 - `scenario_id` or `weather_or_incident_flag` when the scenario genuinely exposes that context;
 - `upgrade_mask_local`: whether the signal and relevant neighbors are equipped for intelligent control.
 
-Neighborhood fields must have a stable maximum size or graph adapter. Do not concatenate an
-unbounded 100-signal vector into every agent observation.
+Neighborhood fields need a bounded size and explicit availability. The retained-map pilot has up
+to 8 eligible nodes; a graph adapter is not an accepted prerequisite.
 
 ## Memory contract
 

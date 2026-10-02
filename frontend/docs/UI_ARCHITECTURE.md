@@ -4,6 +4,10 @@ The existing React/Vite frontend and FastAPI service provide views for district,
 comparison, finance and system status. They are not a second simulator.
 The current default remains a toy DistrictSpec/reference-engine demo; real-map integration is planned.
 
+Audit 2026-09-20: finance APIs gọi scoring/investment legacy, chưa gọi map-aware QUBO.
+Legacy cắt adverse savings và dùng budget equality penalty không slack; không trình bày ranking
+này như kết quả nghiên cứu retained map. Đường dữ liệu dưới đây là đích tích hợp, chưa end-to-end.
+
 ## Data flow
 
 Retained SUMO project + demand + controller → run artifacts and cost ledger →

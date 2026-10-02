@@ -3,7 +3,7 @@
 This folder holds small data contracts and templates that are safe to keep in Git.
 
 Large or generated artifacts are managed by DVC and Google Drive Desktop, not committed directly.
-See `docs/02_ARCHITECTURE/DVC_DATA_MANAGEMENT.md` for the current DVC workflow.
+See `docs/02_ARCHITECTURE/DATA_ARTIFACT_WORKFLOW.md` for the current DVC workflow.
 
 ## Folder Roles
 
@@ -23,10 +23,10 @@ Use DVC for:
 - Colab/Kaggle training outputs;
 - model checkpoints and exported weights.
 
-The default DVC remote is `drive_desktop`, backed by the team's Drive Desktop data-management
-workspace.
+The configured DVC remote is `drive_desktop`. Its local backing and cloud sync availability
+were not revalidated in the 2026-09-20 audit.
 
-## Week 1 Rule
+## Evidence ownership
 
 The Economics/Public Finance team defines assumptions and policy scenarios. The CS team defines how
 those assumptions become SUMO-RL inputs and reproducible outputs.

@@ -1,0 +1,38 @@
+id = "TASK-109"
+owner = "integrator"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "4d32368"
+allowed_paths = [
+  "AGENTS.md",
+  "coordination/tasks/109_editable_urban_environment.toml",
+  "docs/00_TARGETS/PROJECT_TARGET.md",
+  "docs/02_ARCHITECTURE/UNREAL_ASSET_PIPELINE.md",
+  "docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md",
+  "docs/04_STATUS/IMPLEMENTATION_STATUS.md",
+  "scripts/render/prepare_urban_environment.py",
+  "scripts/render/bootstrap_urban_environment.py",
+  "scripts/render/run_sumo_unreal.py",
+  "scripts/render/check_urban_height_edit.py",
+  "render_unreal/README.md",
+  "render_unreal/Config/DefaultGame.ini",
+  "render_unreal/Plugins/TrafficRenderBridge/Source/TrafficRenderRuntime/Public/TrafficUrbanEnvironment.h",
+  "render_unreal/Plugins/TrafficRenderBridge/Source/TrafficRenderRuntime/Private/TrafficUrbanEnvironment.cpp",
+  "render_unreal/Plugins/TrafficRenderBridge/Source/TrafficRenderRuntime/Public/TrafficLiveProfile.h",
+  "render_unreal/Plugins/TrafficRenderBridge/Source/TrafficRenderRuntime/Public/TrafficLiveController.h",
+  "render_unreal/Plugins/TrafficRenderBridge/Source/TrafficRenderRuntime/Private/TrafficLiveController.cpp",
+  "tests/unit/render/test_urban_environment_geometry.py",
+  "render_unreal/CitySources/urban_geometry.v1.json",
+]
+dependencies = ["TASK-108"]
+acceptance_commands = [
+  "uv run --with shapely pytest tests/unit/render/test_urban_environment_geometry.py -q",
+  "UnrealBuildTool TrafficRenderEditor Win64 Development",
+  "uv run python scripts/render/run_sumo_unreal.py --duration 120 --speed 2 --record-seconds 12 --verify --visual-profile /Game/LiveTraffic/Profiles/UrbanScene",
+]
+status = "handoff"
+
+[handoff]
+summary = "Editable native urban layer: OSM footprints with assumed heights, SUMO lane markings, sidewalks and safely placed instanced greenery."
+validation = ["Win64 native build succeeded", "Urban live run 20261002-210344-a7a868 passed 16 gates: 1200 frames, 6137 building parts, lane markings, sidewalks and greenery present", "Roof triangulation preserves concave footprint/courtyard test passed", "User requested commit/push checkpoint before remaining visual polish"]
+risks = ["Building heights and generated landscaping are declared visual assumptions, not surveyed data."]
+next_steps = ["Visual polish and per-building Editor height override verification remain; see docs/04_STATUS/UNREAL_CHECKPOINT_HANDOFF.md"]

@@ -23,6 +23,6 @@ def test_delivery_plan_is_indexed_and_explicitly_planned() -> None:
     assert "SYSTEM_DELIVERY_PLAN.md" in index
     assert "UNREAL_ASSET_PIPELINE.md" in index
     plan = (docs / "02_ARCHITECTURE" / "SYSTEM_DELIVERY_PLAN.md").read_text(encoding="utf-8")
-    assert "chưa triển khai M0–M6" in plan
+    assert "M0 đang triển khai; M1–M6 chưa nghiệm thu" in plan
     for milestone in range(7):
         assert f"### M{milestone}" in plan

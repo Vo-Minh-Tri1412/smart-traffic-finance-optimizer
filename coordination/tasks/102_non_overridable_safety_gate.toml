@@ -1,0 +1,37 @@
+id = "TASK-102"
+owner = "integrator"
+dependencies = ["TASK-101"]
+allowed_paths = [
+  "coordination/tasks/102_non_overridable_safety_gate.toml",
+  "ai_quantum_hvtc/rl/reward_profiles.py",
+  "tests/unit/rl/test_reward_profiles.py",
+  "tests/integration/cli/test_rl_sumo_train_cli.py",
+  "docs/04_STATUS/IMPLEMENTATION_STATUS.md",
+  "docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md",
+]
+acceptance_commands = [
+  "uv run pytest tests/unit/rl/test_reward_profiles.py tests/integration/cli/test_rl_sumo_train_cli.py -ra",
+  "uv run ruff check ai_quantum_hvtc/rl/reward_profiles.py tests/unit/rl/test_reward_profiles.py tests/integration/cli/test_rl_sumo_train_cli.py",
+  "uv run mypy --follow-imports=silent ai_quantum_hvtc/rl/reward_profiles.py",
+  "git diff --check -- ai_quantum_hvtc/rl/reward_profiles.py tests/unit/rl/test_reward_profiles.py tests/integration/cli/test_rl_sumo_train_cli.py docs/04_STATUS/IMPLEMENTATION_STATUS.md docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md",
+  "uv run python -c 'import tomllib; from pathlib import Path; path = Path(\"coordination/tasks/102_non_overridable_safety_gate.toml\"); tomllib.loads(path.read_text(encoding=\"utf-8\")); text = path.read_text(encoding=\"utf-8\"); assert not any(line.endswith((\" \", \"\\t\")) for line in text.splitlines())'",
+]
+status = "done"
+
+[handoff]
+summary = "Make pending action_filter_required constraints an unconditional training blocker, independent of acknowledgment and hard_constraints_block_training. Reject unsupported enforcement values, report the blocker in dry-run, and prove training setup is not reached. This gate change does not implement emergency preemption or establish runtime safety; research remains closed."
+validation = [
+  "Focused reward-profile and training CLI tests passed: 9 passed.",
+  "Scoped Ruff passed for reward_profiles.py and the focused unit/CLI tests.",
+  "Scoped mypy passed with --follow-imports=silent for reward_profiles.py.",
+  "Scoped git diff --check passed for tracked implementation, tests, and owned docs.",
+  "Task manifest TOML parsing and trailing-whitespace check passed.",
+]
+risks = [
+  "The training gate prevents execution while the required emergency action filter is absent; it does not implement emergency phase selection, clearance enforcement, or validate signal safety at runtime.",
+  "Unknown enforcement values fail validation. New enforcement values must be explicitly added to the supported set before acknowledgment behavior can apply.",
+  "Research gate remains closed and M0 remains in progress.",
+]
+next_steps = [
+  "Implement and validate runtime action filtering/clearance evidence before any research-training gate can open.",
+]

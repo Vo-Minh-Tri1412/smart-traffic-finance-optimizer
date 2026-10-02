@@ -1,0 +1,14 @@
+id = "TASK-092"
+owner = "integrator"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "70a1ee65c777bfd7531d6a74ad7af224184562e4"
+allowed_paths = ["coordination/tasks/092_unreal_signal_demo_still.toml", "scripts/render/unreal_signal_demo.py", ".gitignore", "render_unreal/README.md"]
+dependencies = ["TASK-086"]
+acceptance_commands = ["uv run ruff check scripts/render/unreal_signal_demo.py"]
+status = "in_progress"
+
+[handoff]
+summary = "Render an actual Unreal GPU still of an isolated art-directed traffic signal demonstration; not calibrated traffic or a map geometry claim."
+validation = []
+risks = ["Procedural presentation set and staged vehicles are illustrative, not SUMO state."]
+next_steps = []

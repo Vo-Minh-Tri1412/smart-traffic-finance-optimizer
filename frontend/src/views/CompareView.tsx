@@ -86,10 +86,11 @@ export default function CompareView() {
       rows.map((row) => ({
         controller: row.controller_id,
         label: controllerLabel(row.controller_id),
-        value: Number(row[metric] ?? 0),
+        value: row[metric],
       })),
     [rows, metric],
   );
+  const metricUnavailable = chartData.length > 0 && chartData.every((entry) => entry.value === null);
 
   const bestAlternative = useMemo(() => {
     const alternatives = rows.filter((row) => row.controller_id !== "fixed_time");
@@ -215,7 +216,11 @@ export default function CompareView() {
             }
           >
             <div className="h-72">
-              <ResponsiveContainer>
+              {metricUnavailable ? (
+                <div className="flex h-full items-center justify-center text-xs text-ink-3">
+                  Không khả dụng trong dữ liệu nguồn.
+                </div>
+              ) : <ResponsiveContainer>
                 <BarChart data={chartData} barGap={2} margin={{ top: 24, right: 8 }}>
                   <CartesianGrid vertical={false} strokeDasharray="0" />
                   <XAxis dataKey="label" tickLine={false} axisLine={false} />
@@ -235,7 +240,10 @@ export default function CompareView() {
                             {
                               color: controllerColor(String(payload[0].payload.controller)),
                               name: metricInfo.label,
-                              value: formatNumber(Number(payload[0].value)),
+                              value:
+                                payload[0].value == null
+                                  ? "Không khả dụng"
+                                  : formatNumber(Number(payload[0].value)),
                             },
                           ]}
                         />
@@ -246,7 +254,7 @@ export default function CompareView() {
                     <LabelList
                       dataKey="value"
                       position="top"
-                      formatter={(value) => formatNumber(Number(value))}
+                      formatter={(value) => (value == null ? "" : formatNumber(Number(value)))}
                       style={{ fill: "var(--color-ink-2)", fontSize: 11 }}
                     />
                     {chartData.map((entry) => (
@@ -254,7 +262,7 @@ export default function CompareView() {
                     ))}
                   </Bar>
                 </BarChart>
-              </ResponsiveContainer>
+              </ResponsiveContainer>}
             </div>
           </Card>
 
@@ -311,7 +319,9 @@ export default function CompareView() {
                         {formatSeconds(row.emergency_delay_saved_vs_fixed_seconds)}
                       </td>
                       <td className="py-2.5 pr-3 text-right tabular-nums text-ink-2">
-                        {formatSeconds(row.bus_passenger_delay_saved_vs_fixed_seconds)}
+                        {row.bus_passenger_delay_saved_vs_fixed_seconds === null
+                          ? "Không khả dụng"
+                          : formatSeconds(row.bus_passenger_delay_saved_vs_fixed_seconds)}
                       </td>
                       <td className="py-2.5 pr-3 text-right tabular-nums text-ink-2">
                         {formatSeconds(row.truck_delay_saved_vs_fixed_seconds)}

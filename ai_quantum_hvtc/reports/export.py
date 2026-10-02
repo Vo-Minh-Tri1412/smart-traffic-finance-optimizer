@@ -90,7 +90,12 @@ def baseline_comparison_rows(results: list[SimulationResult]) -> list[dict[str, 
     for result in results:
         waiting_saved = baseline.total_waiting_time_seconds - result.total_waiting_time_seconds
         emergency_saved = baseline.emergency_delay_seconds - result.emergency_delay_seconds
-        bus_saved = baseline.bus_passenger_delay_seconds - result.bus_passenger_delay_seconds
+        bus_saved = (
+            baseline.bus_passenger_delay_seconds - result.bus_passenger_delay_seconds
+            if baseline.bus_passenger_delay_seconds is not None
+            and result.bus_passenger_delay_seconds is not None
+            else None
+        )
         truck_saved = baseline.truck_delay_seconds - result.truck_delay_seconds
         throughput_gain = result.throughput - baseline.throughput
         rows.append(
@@ -116,7 +121,9 @@ def baseline_comparison_rows(results: list[SimulationResult]) -> list[dict[str, 
                 ),
                 "throughput_gain_vs_fixed": throughput_gain,
                 "emergency_delay_saved_vs_fixed_seconds": round(emergency_saved, 3),
-                "bus_passenger_delay_saved_vs_fixed_seconds": round(bus_saved, 3),
+                "bus_passenger_delay_saved_vs_fixed_seconds": (
+                    round(bus_saved, 3) if bus_saved is not None else None
+                ),
                 "truck_delay_saved_vs_fixed_seconds": round(truck_saved, 3),
                 "interpretation": _baseline_interpretation(
                     result=result,
@@ -302,7 +309,9 @@ def metrics_summary(result: SimulationResult) -> dict[str, Any]:
         "average_waiting_time_seconds": result.average_waiting_time_seconds,
         "max_queue_vehicles": result.max_queue_vehicles,
         "emergency_delay_seconds": result.emergency_delay_seconds,
+        "bus_passenger_delay_seconds": result.bus_passenger_delay_seconds,
         "truck_delay_seconds": result.truck_delay_seconds,
+        "reroute_count": result.reroute_count,
         "failed_route_count": result.failed_route_count,
         "controller_interventions": result.controller_interventions,
     }

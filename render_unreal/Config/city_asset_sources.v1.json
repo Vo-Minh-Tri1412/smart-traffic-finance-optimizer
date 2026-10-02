@@ -1,0 +1,62 @@
+{
+  "schema_version": "city_asset_sources.v1",
+  "provider": "Poly Haven",
+  "api_base_url": "https://api.polyhaven.com",
+  "license": "CC0 1.0 Universal",
+  "license_url": "https://polyhaven.com/license",
+  "api_credit_required": true,
+  "api_credit_text": "Powered by Poly Haven",
+  "api_user_agent": "AIQuantumHVTC-CityAssetFetcher/1.0 (academic asset intake)",
+  "max_download_bytes": 100000000,
+  "download_root": "artifacts/city_assets/polyhaven",
+  "assets": [
+    {
+      "id": "modular_urban_apartments_facade",
+      "type": "model",
+      "role": "hero_facade",
+      "resolution": "2k",
+      "download": true,
+      "selection": {
+        "format": "gltf",
+        "include_dependencies": true
+      },
+      "note": "Hero facade source; preserve all API-listed GLTF dependencies."
+    },
+    {
+      "id": "modular_factory_facade",
+      "type": "model",
+      "role": "industrial_facade_later",
+      "resolution": "1k",
+      "download": false,
+      "selection": {
+        "format": "gltf",
+        "include_dependencies": true
+      },
+      "note": "Deferred industrial source; listed in dry-run only for a later scene pass."
+    },
+    {
+      "id": "clean_asphalt",
+      "type": "texture",
+      "role": "road_surface",
+      "resolution": "2k",
+      "download": true,
+      "selection": {
+        "maps": ["Diffuse", "nor_dx", "arm"],
+        "format": "jpg"
+      },
+      "note": "ARM is the packed ambient-occlusion, roughness and metalness map."
+    },
+    {
+      "id": "concrete_pavement_03",
+      "type": "texture",
+      "role": "sidewalk_surface",
+      "resolution": "2k",
+      "download": true,
+      "selection": {
+        "maps": ["Diffuse", "nor_dx", "arm"],
+        "format": "jpg"
+      },
+      "note": "ARM is the packed ambient-occlusion, roughness and metalness map."
+    }
+  ]
+}

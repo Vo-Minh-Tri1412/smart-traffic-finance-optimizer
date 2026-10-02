@@ -1,0 +1,35 @@
+{
+  "schema_version": "sumo_netconvert_profile.v1",
+  "profile_id": "district7_full_road_seed",
+  "project_id": "district7_osm_seed_20260702",
+  "project_descriptor": "../district7.project.json",
+  "source_osm": "../01_raw_sources/district7_osm_seed_20260702/district7_seed.osm",
+  "source_osm_sha256": "48ebde0a275940e19a0258f30a40f9f77a3e68eb8ae5866902711f9fb3f72753",
+  "retained_net": "../02_prepared_sources/district7_osm_seed_20260702/district7_seed.net.xml",
+  "retained_net_body_sha256": "09893b501fa014ea8bc5d97d98bddbc57c8b0b622a6e309988bed9e159163529",
+  "converter": {
+    "name": "Eclipse SUMO netconvert",
+    "version": "1.27.1",
+    "binary": "netconvert"
+  },
+  "source_provenance": {
+    "provider": "OpenStreetMap",
+    "acquisition": "Overpass API",
+    "query_file": "../01_raw_sources/district7_osm_seed_20260702/district7_overpass_query.overpassql",
+    "osm_base_timestamp": "2026-07-01T18:09:41Z",
+    "license": "ODbL-1.0",
+    "attribution": "OpenStreetMap contributors",
+    "bounding_box_south_west_north_east": [10.705, 106.695, 10.775, 106.78]
+  },
+  "options": [
+    {"name": "--proj.utm", "value": true},
+    {"name": "--geometry.remove", "value": true},
+    {"name": "--roundabouts.guess", "value": true},
+    {"name": "--tls.discard-simple", "value": true},
+    {"name": "--tls.guess-signals", "value": true},
+    {"name": "--ramps.guess", "value": true},
+    {"name": "--no-turnarounds", "value": true},
+    {"name": "--junctions.join", "value": true},
+    {"name": "--verbose", "value": true}
+  ]
+}

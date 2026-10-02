@@ -7,12 +7,23 @@ planned editing surface for renderer-only configuration; see [asset pipeline](UN
 
 ## Contract versions
 
+Bảng này là registry và trách nhiệm thiết kế, không chứng minh mọi producer đã hoàn tất.
+Geometry/vehicle replay có implementation; TLS/event full-net logs và UE sensor exporter chưa đủ.
+M0 TASK-095: loader đọc riêng `semantic_overlay.v1` (legacy anchored flows) và
+`roi_semantic_overlay.v2` (polygon inventory). Giữ nguyên schema, geometry, parent source IDs,
+tags, caveats và toàn bộ raw payload; không suy ra cổng hoặc demand từ polygon.
+`roi_semantic_overlay.v1` của ROI utility chưa được adapter này hỗ trợ.
+Registry constants Python/UE và report của `unreal_contract_smoke.py` vẫn chứa tên proposal
+`semantic_overlay.v2`; smoke hiện chỉ kiểm tra geometry/vehicle, chưa validate overlay được khai báo.
+Không coi report đó là bằng chứng native UE đã đọc retained polygon schema. Phần này còn phải
+nối vào render consumer; table dưới ghi wire format thực của đầu vào.
+
 | Contract | Version | Producer | Consumer | Purpose |
 |---|---:|---|---|---|
 | `geometry_manifest` | `geometry_manifest.v1` | Python/SUMO map prep | render adapter | points to SUMO net, bounds, geometry metadata |
 | `vehicle_trace` | `vehicle_trace.v2` | Python SUMO parser | render adapter, sensors | vehicle-level frame stream |
 | `traffic_light_trace` | `traffic_light_trace.v1` | Python SUMO parser | render adapter | traffic-light phase/state replay |
-| `semantic_overlay` | `semantic_overlay.v2` | map ROI/zoning pipeline | render adapter, finance | zones, demand anchors, public-finance tags |
+| `semantic_overlay` | `roi_semantic_overlay.v2` | retained map preparation | Python map loader, render/finance inputs | polygon inventory and provenance; no implied demand |
 | `event_trace` | `event_trace.v1` | scenario runner | render adapter, reports | incidents, closures, road works, temporary speed changes |
 | `visibility_trace` | `visibility_trace.v1` | geometry sensor adapter | RL observation adapter, sensor reports | camera FOV, depth ordering, visible/occluded vehicle state |
 | `render_run_manifest` | `render_run_manifest.v1` | Python wrapper or demo config | render adapter | one file that wires geometry, traces, overlay, assets |
@@ -22,7 +33,7 @@ planned editing surface for renderer-only configuration; see [asset pipeline](UN
 canonical vehicle cuboids into a software depth/instance buffer and does not depend on Unreal meshes
 or presentation-camera LOD. This geometry producer is not a completed Unreal RGB/instance exporter.
 
-Existing `simulation_trace_frame.v1` remains supported for backward compatibility. New render bridge
+Legacy `simulation_trace_frame.v1` remains in the dashboard/legacy path, not the native UE v2 reader. New render bridge
 work should prefer `vehicle_trace.v2` naming for vehicle-level replay.
 
 ## `render_run_manifest.v1`
@@ -105,20 +116,18 @@ ground truth for replay and label generation.
 
 `vehicle_trace.v2` requires canonical physical fields for geometry visibility. SUMO `x,y` is the
 front-bumper centre, so consumers must not treat it as the centre of the vehicle box. Existing
-`simulation_trace_frame.v1` remains replay-compatible but is rejected by the geometry camera.
+`simulation_trace_frame.v1` is a legacy path, rejected by the geometry camera and not the native UE v2 contract.
 
 With the SUMO Sublane model, FCD `x,y` already includes the physical lateral displacement. The
 separate `pos_lat_m` is preserved and interpolated as lateral-motion state, but replay must **not**
 add it to `x,y` a second time. The renderer must fit each fallback mesh or imported visual asset to
 the canonical `width_m × height_m × length_m` proxy after mapping that FCD pose.
 
-## Camera-zone streaming
+## Camera-zone streaming — planned, not native UE implementation
 
-The official Quận 7 renderer keeps every semantic and neutral zone whose conservative cached
-polygon bound intersects the camera's active-radius and forward-prefetch corridor. It does not
-impose a global zone-count quota: the active set is spatial, retained across small camera moves,
-and updated incrementally. Neutral zones therefore remain ordinary building-bearing zones; they
-are not a blank fallback plane.
+Use spatial bounds and incremental activation, not arbitrary global quotas.
+Sensor occluders must remain complete independently of presentation LOD/streaming.
+Neutral zones are unclassified land, not verified building footprints, heights or capacities.
 
 ## `camera_calibration.v1`
 
@@ -177,30 +186,54 @@ Traffic lights are first-class state, not just intersection metadata.
 If SUMO manages traffic lights, render adapters must follow SUMO state rather than recomputing the
 phase visually.
 
-## `semantic_overlay.v2`
+## `roi_semantic_overlay.v2`
 
 Overlay owns meaning, not road geometry.
 
 ```json
 {
-  "schema_version": "semantic_overlay.v2",
+  "schema_version": "roi_semantic_overlay.v2",
+  "id": "prepared_overlay",
+  "name": "Prepared polygon inventory",
+  "coordinate_system": "sumo_xy",
   "zones": [
     {
-      "zone_id": "zone_001",
-      "zone_type": "healthcare",
-      "display_name": "Bệnh viện",
-      "anchor_edges": ["edge_a", "edge_b"],
+      "id": "zone_001",
+      "type": "healthcare",
+      "name": "Bệnh viện",
+      "source_element_id": "way/123",
+      "source_element_kind": "buildable_geometry",
+      "geometry": {
+        "type": "polygon",
+        "coordinate_system": "sumo_xy",
+        "coordinates": [[0, 0], [10, 0], [10, 10], [0, 0]]
+      },
+      "centroid": [6.67, 3.33],
+      "anchor_edges": [],
+      "anchor_junctions": [],
+      "demand_enabled": true,
       "source_tags": {"amenity": "hospital"},
       "confidence": 0.85,
       "manual_review_required": false
     }
   ],
-  "investment_candidates": [],
-  "demand_anchors": []
+  "investment_candidates": []
 }
 ```
 
-Planned UE Data Asset catalogs decide how a `healthcare` zone looks without changing its semantics.
+IDs must be non-empty and unique within each collection. Polygon XY coordinates and centroid
+must be finite; the polygon needs three distinct points and non-zero area. This checks structure,
+not surveyed geometry, polygon topology, facility capacity or accessibility. Non-empty edge and
+junction references must exist in the retained net. Unresolved anchors are permitted in the
+inventory and remain explicitly empty. `demand_enabled` is eligibility, not a trip count or
+reviewed gate. Any supplied legacy flow must use enabled, anchored zones. The generator rejects
+missing flows or an empty scenario before creating outputs or invoking SUMO routing.
+
+The former `semantic_overlay.v2` example with `zone_id/zone_type/display_name` was an unimplemented
+proposal, not the retained wire format, and is rejected by the Python map loader. Legacy
+`semantic_overlay.v1`
+continues to require anchored zones. Planned UE Data Asset catalogs decide how a `healthcare`
+zone looks without changing its semantics.
 
 ## `event_trace.v1`
 

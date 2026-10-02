@@ -19,7 +19,10 @@ public class TrafficRenderRuntime : ModuleRules
             "Json",
             "JsonUtilities",
             "Projects",
-            "XmlParser"
+            "XmlParser",
+            "Sockets",
+            "Networking",
+            "InputCore"
         });
     }
 }

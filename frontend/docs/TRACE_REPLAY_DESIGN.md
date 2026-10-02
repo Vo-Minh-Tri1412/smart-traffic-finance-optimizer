@@ -1,7 +1,7 @@
 # Trace replay design
 
-`simulation_trace.jsonl` is one JSON object per frame or timestep. It is the shared contract between
-SUMO, the React dashboard, and the Unreal render adapter.
+Trace files use one JSON object per frame or timestep. File names alone do not identify a schema.
+The dashboard legacy path and native UE v2 reader do not accept identical contracts.
 
 Legacy aggregate schema version (vehicle replay uses vehicle_trace.v2):
 

@@ -3,6 +3,7 @@ import { Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
 import CompareView from "./views/CompareView";
 import DistrictView from "./views/DistrictView";
+import ExperimentsView from "./views/ExperimentsView";
 import FinanceView from "./views/FinanceView";
 import OverviewView from "./views/OverviewView";
 import ReplayView from "./views/ReplayView";
@@ -16,6 +17,7 @@ export default function App() {
         <Route index element={<OverviewView />} />
         <Route path="district" element={<DistrictView />} />
         <Route path="runs" element={<RunsView />} />
+        <Route path="experiments" element={<ExperimentsView />} />
         <Route path="replay" element={<ReplayView />} />
         <Route path="replay/:runId" element={<ReplayView />} />
         <Route path="compare" element={<CompareView />} />

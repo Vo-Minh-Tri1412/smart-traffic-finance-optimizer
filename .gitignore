@@ -62,3 +62,13 @@ render_unreal/**/*.VC.db
 render_unreal/**/*.opensdf
 render_unreal/**/*.sdf
 render_unreal/Content/Demo092/
+render_unreal/Content/City/
+
+# Local personal documents, temporary reviews and the generated duplicate checkout.
+/Giay_to/
+/tmp/
+/render_unreal 5.8/
+
+# Verification-only profile copies; keep the editable application profiles.
+render_unreal/Content/LiveTraffic/Profiles/*_EditCheck.uasset
+render_unreal/Content/LiveTraffic/Profiles/*_HeightCheck.uasset

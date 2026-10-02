@@ -32,6 +32,11 @@ from ai_quantum_hvtc.rl import (  # noqa: E402
 from ai_quantum_hvtc.rl import (  # noqa: E402
     load_reward_profile as load_technical_reward_profile,
 )
+from ai_quantum_hvtc.rl.action_guard import (  # noqa: E402
+    DiscreteActionGuardParallelEnv,
+    capture_discrete_action_counts,
+    validate_action_interval,
+)
 from ai_quantum_hvtc.simulation.engines.sumo.config import resolve_sumo_binary  # noqa: E402
 from ai_quantum_hvtc.simulation.engines.sumo.errors import SumoRuntimeError  # noqa: E402
 from ai_quantum_hvtc.simulation.engines.sumo.exporter import (  # noqa: E402
@@ -201,6 +206,8 @@ def _sumo_environment_kwargs(
     scale from a small ROI smoke test to a full Quận 7/large-ROI run.
     """
 
+    delta_time = spec.metadata.time_step_seconds
+    validate_action_interval(delta_time=delta_time, yellow_time=yellow_time)
     return {
         "net_file": str(paths.net),
         "route_file": str(paths.routes),
@@ -208,7 +215,7 @@ def _sumo_environment_kwargs(
         "use_gui": False,
         "begin_time": 0,
         "num_seconds": spec.metadata.horizon_seconds,
-        "delta_time": max(1, spec.metadata.time_step_seconds),
+        "delta_time": delta_time,
         "yellow_time": yellow_time,
         "min_green": min_green,
         "max_green": max_green,
@@ -263,10 +270,19 @@ def _build_training_env(
         # the correct compatibility value.
         if not hasattr(env.unwrapped, "render_mode"):
             env.unwrapped.render_mode = None
+        phase_source = env.unwrapped
+        original_action_counts = capture_discrete_action_counts(env)
         # Incoming lanes/phases differ across real intersections. Padding keeps one shared policy
         # shape while preserving each agent's local feature ordering.
         env = pad_observations_v0(env)
         env = pad_action_space_v0(env)
+        env = DiscreteActionGuardParallelEnv(
+            env,
+            action_counts=original_action_counts,
+            phase_source=phase_source,
+            event_log_path=log_dir / f"{args.run_id}_action_interventions.jsonl",
+            run_id=args.run_id,
+        )
         env = pettingzoo_env_to_vec_env_v1(env)
         # Always pass through concat_vec_envs_v1 so the MarkovVectorEnv becomes an SB3 VecEnv,
         # including the default single-copy case.
@@ -351,12 +367,12 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
     if blockers:
         raise SystemExit("Training blocked:\n- " + "\n- ".join(blockers))
 
-    out_dir = Path(args.out_dir)
+    out_dir = _reserve_training_output_directory(Path(args.out_dir))
     sumo_dir = out_dir / "sumo"
     model_dir = out_dir / "models"
     log_dir = out_dir / "logs"
     for directory in (sumo_dir, model_dir, log_dir):
-        directory.mkdir(parents=True, exist_ok=True)
+        directory.mkdir()
 
     paths = export_sumo_project(
         spec=spec,
@@ -419,6 +435,11 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         "scenario": args.scenario,
         "total_timesteps": args.total_timesteps,
         "agent_mode": args.agent_mode,
+        "action_intervention_log_path": (
+            str(log_dir / f"{args.run_id}_action_interventions.jsonl")
+            if args.agent_mode == "multi_agent"
+            else None
+        ),
         "memory_mode": args.memory,
         "frame_stack_size": args.frame_stack_size if args.memory == "frame_stack" else 0,
         "num_envs": args.num_envs,
@@ -428,11 +449,23 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
             "with the project observation/sensor adapter before camera-based claims."
         ),
     }
-    (out_dir / "training_manifest.json").write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
+    with (out_dir / "training_manifest.json").open("x", encoding="utf-8") as stream:
+        stream.write(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
     return manifest
+
+
+def _reserve_training_output_directory(out_dir: Path) -> Path:
+    """Atomically claim a new output directory; existing and partial runs are never resumed."""
+
+    out_dir.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        out_dir.mkdir(exist_ok=False)
+    except FileExistsError as exc:
+        raise SystemExit(
+            f"Training output directory already exists; refusing to overwrite or resume: "
+            f"{out_dir}"
+        ) from exc
+    return out_dir
 
 
 def build_parser() -> argparse.ArgumentParser:

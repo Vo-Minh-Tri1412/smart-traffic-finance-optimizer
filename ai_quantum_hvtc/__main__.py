@@ -15,6 +15,10 @@ def main(argv: list[str] | None = None) -> int:
         from .dashboard.__main__ import main as dashboard_main
 
         return dashboard_main(args[1:])
+    if args and args[0] == "experiments":
+        from .experiments.cli import main as experiments_main
+
+        return experiments_main(args[1:])
     return doctor_main(args)
 
 

@@ -114,7 +114,14 @@ class RunStore:
             engine_id=result.engine_id,
         )
         target = self.run_dir(resolved_run_id)
-        target.mkdir(parents=True, exist_ok=True)
+        try:
+            # This directory is the run's exclusive write reservation. Existing or partial
+            # runs are never resumed, so serializers cannot overwrite their files.
+            target.mkdir(parents=True, exist_ok=False)
+        except FileExistsError as exc:
+            raise FileExistsError(
+                f"dashboard run already exists; refusing to overwrite or resume: {resolved_run_id}"
+            ) from exc
         result_to_json(result, target / RESULT_FILE)
         result_to_trace_jsonl(result, spec, target / TRACE_FILE)
         trace_frames = _count_lines(target / TRACE_FILE)

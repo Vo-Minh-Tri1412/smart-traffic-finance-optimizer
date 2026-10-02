@@ -1,5 +1,9 @@
 # Reward RL và mục tiêu QUBO cho ROI hiện tại
 
+**Hai thiết kế để so sánh:** R0 là reward thời gian cơ sở ở phần đầu; R1 là đề xuất nghiên cứu
+lịch hoạt động + ràng buộc rủi ro/mức phục vụ + potential shaping ở mục 8.
+R1 chưa thay runtime và chưa chứng minh tốt hơn R0. Không đồng nhất reward với lợi ích đầu tư.
+
 ## Thiết kế kế tiếp đã chốt (2026-09-19), chưa thay callback runtime
 
 [Kế hoạch toàn hệ thống](SYSTEM_DELIVERY_PLAN.md) chọn ledger toàn mạng và shared reward làm
@@ -31,8 +35,7 @@ Ledger giữ pending/running/arrived/error/teleport, chạy drain-out có giới
 unserved demand. Không được tuyên bố tiết kiệm dựa trên tập arrived bị chọn lọc. Nếu transit có
 passenger records thì dùng một quy tắc hạch toán nhất quán, không cộng trùng với occupancy xe.
 
-Đây là lựa chọn thay thế cho đề xuất `departDelay + timeLoss` ở mục 3 làm **primary evaluator**;
-hai trường đó vẫn là chẩn đoán có ích. Mốc tham chiếu cần giữ cố định theo route, speed assumptions
+`departDelay` và `timeLoss` là chẩn đoán, không phải **primary evaluator** cạnh tranh với `C`. Mốc tham chiếu cần giữ cố định theo route, speed assumptions
 và scheduled stops. Không thay mốc theo tuyến mà policy tự chọn; v1 chưa nghiên cứu induced demand.
 
 Lý do: chi phí bao phủ cả queue trước khi chèn và xe ngoài lane của agent; agent không được lợi
@@ -126,14 +129,12 @@ Cho scenario `s`, seed `k`, investment mask `x`, policy `pi`, giữ cùng danh s
 Cost pilot ít giả định nhất là:
 
 ```text
-C_time(x, pi, s, k) = sum_v n_v * w_OD(v) * d_v(x, pi, s, k) / 3600
+C_time(x, pi, s, k) = sum_v n_v * w_OD(v) * (T_v(x, pi, s, k) - T0_v) / 3600
 ```
 
-Ở thí nghiệm **tuyến cố định**, `d_v = departDelay_v + timeLoss_v` là đại lượng đề xuất để
-không thưởng việc ngăn xe vào mạng. Giữ speedFactor và các dừng theo lịch nhất quán. Nếu cho phép
-đổi tuyến, timeLoss thấp chưa chắc tổng thời gian ngắn: tuyến vòng dài nhưng chạy nhanh có thể
-ít timeLoss. Khi đó dùng tổng thời gian từ khởi hành dự định đến đến nơi trừ một mốc OD cố định,
-hoặc so tổng thời gian của cùng OD; không dùng mốc free-flow thay đổi theo tuyến của từng policy.
+`T_v` tính intended departure → arrival; `T0_v` cố định giữa các phương án.
+Giữ route, speedFactor và scheduled stops nhất quán trong pilot. Ít timeLoss không chứng minh
+hành trình ngắn hơn. Chưa nghiên cứu induced demand hoặc policy tự thay routing assumptions.
 
 Đây là **đặc tả bộ đánh giá cần bổ sung**, không phải khẳng định callback đã đo đủ. Cần ledger
 nhu cầu dự định để nối xe đã hoàn thành, đang chạy, chưa được chèn, bị loại/teleport và lỗi route.
@@ -202,8 +203,8 @@ không khẳng định QUBO chính xác toàn mạng hay có ưu thế lượng 
 
 ### RL policy trong thí nghiệm investment mask
 
-Chốt một protocol trước khi đo `F`: policy shared điều kiện hóa theo mask, hoặc train lại cho từng
-mask với cùng ngân sách huấn luyện/seed. Hai protocol trả lời hai câu hỏi khác nhau. Không so model
+Protocol pilot: shared policy điều kiện hóa theo mask, freeze checkpoint trước khi đo `F`.
+Không train lại riêng từng mask trong protocol đã chốt. Không so model
 được train kỹ ở mask A với model chưa thích nghi ở mask B rồi quy mọi khác biệt thành hiệu quả đầu tư.
 Kiểm tra fixed-time, rule-based, RL-full và RL-budget trên cùng demand; full-upgrade chỉ là comparator,
 không giả định luôn tốt nhất. Pipeline train/evaluate theo mask hiện chưa hoàn thiện trong repository.
@@ -282,3 +283,274 @@ trọng số tùy ý khi chúng chỉ mô tả lại cùng delay; dùng chúng l
 trên. Đề xuất thiết kế trong tài liệu này không tự đổi status profile thành approved và không bỏ
 production gate. SUMO official docs được mở kiểm tra ngày rà soát; các nguồn kinh tế/travel nằm
 trong hai báo cáo nguồn với locator, phạm vi, tuổi dữ liệu và access caveats riêng.
+
+## 8. Đề xuất nghiên cứu mở rộng: lịch hoạt động, rủi ro và mức phục vụ
+
+Cập nhật 2026-09-20 theo yêu cầu nghiên cứu reward sâu hơn. **Đây là đề xuất tổng hợp của dự án,
+chưa phải phương pháp mới đã được công bố, chưa hiệu chỉnh cho map, chưa tích hợp callback hoặc
+chứng minh tốt hơn baseline.** Giữ công thức phần đầu làm R0; không thay ngầm cấu hình runtime.
+Phần này sở hữu thiết kế R1, không tạo roadmap khác với SYSTEM_DELIVERY_PLAN.
+
+### 8.1 Căn cứ và khoảng trống nghiên cứu
+
+| Nguồn đã đọc | Điều dùng được | Điều không được suy ra |
+|---|---|---|
+| [Fosgerau & Karlström, The value of reliability, 2010](https://mpra.ub.uni-muenchen.de/42274/5/MPRA_paper_42274.pdf), §2–3 | Liên hệ thời gian hành trình, giờ mong muốn đến và biến động thời gian | Hệ số định giá của Việt Nam hoặc tính đúng của mọi phân phối |
+| [Small, Valuation of travel time, 2012](https://sites.socsci.uci.edu/~ksmall/VOT%20review.pdf), §2.4 | Định giá thời gian khác theo bối cảnh; lịch và reliability có thể phản ánh phần thiệt hại trùng nhau | Thu nhập tự động là VOT; mọi khoản phạt là chi phí xã hội |
+| [Ng, Harada & Russell, 1999](https://people.eecs.berkeley.edu/~pabbeel/cs287-fa09/readings/NgHaradaRussell-shaping-ICML1999.pdf), theorem về shaping | Bổ sung hiệu thế có dạng gamma*Phi(next)-Phi(current) | Bảo đảm hội tụ cho PPO nhiều agent, quan sát thiếu hoặc potential thay đổi tùy ý |
+| [Achiam et al., CPO, 2017](https://proceedings.mlr.press/v70/achiam17a/achiam17a.pdf), §4–5 | Tách mục tiêu và giới hạn chi phí trong tối ưu có ràng buộc | Penalty hoặc PPO-Lagrangian tự bảo đảm an toàn từng hành động |
+| [Rockafellar & Uryasev, 2000](https://sites.math.washington.edu/~rtr/papers/rtr179-CVaR1.pdf), hàm F_alpha | Công thức tối ưu CVaR qua ngưỡng eta và phần vượt ngưỡng | Một vài seed đủ để ước lượng đuôi phân phối đáng tin |
+| [Prashanth, 2014, CVaR-constrained MDPs](https://arxiv.org/pdf/1405.2690), §2–5 | Học policy với ước lượng rủi ro và cập nhật biến đối ngẫu | Tự chuyển định lý trong bài sang SUMO/PPO hiện tại |
+| [Wei et al., PressLight, KDD 2019](https://faculty.ist.psu.edu/jessieli/Publications/2019-KDD-presslight.pdf) | Đối chứng điều khiển dựa trên chênh lệch dòng/áp lực giữa các hướng | Throughput cao đồng nghĩa công bằng, đúng giờ hoặc lợi ích tiền cao trong mọi trường hợp |
+
+Câu hỏi nghiên cứu: **với cùng demand hành vi và ngân sách tính toán, thêm lịch hoạt động cùng
+ràng buộc đuôi chậm trễ có giảm thiệt hại và bảo vệ các nhóm chịu thiệt so với R0 hay không;
+shaping có giảm số mẫu học mà không làm thay đổi bộ đánh giá không?**
+Các thành phần đã có trong literature. Đóng góp cần chứng minh nằm ở cách hạch toán/ghép nối và
+kiểm định trên map, không ở việc đặt tên mới cho tổng các công thức.
+
+### 8.2 Đơn vị hạch toán và điều kiện thí nghiệm
+
+Dùng person-leg e cho thời gian người; vehicle v cho vận hành xe; activity j cho lịch đến;
+shipment k cho thiệt hại hàng hóa riêng biệt. Mỗi bản ghi có ID ổn định, nguồn/đích, thời điểm,
+đơn vị và evidence. Không dùng một hệ số ưu tiên chung cho nhãn ambulance/bus/truck.
+
+R0 occupancy-weighted tương đương person-leg khi người trên xe có cùng khoảng thời gian và VOT.
+R1 cần registry người/chặng để xử lý lên/xuống xe và đổi phương tiện. Mỗi người tại một thời điểm
+chỉ thuộc một trạng thái thời gian: di chuyển, chờ phục vụ chuyến, hoạt động hoặc nghỉ. Không
+tính đồng thời occupancy xe và passenger records cho cùng người.
+
+Giữ cùng danh sách người, hoạt động, cửa sổ giờ, routing assumptions và ngẫu nhiên ngoại sinh giữa
+các policy. Với tour liên kết, giờ phát sinh chặng sau có thể phụ thuộc giờ đến chặng trước:
+dùng cùng QUY TẮC lịch cho mọi policy, không ép phát xe trước khi người/xe có mặt.
+Phân biệt planned start và actual release. Chậm từ chặng trước không được biến thành hàng chờ
+ảo của chặng sau rồi tính cùng khoảng thời gian hai lần. Phần mất cơ hội hoạt động xử lý ở lịch.
+Nếu runner chưa hỗ trợ liên kết này, chỉ gọi thí nghiệm fixed-leg, chưa claim activity-aware đầy đủ.
+
+Ngoài map: giữ endpoint thật và connector. Chỉ tính đoạn thời gian trong phạm vi được mô hình hóa,
+kể cả hàng chờ đầu vào. Chỉ tính trễ hẹn tại đích ngoài map nếu có mô hình đoạn ngoài đã kiểm chứng
+và dùng thống nhất. Nếu không, báo giới hạn phạm vi thay vì bịa giờ đến đích.
+
+### 8.3 Chi phí R1: thời gian và lịch hoạt động
+
+Đặt [x]_+=max(x,0). Các mốc thời gian dùng giây, đơn giá thời gian dùng VND/người-giờ.
+
+\[
+C_{\mathrm{trip}}(\omega)=
+\sum_e \frac{w_e T_e}{3600}
++\sum_j\left\{
+\frac{\beta_j[E_j-a_j]_+ + \ell_j[a_j-L_j]_+}{3600}
++m_j\,{\bf1}(a_j>D_j)
+\right\}.
+\]
+
+- omega: một ngày/kịch bản và seed; T_e gồm thời gian đi/chờ phục vụ của person-leg, không gồm
+  thời gian đang làm việc/ở nhà. Hàng chờ insertion là thời gian của người, kể cả xe chưa vào net.
+- [E_j,L_j]: cửa sổ đến chấp nhận được cho person-activity j; a_j là giờ đến thực tế.
+  Không có yêu cầu đúng giờ thì không tự dựng deadline.
+- beta_j, ell_j: chi phí sớm/muộn còn lại ngoài VOT di chuyển; không mặc định ell>beta nếu chưa có
+  bằng chứng. Mỗi hoạt động gắn đúng người, nên không nhân occupancy thêm lần nữa.
+- D_j>=L_j: hạn mất cơ hội; m_j chỉ bật nếu có thiệt hại tăng thêm thực sự tránh được.
+  Bỏ lỡ cuộc hẹn không tự bằng cả doanh thu dịch vụ. Tiền phạt chuyển từ bên này sang bên kia
+  không tự là mất mát xã hội. Nếu m đã gồm trễ giờ thì tách phần trùng trước khi cộng.
+- Sau D, công thức trên giả định thiệt hại trễ tuyến tính còn tiếp tục ngoài khoản mất cơ hội.
+  Nếu hoạt động thực sự bị hủy, phải dùng loss curve và trạng thái hủy riêng; không kéo dài
+  tuyến tính vô hạn hoặc cho hủy làm chuyến biến mất. Core pilot chưa cho policy tự hủy nhu cầu.
+
+R1 core dùng time + schedule, chưa cần missed-activity fee. Có thể thêm
+C_resource (năng lượng/hao mòn) và C_external (phát thải), hoặc C_cargo theo shipment,
+nhưng chỉ khi có nguồn, cùng năm giá và bảng loại trùng. Các kênh này là mở rộng có gate,
+không các số 0 được gọi là đã bao phủ toàn bộ thiệt hại.
+
+Reliability trong R1 thể hiện qua phân phối đến sớm/muộn và kiểm tra rủi ro ở §8.4.
+Không cộng mặc định một khoản w_sigma*std(T) bên cạnh schedule loss.
+Điều này không chứng minh đã bao phủ mọi sở thích tránh bất định; nếu cần khoản riêng,
+phải ước lượng phần dư và kiểm định khả năng phân biệt tham số.
+
+**Tính chi phí từng bước:** đặt C_acc(t) là thời gian đã phát sinh + trễ hẹn đã tích lũy
++ sự kiện đã ghi nhận. Với hoạt động chưa đến và đã qua L_j, tích lũy
+ell_j*[min(t,a_j)-L_j]_+/3600 (a_j=+infinity khi chưa đến).
+Chi phí đến sớm chỉ ghi một lần lúc đến; khoản m chỉ ghi một lần khi vượt D mà chưa đến.
+Trạng thái cuối chuyến phải dừng tích lũy. Không chờ tới arrival mới tính toàn bộ lateness,
+vì policy có thể trì hoãn arrival để né khoản phạt trong cửa sổ quan sát.
+
+Mỗi outcome có một harm_id/ledger owner. Đến sớm rồi chờ mở cửa cần chọn một cách hạch toán:
+chi phí schedule early đã bao gồm việc chờ, hoặc tách phần chờ vào time và chỉ giữ residual
+schedule discomfort. Không tính cả hai toàn phần. Lịch hoạt động liên tiếp có thể chịu
+nhiều thiệt hại khác nhau, nhưng cùng khoản mất thu nhập không được gán cho nhiều activity.
+
+### 8.4 Công bằng, đuôi chậm trễ và phục vụ nhu cầu
+
+Tối ưu chi phí kỳ vọng **với ràng buộc**, không quy mọi tiêu chí thành VND:
+
+\[
+\min_\pi \mathbb E_\omega[C_{\mathrm{trip}}^\pi(\omega)]
+\quad\text{s.t.}\quad
+\mathrm{CVaR}_{\alpha_g}(Z_g^\pi)\le b_g,\quad
+\mathbb E[Y_h^\pi]\le d_h,\quad a_t\in\mathcal A_{\mathrm{safe}}(s_t).
+\]
+
+Z_g là số giây trễ của một person-leg/hoạt động dự định trong nhóm g. Chọn rõ loại:
+max(0,T_e-T0_e) cho excess travel, hoặc max(0,a_j-L_j) cho trễ hoạt động.
+T0 cố định giữa các phương án; không dùng VOT làm trọng số công bằng.
+g có thể là khu vực, hướng qua biên, transit, tiếp cận trường/bệnh viện.
+Không tự suy nhóm thu nhập từ địa chỉ. Nhóm giao nhau được phép trong constraints,
+không làm thời gian đó được cộng nhiều lần vào chi phí tiền.
+
+Phân phối Z_g được xác định bằng: chọn scenario với trọng số đã freeze, rồi chọn đều trong
+roster người-chặng/hoạt động dự định của nhóm trong scenario đó. Đây là **trọng số theo scenario**,
+không tự đồng nghĩa chọn đều mọi người trên toàn bộ các ngày. Nếu muốn person-weighted toàn bộ
+thì đổi trọng số scenario theo N_g từ trước, dùng cùng quy tắc ở train/eval/QUBO.
+Roster không phụ thuộc số arrived. N_g=0 là not-applicable, không thay CVaR bằng 0.
+
+\[
+\mathrm{CVaR}_{\alpha}(Z)=
+\min_\eta\left[\eta+\frac{\mathbb E[(Z-\eta)_+]}{1-\alpha}\right].
+\]
+
+Công thức hinge xử lý được phân phối rời rạc. Không lấy đơn giản mean(Z>=quantile) khi có ties.
+Chọn alpha và ngưỡng trước test theo độ phủ dữ liệu/mức dịch vụ; không tự tuyên bố
+alpha=0.95 là tiêu chuẩn. Ít mẫu đuôi thì báo chưa đủ bằng chứng, thêm seeds/ngày.
+
+Y_h có thể là person-mean delay hoặc tỷ lệ trễ hẹn theo nhóm. Bổ sung giới hạn
+“không xấu hơn baseline quá epsilon” và giới hạn tuyệt đối khi có căn cứ.
+Ngưỡng tương đối freeze từ tập development với uncertainty, không tune theo test.
+Baseline tệ không tự là mức phục vụ chấp nhận được.
+Không tồn tại bộ tham số thỏa constraints thì báo infeasible, không lén nới ngưỡng.
+
+An toàn xung đột pha/clearance/minimum-green do action shield kiểm soát từng bước.
+Giới hạn kỳ vọng/CVaR không bảo đảm không ai bị chờ lâu, nên cần theo dõi starvation,
+hàng chờ và kiểm tra stress riêng. Không hứa maximum wait tuyệt đối nếu demand vượt capacity.
+
+Unroutable, teleport, bị loại và unfinished đều ở ledger. Chạy drain-out với giới hạn chung.
+Nếu còn chuyến dở: cost và tail-delay đã tích lũy là lower bound; không xác nhận feasible
+hoặc báo tiết kiệm hoàn chỉnh từ chúng. Gate phục vụ so sánh mọi intended demand.
+Policy không được tự kết thúc episode để né chi phí. Truncation do rollout không là terminal.
+
+### 8.5 Reward mở rộng R1 và tín hiệu học
+
+Với episode hoàn chỉnh có N bước, S>0 cố định, đề xuất:
+
+\[
+r_t^{R1}=
+-\frac{C_{\mathrm{acc}}(t+1)-C_{\mathrm{acc}}(t)}{S}
+-\mathbf1_{t=N-1}\,P(\omega)
++\kappa\{\gamma\Phi(\xi_{t+1})-\Phi(\xi_t)\},
+\]
+\[
+P(\omega)=
+\sum_g\lambda_g\frac{H_g(\omega;\eta_g)-b_g}{u_g}
++\sum_h\nu_h\frac{Y_h(\omega)-d_h}{v_h},
+\qquad
+H_g=\eta_g+\frac{\sum_{e\in g}(z_e-\eta_g)_+}{(1-\alpha_g)N_g}.
+\]
+
+H_g ước lượng theo roster đủ và eta cố định trong batch; E[H_g] là surrogate CVaR.
+u_g,v_h>0 là thang đơn vị freeze, không fit lại theo policy; lambda,nu>=0 là biến đối ngẫu,
+**không phải giá tiền của con người**. P có thể âm khi dư mức phục vụ, đúng dạng Lagrangian.
+Không clip P về phần dương tùy ý rồi vẫn tuyên bố cùng bài toán.
+
+Policy giảm chi phí Lagrangian, eta cập nhật để giảm surrogate CVaR,
+lambda <- max(0,lambda + lr*(mean(H)-b)/u), tương tự nu.
+Freeze eta/lambda/nu/kappa trong một batch rollout. Cập nhật chậm, log dao động và residual.
+Không chỉ thêm biểu thức vào callback PPO rồi gọi đó là constrained optimizer đã hoàn tất.
+Terminal signal thưa là trade-off thật; dùng cost critics/advantages theo constraint để giảm
+variance. Chưa tuyên bố hội tụ hoặc bảo đảm feasibility của neural policy.
+
+**Đồng nhất với evaluator:** pilot dùng gamma=1 cho episode hữu hạn đã hoàn tất, Phi(terminal)=0,
+Phi đầu không phụ thuộc action, kappa cố định. Khi đó tổng reward =
+-C_trip/S - P - kappa*Phi(initial), giả sử C_acc(initial)=0.
+Ở đây t là chỉ số quyết định; thời gian vật lý của ledger vẫn dùng giây. Nếu có warm-up,
+freeze ledger đầu đợt và dùng chênh lệch C_final-C_initial nhất quán giữa reward/evaluator;
+giữ tuổi hàng chờ và trạng thái lịch, không reset chúng để xóa chi phí hoặc đếm lại sự kiện.
+Đây là đẳng thức kế toán với lambda/eta cố định, không chứng minh PPO tìm được nghiệm.
+Nếu gamma<1, chỉ shaping telescope theo discount; chi phí bị ưu tiên theo thời điểm nên
+không còn bằng cost không discount. Phải ghi là ablation khác, không gọi tương đương.
+Rollout bị cắt cần bootstrap tiếp, không đặt Phi=0 như episode đã hoàn thành.
+
+**Potential hỗ trợ phối hợp:** thử Phi=-sum_m min(p_m^2,p_max^2),
+p_m=q_in(m)/K_in(m)-q_out(m)/K_out(m), K>0 theo movement mapping.
+q là lượng người chờ/ước lượng, K là sức chứa quy đổi cùng đơn vị và mode. Mapping phải tránh
+tùy ý đếm một queue nhiều lần. p_max và kappa freeze trên development.
+Đây là heuristic bounded dùng ý tưởng pressure, **không phải reward PressLight nguyên bản**
+và không mang theo định lý throughput. Phi có thể phản tác dụng với function approximation:
+phải có ablation kappa=0. Queue/spillback không được cộng thêm thành tiền trong C_trip.
+
+xi là thông tin phù hợp sensor mode (observation history/belief nếu thiếu quan sát);
+không dùng exact hidden counts làm input policy camera. Ground truth được dùng cho
+training reward/evaluation riêng, nhưng actor không nhận reward/cost/lambda hay hidden ledger
+qua recurrent input trong thí nghiệm camera. Critic đặc quyền nếu dùng phải khai báo riêng.
+
+Shared reward có vấn đề credit assignment. Cost critics và shaping là hướng thử trước.
+Không gọi chênh lệch local queue là tác động nhân quả của một agent. Difference reward
+đúng cần counterfactual cùng state/demand với action thay thế, tốn thêm mô phỏng và ngoài core.
+Nhiều bản sao reward cho nhiều agent vẫn chỉ ứng với một ledger/environment.
+
+### 8.6 Liên kết QUBO và kiểm định danh mục
+
+R0 và R1 đều dùng cùng paired demand và shared checkpoint theo protocol pilot.
+Với R1, thay cost đầu vào F bằng kỳ vọng C_trip đã có lịch đại diện để quy đổi năm.
+Giữ B_i=F(0)-F(i), I_ij=F(i)+F(j)-F(i,j)-F(0), capex/opex/discount theo §4.
+Dùng cost thô và constraints, **không dùng tổng r_R1, P, potential hoặc lambda làm VND**.
+
+CVaR không có tính cộng như kỳ vọng và không tự là đa thức bậc hai của mask.
+Không cộng CVaR của từng OD rồi gọi là CVaR của toàn mạng. Không đưa tail penalty vào hệ số
+map_qubo hiện tại rồi nói solver đã bảo đảm fairness.
+QUBO cung cấp danh mục ứng viên; rerun trên held-out scenarios, kiểm tra mọi ràng buộc g/h
+và phục vụ. Vi phạm thì loại/chưa khuyến nghị. Với pilot nhỏ, có thể kiểm tra thêm các danh mục
+khả thi bằng liệt kê; chưa kiểm hết thì không claim tối ưu toàn cục dưới constraints.
+Proxy rủi ro bậc hai là nghiên cứu riêng, cần kiểm tra sai số độc lập.
+
+### 8.7 Dữ liệu tối thiểu và cách hiệu chỉnh
+
+| Nhóm | Cần có | Nếu thiếu |
+|---|---|---|
+| Time | person/leg/vehicle IDs, occupancy theo chặng, planned/actual release, arrival, boundary scope | Chỉ R0 với assumption ghi rõ; không tự nhân bus=20 |
+| Schedule | activity IDs, cửa sổ đến, lịch, beta/ell và source | Chỉ kịch bản minh họa/sensitivity; không claim calibrated R1 |
+| Missed activity | deadline, hậu quả biên, harm_id, quy tắc hủy | Tắt riêng m, không suy từ doanh thu cơ sở |
+| Fairness/risk | group roster, T0, scenario weights, alpha, ngưỡng, mẫu đuôi | Báo thiếu coverage; không gọi constraint đạt |
+| Learning | S/u/v, eta/lambda/kappa, seed/split, terminal semantics, feature contract | Không train chính thức nếu chưa freeze và validate |
+| Economics | price year, đơn vị, scope, bảng khoản trùng, financial calendar | Không quy đổi thành lợi ích đầu tư thật |
+
+Time và schedule coefficients phải hiệu chỉnh chung hoặc có kiểm tra overlap.
+Khảo sát lựa chọn/lịch thực tế mới có thể phân biệt sở thích thời gian; traffic counts riêng
+không nhận dạng được beta/ell/m. Không lấy số hệ số nước ngoài rồi coi là dữ liệu địa phương.
+Dùng same-VOT/person-time làm sensitivity công bằng, so với purpose-VOT có nguồn.
+S/u/v là chuẩn hóa; beta/ell là assumptions kinh tế; b/d là quyết định mức phục vụ.
+Ba loại tham số không được tune chung để tối đa lợi ích trên test.
+
+### 8.8 Protocol kiểm chứng và phản ví dụ
+
+Đối chứng: fixed-time, movement-aware rule/max-pressure nếu triển khai hợp lệ; local reward
+legacy; R0; R0+schedule; R0+constraints; R1 không shaping; R1 có shaping.
+Cùng kiến trúc, số mẫu, compute budget, seed splits, demand và safety. Mọi policy đều đánh giá
+bằng C_trip đầy đủ khi dữ liệu cho phép, kèm pure person-time, không mỗi policy một thước đo.
+Kiểm tra matched train budget và cost thời gian chạy; không chỉ final return.
+
+Hypotheses có thể bác bỏ:
+- Schedule giúp đúng giờ hơn ở cùng mức tổng thời gian hoặc có trade-off chấp nhận được.
+- Constraints giảm tail harm/vi phạm nhóm, có thể tăng cost trung bình.
+- Shaping tăng sample efficiency, không đổi ranking kế toán của trajectory hoàn chỉnh.
+- R1 dẫn tới portfolio tốt hơn R0 sau rerun, không chỉ theo quadratic prediction.
+
+Các tình huống bắt buộc:
+1. Cùng travel time nhưng một activity trễ hẹn: R0 hòa, R1 phân biệt.
+2. Tiết kiệm năm phút nhưng vẫn sớm hơn cửa sổ: có thể không tốt hơn; kiểm tra beta hợp lý.
+3. Người cùng xe chia/ghép roster không đổi tổng time cost; người chưa đến không mất mẫu số.
+4. Mean delay bằng nhau nhưng có một nhóm chịu tail lớn: CVaR phát hiện, không chỉ variance chung.
+5. Đẩy xe ra hàng chờ trước cửa mạng, teleport, xóa route: không tạo savings hợp lệ.
+6. Nghẽn chuyển sang nút bên cạnh/nhóm ít VOT: ledger toàn mạng và constraints cùng phát hiện.
+7. Phi thay đổi dọc đường nhưng cùng initial/terminal: tổng shaping chỉ là hằng số; terminal
+   chưa về 0 hoặc sai gamma phải làm test thất bại.
+8. Kết quả QUBO cải thiện mean nhưng vi phạm nhóm: không được trình bày như phương án được duyệt.
+9. Sensor occlusion tăng, future/deadline truth không lọt vào actor qua reward history.
+10. Tour chặng trước đến trễ: chặng sau không phát sớm, không đếm hai lần cùng thời gian người.
+
+Báo paired differences và uncertainty theo seed/ngày (cluster bootstrap theo ngày, không coi
+mọi xe cùng ngày độc lập); với CVaR báo số mẫu ở đuôi và khoảng bất định.
+Ba seed test trong plan chỉ là smoke khởi đầu, chưa đủ tự động kết luận tail đáng tin.
+Nếu không đủ tài nguyên, báo thiếu precision thay vì ghi một tỷ lệ cải thiện chắc chắn.
+Một phần hoặc toàn bộ R1 có thể không thắng; khi đó giữ kết quả âm và ưu tiên phương án đơn giản.
+
+Script scripts/research/check_reward_design.py kiểm tra số học với dữ liệu giả tự khai báo:
+không là evaluator SUMO, không chứng minh khả năng học, calibration hoặc hiệu quả trên map.

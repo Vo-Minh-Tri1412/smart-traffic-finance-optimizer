@@ -16,6 +16,7 @@ public class TrafficRenderEditor : ModuleRules
         {
             "CoreUObject",
             "Engine",
+            "ProceduralMeshComponent",
             "UnrealEd"
         });
     }

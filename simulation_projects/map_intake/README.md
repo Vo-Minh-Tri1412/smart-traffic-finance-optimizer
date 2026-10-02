@@ -1,7 +1,12 @@
 # Map intake workspace
 
-This folder is the staging area for maps before they become a Unreal replay input or a committed
-`district_spec`.
+This folder owns the retained SUMO project and map-intake artifacts. The current map is not
+converted back into a DistrictSpec fixture.
+
+M0 TASK-095, 2026-09-20: validate-sumo-net --project district7.project.json now validates the
+retained roi_semantic_overlay.v2 without changing its geometry or provenance. It reports 2,588
+unanchored polygons and missing demand. The roundtrip fails explicitly before routing when no
+flows exist; map validation does not certify demand or end-to-end research readiness.
 
 Use it when the team already has or generates a map first, then wants to refine the semantic,
 economic, and visual layers for Unreal.

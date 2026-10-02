@@ -3,6 +3,14 @@
 Decision recorded: 2026-09-19. **Accepted design, not implemented capability.**
 The full delivery sequence is in [System delivery plan](SYSTEM_DELIVERY_PLAN.md).
 
+Reaffirmed 2026-10-02: the immediate deliverable is live retained-map SUMO traffic in Unreal.
+Native catalog, placement and scene Data Assets are the required editing surface for that
+deliverable. Replacing a mesh/material or changing camera/lighting must work in the Editor
+without changing or recompiling the bridge. The C++ layer owns transport, validation, canonical
+coordinate conversion and applying simulation state; Blueprint hooks extend presentation.
+Staged art stills do not count as integrated simulation evidence. TASK-108 is implementing this
+boundary; implementation is only accepted after a real run and an edit-without-rebuild check.
+
 ## Ownership and editing surface
 
 SUMO owns positions, routes, dimensions and signal states. UE owns their visual representation.
@@ -61,9 +69,15 @@ The first corner must come from the retained map, at a validated pilot signal, w
 and TLS trace. Unverified surrounding architecture is illustrative, not a surveyed reconstruction.
 
 Acceptance: a real UE 1920x1080 still plus replay, no missing textures, incorrect ground contact or
-TLS state mismatch. Record a 60-second benchmark after warm-up with preset, visible counts and GPU
-memory. Target P95 frame time <= 33.3 ms at 1080p; this is an acceptance target, not measured FPS.
-Do not achieve it by dropping traffic from the active view without reporting that loss.
+TLS state mismatch. Benchmark the in-process PIE game viewport with UE `StartFPSChart`/
+`StopFPSChart` per-frame Frame/GT/RT/GPU CSV: 20-second warm-up, 60-second sample, verified
+1920x1080 viewport, D3D12, >=95% non-zero GPU samples, at least 1,500 frame rows and at least
+59 seconds in wall time, CSV time span and summed frame deltas. Target P95 frame time <= 33.3 ms. Record the active
+preset, GPU memory and visible counts. If visible counts are unavailable, report the frame-time gate
+separately and keep the M1 benchmark incomplete. The current Editor Python driver supports
+in-process PIE; it does not control a separate Standalone process. The Editor + SceneCapture/Slate
+tick proxy is diagnostic only and does not satisfy gameplay acceptance. Do not achieve the target by dropping
+traffic from the active view without reporting that loss.
 
 Use a distinct sensor preset for synchronized RGB/depth/instance exports. Do not use post-processing
 that makes masks disagree with RGB, or projected rectangles as depth-correct masks. Actor-ID mapping
