@@ -1,0 +1,51 @@
+id = "TASK-099"
+owner = "luna_metric_missingness"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "4d32368f5b9221b61c9da2864c1876d1d287c10f"
+allowed_paths = [
+  "coordination/tasks/099_metric_availability.toml",
+  "ai_quantum_hvtc/simulation/metrics/schema.py",
+  "ai_quantum_hvtc/simulation/engines/sumo/parser.py",
+  "ai_quantum_hvtc/simulation/engines/reference/engine.py",
+  "ai_quantum_hvtc/simulation/traces/schema.py",
+  "ai_quantum_hvtc/reports/export.py",
+  "ai_quantum_hvtc/public_finance/scoring.py",
+  "ai_quantum_hvtc/dashboard/schemas.py",
+  "ai_quantum_hvtc/dashboard/routers/runs.py",
+  "ai_quantum_hvtc/dashboard/routers/finance.py",
+  "frontend/src/lib/types.ts",
+  "frontend/src/views/CompareView.tsx",
+  "tests/unit/simulation/test_sumo_metric_availability.py",
+  "tests/unit/reports/test_baseline_comparison_report.py",
+  "tests/unit/public_finance/test_scoring.py",
+  "tests/unit/dashboard/test_metric_availability.py",
+]
+dependencies = ["TASK-098"]
+acceptance_commands = [
+  "uv run pytest tests/unit/simulation/test_sumo_metric_availability.py tests/unit/reports/test_baseline_comparison_report.py tests/unit/public_finance/test_scoring.py tests/unit/dashboard/test_metric_availability.py",
+  "uv run pytest tests/integration/sumo/test_existing_sumo_net_runner.py::test_existing_sumo_net_runner_reuses_net_and_routes -q",
+  "uv run ruff check ai_quantum_hvtc/simulation/metrics/schema.py ai_quantum_hvtc/simulation/engines/sumo/parser.py ai_quantum_hvtc/simulation/engines/reference/engine.py ai_quantum_hvtc/simulation/traces/schema.py ai_quantum_hvtc/reports/export.py ai_quantum_hvtc/public_finance/scoring.py ai_quantum_hvtc/dashboard/schemas.py ai_quantum_hvtc/dashboard/routers/runs.py ai_quantum_hvtc/dashboard/routers/finance.py tests/unit/simulation/test_sumo_metric_availability.py tests/unit/reports/test_baseline_comparison_report.py tests/unit/public_finance/test_scoring.py tests/unit/dashboard/test_metric_availability.py",
+  "uv run mypy --follow-imports=silent ai_quantum_hvtc/simulation/metrics/schema.py ai_quantum_hvtc/simulation/engines/sumo/parser.py ai_quantum_hvtc/simulation/engines/reference/engine.py ai_quantum_hvtc/simulation/traces/schema.py ai_quantum_hvtc/reports/export.py ai_quantum_hvtc/public_finance/scoring.py ai_quantum_hvtc/dashboard/schemas.py ai_quantum_hvtc/dashboard/routers/runs.py ai_quantum_hvtc/dashboard/routers/finance.py",
+  "npm --prefix frontend run typecheck",
+]
+status = "done"
+
+[handoff]
+summary = "Represent unavailable SUMO bus passenger delay and failed-route count as null through result JSON, report deltas, dashboard API, and UI. Reroute count is the sum of rerouteNo over non-empty emitted TripInfo rows only when every row has a valid nonnegative integer; trace generation omits unknown failed-route events; public-finance scoring rejects incomplete metrics and the dashboard returns HTTP 422."
+validation = [
+  "Focused pytest command passed, including parser cases for complete rerouteNo rows, missing/invalid/negative attributes, and empty TripInfo.",
+  "SUMO integration runner test passed; a local SUMO smoke emitted 773 TripInfo rows and all 773 carried rerouteNo.",
+  "Scoped Ruff command passed.",
+  "Scoped mypy command with --follow-imports=silent passed for 9 source modules.",
+  "Frontend TypeScript typecheck passed.",
+  "A normal unfiltered scoped mypy run reports only the known pre-existing error at ai_quantum_hvtc/simulation/engines/sumo/existing_net.py:279 (float(Number)); TASK-099 does not address that diagnostic.",
+  "SUMO TripInfo source review: rerouteNo is the per-row reroute total; all vehicles are reported by default, write-unfinished adds active vehicles, and both local config builders enable it without device filtering. The metric cohort is all emitted arrived, unfinished, or vaporized TripInfo rows; not-yet-departed vehicles are omitted and cannot have rerouted. Empty output or any missing/invalid row value leaves the count null.",
+  "Scoped git diff --check passed.",
+]
+risks = [
+  "SUMO passenger_count is exported as personCapacity and does not prove actual riders aboard; bus passenger delay remains unavailable until passenger-loading or occupancy observations are supplied.",
+  "Route-failure counts still lack an event source. Reroute count remains unavailable for empty or incomplete TripInfo output; finance scoring rejects runs with unknown required metrics.",
+]
+next_steps = [
+  "Add defensible SUMO passenger occupancy and route-failure event sources before restoring those metrics or scoring SUMO runs.",
+]

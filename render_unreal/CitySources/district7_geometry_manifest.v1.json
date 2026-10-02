@@ -1,0 +1,27 @@
+{
+  "schema_version": "geometry_manifest.v1",
+  "geometry_source": "sumo_net_xml",
+  "coordinate_system": "sumo_xy_meters",
+  "net_xml": "../../simulation_projects/map_intake/02_prepared_sources/district7_osm_seed_20260702/district7_seed.net.xml",
+  "bounds": {
+    "min_x": -0.13,
+    "min_y": -1.62,
+    "max_x": 10648.01,
+    "max_y": 9564.88
+  },
+  "local_origin": {
+    "x": -0.13,
+    "y": -1.62
+  },
+  "project_id": "district7_osm_seed_20260702",
+  "project_version": "v1",
+  "source_id": "district7_seed_net",
+  "source_net_sha256": "80637f09674799490eecfcd9ae1c9abe3f795795350ca3b61e8aa53d4d1f33e0",
+  "semantic_overlay_sha256": "9f596884721a3ccc956a929feabc83419816d9279a805ceb63a1b2edb331183a",
+  "edge_count": 29001,
+  "lane_count": 32013,
+  "junction_count": 13073,
+  "traffic_light_count": 169,
+  "overlay_zone_count": 2588,
+  "overlay_candidate_count": 0
+}

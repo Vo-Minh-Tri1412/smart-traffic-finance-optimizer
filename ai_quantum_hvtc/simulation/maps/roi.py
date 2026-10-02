@@ -196,7 +196,7 @@ class RoiArtifactPaths:
     output_root: Path
     semantic_overlay: Path
     road_review: Path
-    godot_preview: Path
+    render_preview: Path
     qa_json: Path
     qa_markdown: Path
     prepared_net: Path | None = None
@@ -670,14 +670,14 @@ def write_roi_artifacts(result: RoiPrepResult, output_root: Path) -> RoiArtifact
         output_root=output_root,
         semantic_overlay=output_root / "semantic_overlay.generated.json",
         road_review=output_root / "road_review.generated.json",
-        godot_preview=output_root / "godot_preview.generated.json",
+        render_preview=output_root / "render_preview.generated.json",
         qa_json=output_root / "qa_report.json",
         qa_markdown=output_root / "qa_report.md",
         prepared_net=result.prepared_net_path,
     )
     _write_json(paths.semantic_overlay, semantic_overlay_payload(result))
     _write_json(paths.road_review, road_review_payload(result))
-    _write_json(paths.godot_preview, godot_preview_payload(result))
+    _write_json(paths.render_preview, render_preview_payload(result))
     qa = qa_payload(result, paths)
     _write_json(paths.qa_json, qa)
     paths.qa_markdown.write_text(qa_markdown(result, qa), encoding="utf-8")
@@ -712,9 +712,9 @@ def road_review_payload(result: RoiPrepResult) -> dict[str, Any]:
     }
 
 
-def godot_preview_payload(result: RoiPrepResult) -> dict[str, Any]:
+def render_preview_payload(result: RoiPrepResult) -> dict[str, Any]:
     return {
-        "schema_version": "godot_roi_preview.v1",
+        "schema_version": "render_roi_preview.v1",
         "roi_id": result.roi_id,
         "geometry_source": {
             "sumo_net_path": str(result.prepared_net_path or result.source_net_path or ""),
@@ -756,7 +756,7 @@ def qa_payload(result: RoiPrepResult, paths: RoiArtifactPaths) -> dict[str, Any]
         "artifacts": {
             "semantic_overlay": str(paths.semantic_overlay),
             "road_review": str(paths.road_review),
-            "godot_preview": str(paths.godot_preview),
+            "render_preview": str(paths.render_preview),
         },
     }
 

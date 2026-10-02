@@ -79,7 +79,7 @@ def test_roi_artifact_writer_outputs_overlay_review_preview_and_qa(tmp_path: Pat
 
     overlay = json.loads(paths.semantic_overlay.read_text(encoding="utf-8"))
     review = json.loads(paths.road_review.read_text(encoding="utf-8"))
-    preview = json.loads(paths.godot_preview.read_text(encoding="utf-8"))
+    preview = json.loads(paths.render_preview.read_text(encoding="utf-8"))
     qa = json.loads(paths.qa_json.read_text(encoding="utf-8"))
 
     assert overlay["schema_version"] == "roi_semantic_overlay.v1"
@@ -95,6 +95,9 @@ def test_roi_artifact_writer_outputs_overlay_review_preview_and_qa(tmp_path: Pat
     )
     assert review["summary"]["zone_internal_service"] == 1
     assert preview["geometry_source"]["source_of_truth"] == "source_sumo_net"
+    assert preview["schema_version"] == "render_roi_preview.v1"
+    assert paths.render_preview.name == "render_preview.generated.json"
+    assert qa["artifacts"]["render_preview"] == str(paths.render_preview)
     assert qa["counts"]["micro_zones"] >= 4
     assert paths.qa_markdown.read_text(encoding="utf-8").startswith("# ROI prep QA")
 

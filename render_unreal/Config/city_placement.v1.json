@@ -1,0 +1,20 @@
+{
+  "schema_version": "city_placement_profile.v1",
+  "purpose": "illustrative_visual_only",
+  "building_zone_types": [
+    "commercial",
+    "education",
+    "healthcare",
+    "industrial",
+    "market_retail",
+    "port_logistics",
+    "residential"
+  ],
+  "landscape_zone_types": ["neutral"],
+  "building_min_area_m2": 100.0,
+  "building_min_clearance_m": 4.0,
+  "landscape_min_area_m2": 25.0,
+  "landscape_min_clearance_m": 2.0,
+  "max_building_footprint_radius_m": 24.0,
+  "max_landscape_footprint_radius_m": 5.0
+}

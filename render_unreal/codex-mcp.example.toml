@@ -1,0 +1,6 @@
+# Merge this table into the trusted repository's .codex/config.toml.
+# This example does not change any user-global Codex settings.
+[mcp_servers.traffic_unreal]
+url = "http://127.0.0.1:8001/mcp"
+startup_timeout_sec = 30
+tool_timeout_sec = 120

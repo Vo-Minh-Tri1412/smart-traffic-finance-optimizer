@@ -11,7 +11,7 @@ class IntersectionMetric:
     queue_vehicles: float = 0.0
     vehicles: int = 0
     emergency_delay_seconds: float = 0.0
-    bus_passenger_delay_seconds: float = 0.0
+    bus_passenger_delay_seconds: float | None = 0.0
     truck_delay_seconds: float = 0.0
 
 
@@ -29,10 +29,10 @@ class SimulationResult:
     average_queue_vehicles: float
     stopped_vehicles: int
     emergency_delay_seconds: float
-    bus_passenger_delay_seconds: float
+    bus_passenger_delay_seconds: float | None
     truck_delay_seconds: float
-    reroute_count: int
-    failed_route_count: int
+    reroute_count: int | None
+    failed_route_count: int | None
     controller_interventions: int = 0
     intersections: dict[str, IntersectionMetric] = field(default_factory=dict)
     vehicle_trace_frames: list[dict[str, Any]] = field(default_factory=list, repr=False)

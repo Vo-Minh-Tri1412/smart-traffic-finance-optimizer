@@ -1,0 +1,42 @@
+id = "TASK-106"
+owner = "integrator"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "4d32368f5b9221b61c9da2864c1876d1d287c10f"
+allowed_paths = [
+  "coordination/tasks/106_dashboard_experiment_read_view.toml",
+  "ai_quantum_hvtc/dashboard/config.py",
+  "ai_quantum_hvtc/dashboard/app.py",
+  "ai_quantum_hvtc/dashboard/schemas.py",
+  "ai_quantum_hvtc/dashboard/routers/__init__.py",
+  "ai_quantum_hvtc/dashboard/routers/experiments.py",
+  "tests/unit/dashboard/test_experiments_api.py",
+  "docs/04_STATUS/IMPLEMENTATION_STATUS.md",
+  "docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md",
+]
+dependencies = ["TASK-098", "TASK-105"]
+acceptance_commands = [
+  "uv run pytest tests/unit/dashboard tests/unit/experiments/test_store.py -ra",
+  "uv run ruff check ai_quantum_hvtc/dashboard/config.py ai_quantum_hvtc/dashboard/app.py ai_quantum_hvtc/dashboard/schemas.py ai_quantum_hvtc/dashboard/routers tests/unit/dashboard/test_experiments_api.py",
+  "uv run mypy --follow-imports=silent ai_quantum_hvtc/dashboard/config.py ai_quantum_hvtc/dashboard/app.py ai_quantum_hvtc/dashboard/schemas.py ai_quantum_hvtc/dashboard/routers/experiments.py",
+  "git diff --check -- ai_quantum_hvtc/dashboard/config.py ai_quantum_hvtc/dashboard/app.py ai_quantum_hvtc/dashboard/schemas.py ai_quantum_hvtc/dashboard/routers/__init__.py ai_quantum_hvtc/dashboard/routers/experiments.py tests/unit/dashboard/test_experiments_api.py docs/04_STATUS/IMPLEMENTATION_STATUS.md docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md",
+  "uv run python -c 'import tomllib; from pathlib import Path; manifest = Path(\"coordination/tasks/106_dashboard_experiment_read_view.toml\"); tomllib.loads(manifest.read_text(encoding=\"utf-8\")); paths = [manifest, Path(\"ai_quantum_hvtc/dashboard/config.py\"), Path(\"ai_quantum_hvtc/dashboard/app.py\"), Path(\"ai_quantum_hvtc/dashboard/schemas.py\"), Path(\"ai_quantum_hvtc/dashboard/routers/__init__.py\"), Path(\"ai_quantum_hvtc/dashboard/routers/experiments.py\"), Path(\"tests/unit/dashboard/test_experiments_api.py\"), Path(\"docs/04_STATUS/IMPLEMENTATION_STATUS.md\"), Path(\"docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md\")]; bad = [(str(p), n) for p in paths for n, line in enumerate(p.read_text(encoding=\"utf-8\").splitlines(), 1) if line.endswith((\" \", \"\\t\"))]; print(\"TOML parsed; trailing whitespace:\", bad); raise SystemExit(bool(bad))'",
+]
+status = "done"
+
+[handoff]
+summary = "Add an opt-in read-only dashboard index of direct-child experiment manifests and on-demand run verification. Keep this view separate from the legacy RunStore, hide verifier failures and absolute paths, and list discovered run directory names as unverified until individually checked."
+validation = [
+  "uv run pytest tests/unit/dashboard tests/unit/experiments/test_store.py -ra: 74 passed, 1 unrelated Starlette/httpx deprecation warning.",
+  "Scoped Ruff command passed.",
+  "Scoped mypy command passed with no issues in 4 source files.",
+  "Scoped git diff --check passed.",
+  "Task TOML parsed and allowed-path trailing-whitespace scan passed with no findings.",
+]
+risks = [
+  "Verification follows the input paths frozen in experiment manifests; the endpoint does not expose those paths, archive those inputs, or make their source data immutable.",
+  "Discovered run IDs are directory names only; run verification must be requested separately and a successful hash check is artifact identity, not scientific acceptance.",
+  "The dashboard experiment view is not shared identity between dashboard jobs/RunStore and TASK-098. M0 remains in progress and the research gate remains closed.",
+]
+next_steps = [
+  "If a future task needs common dashboard/experiment identity, design explicit bindings without merging the existing read-only view with legacy RunStore semantics.",
+]

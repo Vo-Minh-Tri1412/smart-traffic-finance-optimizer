@@ -1,0 +1,96 @@
+{
+  "schema_version": "map_economic_source_research.v1",
+  "accessed_at": "2026-09-16",
+  "scope": "Existing prepared map ROI retained by user; no administrative-boundary claim",
+  "calibration_status": "research_only_no_profile_values_changed",
+  "sources": [
+    {
+      "source_id": "ECON-JICA-SOUTHERN-2016-VOT",
+      "publisher": "Japan International Cooperation Agency",
+      "title": "Data Collection Survey on Traffic Conditions of Southern Roads and Bridges, Final Report, Appendix 1",
+      "url": "https://openjicareport.jica.go.jp/pdf/12305017_02.pdf",
+      "locator": "Table 1.2.9, printed Appendix 1-28, PDF page 30 (1-based)",
+      "observation_year": 2013,
+      "price_year": 2016,
+      "unit": "USD/passenger_hour",
+      "extracted_values": {"motorcycle": 1.58, "car": 3.72, "bus": 1.16},
+      "evidence_type": "published_derived_estimate",
+      "verification": "primary_pdf_text_read; screenshot_requested",
+      "derivation": "METROS 2013 monthly personal income; GDP deflator to 2016; 22 workdays/month and 8 hours/day",
+      "permitted_use": "historical methodological prior",
+      "transfer_limits": "Survey-region mode averages; no building OD or trip-purpose value; USD conversion and time-price transfer must be explicit; do not multiply per-vehicle VOT by occupancy again"
+    },
+    {
+      "source_id": "ECON-JICA-SOUTHERN-CARGO",
+      "publisher": "Japan International Cooperation Agency",
+      "url": "https://openjicareport.jica.go.jp/pdf/12305017_02.pdf",
+      "locator": "Table 1.2.10, printed Appendix 1-29, PDF page 31 (1-based)",
+      "price_year": 2016,
+      "unit": "USD/vehicle_hour",
+      "evidence_type": "published_derived_estimate",
+      "verification": "primary_pdf_text_read",
+      "permitted_use": "methodology for marginal freight time cost",
+      "transfer_limits": "Uses commodity value, loading and interest assumptions; ROI cargo mix and inventories remain unknown. Gross cargo value is not saved economic benefit"
+    },
+    {
+      "source_id": "ECON-WB-PAD1305",
+      "publisher": "World Bank",
+      "title": "Ho Chi Minh City Green Transport Development Project, PAD1305",
+      "url": "https://documents1.worldbank.org/curated/en/558961468179946764/pdf/PAD1305-PAD-P126507-IDA-R2015-0120-1-Box391444B-OUO-9.pdf",
+      "publication_date": "2015-05-05",
+      "locator": "Annex 6, printed pages 71-72; PDF pages 83-84; footnote 32",
+      "price_year": null,
+      "unit": "VND/minute",
+      "extracted_values": {"forecast_2018_vot": 1636.57, "forecast_2025_vot": 2364.94},
+      "evidence_type": "historical_appraisal_projection_transferred_from_hanoi",
+      "verification": "primary_pdf_text_read",
+      "permitted_use": "CBA structure and sensitivity benchmark only",
+      "transfer_limits": "Hanoi willingness-to-pay proxy; projected year is not observation year or verified price year. Do not treat 2025 projection as current HCMC calibration"
+    },
+    {
+      "source_id": "ECON-NSO-VHLSS2024-HCMC",
+      "publisher": "National Statistics Office of Vietnam",
+      "title": "Results of the Vietnam Household Living Standards Survey 2024",
+      "url": "https://www.nso.gov.vn/wp-content/uploads/2026/03/Sach-Khao-sat-muc-song-dan-cu-2024.pdf",
+      "locator": "Table 5.7 continuation, TP. Ho Chi Minh, row 2024; PDF page not verified",
+      "observation_year": 2024,
+      "price_year": 2024,
+      "unit": "thousand_VND/person_month",
+      "extracted_values": {"mean": 7105.9},
+      "evidence_type": "official_household_survey_estimate",
+      "verification": "official_pdf_search_index_table; direct_fetch_timed_out; unit_and_page_require_visual_confirmation",
+      "permitted_use": "provisional socioeconomic context pending table visual review",
+      "transfer_limits": "Household per-capita income includes non-workers and non-wage income; cannot divide by working hours to claim worker VOT; city scope differs from ROI"
+    },
+    {
+      "source_id": "ECON-NSO-CPI2025",
+      "publisher": "National Statistics Office of Vietnam",
+      "url": "https://www.nso.gov.vn/du-lieu-va-so-lieu-thong-ke/2026/01/chi-so-gia-tieu-dung-chi-so-gia-vang-va-chi-so-gia-do-la-my-thang-muoi-hai-quy-iv-va-nam-2025/",
+      "locator": "Annual 2025 CPI paragraph",
+      "observation_year": 2025,
+      "base_year": 2024,
+      "unit": "percent_change_annual_average",
+      "extracted_values": {"cpi_change": 3.31},
+      "evidence_type": "official_aggregate_price_index",
+      "verification": "official_primary_search_excerpt; PDF companion also indexed",
+      "permitted_use": "explicit national general-price sensitivity adjustment 2024 to 2025",
+      "transfer_limits": "Not local wage growth, freight cost inflation, or a 2016-to-2025 chain. Full chain and chosen deflator required for older values"
+    }
+  ],
+  "rejected_or_unresolved_sources": [
+    {
+      "url": "https://thongkehochiminh.nso.gov.vn/Blog/ChiTietAnPham/2705?slug=nien-giam-thong-ke-tp-hcm-2024",
+      "reason": "Official page explicitly displays sample placeholder content and no verified data table; exclude from numerical evidence"
+    },
+    {
+      "url": "https://thongkehochiminh.gso.gov.vn/Niengiam/2024/Gui%20duyet_NIEN%20GIAM%20TPHCM%2025.7.25_In-413-451.pdf",
+      "reason": "Original URL fetch failed; replacement nso hostname returned 404"
+    },
+    {
+      "url": "https://openjicareport.jica.go.jp/pdf/12305124_03.pdf",
+      "reason": "Web fetch exceeded size limit; slow local partial download not treated as reviewed evidence"
+    }
+  ],
+  "travel_source_review": "docs/02_ARCHITECTURE/CURRENT_ROI_TRAVEL_SOURCE_REVIEW.md",
+  "unresolved_calibration": ["building OD volumes", "time-of-day purpose split", "local wage-based VOT", "occupancy by OD", "reliability willingness-to-pay", "cargo mix and spoilage", "2025 price conversion chain"]
+}

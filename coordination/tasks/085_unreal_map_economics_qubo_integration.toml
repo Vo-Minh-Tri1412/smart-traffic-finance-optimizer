@@ -1,0 +1,69 @@
+id = "TASK-085"
+owner = "integrator"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "00206367dafa7691f26f6dd14bea396cbaf04c6b"
+allowed_paths = [
+  "coordination/tasks/085_unreal_map_economics_qubo_integration.toml",
+  ".gitignore",
+  ".gitattributes",
+  "README.md",
+  "docs/README.md",
+  "docs/02_ARCHITECTURE/MULTI_AGENT_RL_MEMORY_TRAINING.md",
+  "docs/04_STATUS/IMPLEMENTATION_STATUS.md",
+  "ai_quantum_hvtc/rl/",
+  "scripts/training/rl_sumo_train.py",
+  "tests/unit/rl/",
+  "tests/integration/cli/test_rl_sumo_train_cli.py",
+  "coordination/tasks/082_unreal_render_adapter_v1.toml",
+  "coordination/tasks/083_map_economic_data_reward_v1.toml",
+  "coordination/tasks/084_map_aware_qubo_v1.toml",
+  "render_unreal/",
+  "scripts/render/unreal_contract_smoke.py",
+  "tests/integration/unreal/",
+  "docs/02_ARCHITECTURE/UNREAL_RENDER_MIGRATION_PLAN.md",
+  "ai_quantum_hvtc/map_economics/",
+  "scripts/data/prepare_map_economic_profile.py",
+  "configs/economics/",
+  "data/catalog/map_economic_profile.v1.template.json",
+  "data/catalog/map_economic_source_registry.template.csv",
+  "tests/unit/map_economics/",
+  "docs/02_ARCHITECTURE/MAP_ECONOMIC_DATA_MODEL.md",
+  "ai_quantum_hvtc/public_finance/map_qubo.py",
+  "scripts/finance/",
+  "configs/finance/",
+  "tests/unit/public_finance/test_map_qubo.py",
+  "docs/02_ARCHITECTURE/MAP_AWARE_QUBO.md",
+]
+dependencies = [
+  "TASK-082",
+  "TASK-083",
+  "TASK-084",
+]
+acceptance_commands = [
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/085_unreal_map_economics_qubo_integration.toml --skip-diff",
+  "uv run ruff check ai_quantum_hvtc scripts tests",
+  "uv run mypy ai_quantum_hvtc",
+  "uv run pytest",
+]
+status = "handoff"
+
+[handoff]
+summary = "Integrate the Unreal renderer, map-economic profile/reward, and map-aware QUBO work on one GitHub feature branch while preserving SUMO as the authoritative traffic engine."
+validation = [
+  "2026-09-16: full repository pytest passed 139 tests (one existing Starlette/httpx deprecation warning).",
+  "After final audit fixes: 66 scoped map economics, QUBO, RL and Unreal contract tests passed.",
+  "Ruff passed for ai_quantum_hvtc, scripts, tests; mypy passed 93 package and new-entrypoint files.",
+  "Project doctor and task-manifest shape validation passed with existing optional legacy Codex-config warnings.",
+  "Full prepared map materialized to ignored artifacts/map_economics/20260916: 2588 entities, 1354 demand eligible, all eligible mapped by derived nearest edge; source-backed calibration 0%, reviewed demand unavailable.",
+  "Native UE build was reattempted and remains blocked before compilation by missing NetFxSDK; no editor replay or production sensor capture claim.",
+]
+risks = [
+  "The current semantic overlay provides structural land-use coverage but not calibrated building-level monetary values or observed OD demand.",
+  "Unreal MCP is an editor-development control plane, not a high-rate runtime trace transport.",
+  "RL training and policy claims remain blocked until economic assumptions, demand, and hard safety constraints are approved.",
+]
+next_steps = [
+  "Provide NetFxSDK on the UE host, then compile and run editor automation and replay parity checks.",
+  "Bind reviewed existing-net OD demand to training; sampled reward ledgers are not complete trip-level finance accounting.",
+  "Calibrate map-specific economics and measured investment effects before production optimization or policy claims.",
+]

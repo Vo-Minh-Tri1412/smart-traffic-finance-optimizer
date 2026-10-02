@@ -1,0 +1,39 @@
+{
+  "schema_version": "city_visual_placements.v1",
+  "purpose": "illustrative_visual_only",
+  "coordinate_system": "sumo_xy_meters",
+  "source_net_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "source_overlay_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "local_origin": {"x": 100.0, "y": 200.0},
+  "placement_count": 2,
+  "placements": [
+    {
+      "id": "test_building_visual_1",
+      "source_zone_id": "test_building",
+      "source_element_id": "way/1",
+      "zone_type": "residential",
+      "kind": "building",
+      "x_m": 102.0,
+      "y_m": 203.0,
+      "heading_degrees": 15.0,
+      "max_footprint_radius_m": 3.2,
+      "source_polygon_area_m2": 100.0,
+      "source_clearance_m": 4.0,
+      "basis": "illustrative_site_within_road_clipped_semantic_polygon"
+    },
+    {
+      "id": "test_landscape_visual_1",
+      "source_zone_id": "test_landscape",
+      "source_element_id": "way/2",
+      "zone_type": "neutral",
+      "kind": "landscape",
+      "x_m": 105.0,
+      "y_m": 206.0,
+      "heading_degrees": 90.0,
+      "max_footprint_radius_m": 1.6,
+      "source_polygon_area_m2": 40.0,
+      "source_clearance_m": 2.0,
+      "basis": "illustrative_site_within_road_clipped_semantic_polygon"
+    }
+  ]
+}

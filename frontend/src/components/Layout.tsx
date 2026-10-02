@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   GitCompareArrows,
+  FolderOpen,
   LayoutDashboard,
   Map,
   PiggyBank,
@@ -17,6 +18,7 @@ const NAV_ITEMS = [
   { to: "/", label: "Tổng quan", icon: LayoutDashboard, end: true },
   { to: "/district", label: "Bản đồ quận", icon: Map, end: false },
   { to: "/runs", label: "Mô phỏng", icon: TrafficCone, end: false },
+  { to: "/experiments", label: "Experiments", icon: FolderOpen, end: false },
   { to: "/replay", label: "Replay", icon: PlayCircle, end: false },
   { to: "/compare", label: "So sánh", icon: GitCompareArrows, end: false },
   { to: "/finance", label: "Ngân sách", icon: PiggyBank, end: false },

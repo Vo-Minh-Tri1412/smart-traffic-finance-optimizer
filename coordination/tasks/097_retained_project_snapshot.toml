@@ -1,0 +1,28 @@
+id = "TASK-097"
+owner = "integrator"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "4d32368f5b9221b61c9da2864c1876d1d287c10f"
+allowed_paths = [
+  "coordination/tasks/097_retained_project_snapshot.toml",
+  "ai_quantum_hvtc/simulation/maps/snapshot.py",
+  "ai_quantum_hvtc/simulation/cli.py",
+  "tests/unit/simulation/test_project_snapshot.py",
+  "tests/integration/test_retained_project.py",
+  "tests/integration/frontend_contracts/test_unreal_workspace_contract.py",
+  "docs/02_ARCHITECTURE/SIMULATION_BACKEND_ARCHITECTURE.md",
+  "docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md",
+  "docs/04_STATUS/IMPLEMENTATION_STATUS.md",
+]
+dependencies = ["TASK-095"]
+acceptance_commands = [
+  "uv run pytest tests/unit/simulation/test_project_snapshot.py tests/integration/test_retained_project.py",
+  "uv run python -m ai_quantum_hvtc simulate snapshot-sumo-project --project simulation_projects/map_intake/district7.project.json --out artifacts/tmp/m0_snapshot_097/project_snapshot.json",
+  "uv run python -m ai_quantum_hvtc simulate verify-project-snapshot --project simulation_projects/map_intake/district7.project.json --snapshot artifacts/tmp/m0_snapshot_097/project_snapshot.json",
+]
+status = "done"
+
+[handoff]
+summary = "M0 map input snapshot: content hashes and complete TLS program/movement inventory on unchanged retained map; no safety/pilot readiness claim."
+validation = ["Snapshot creation and verification passed on unchanged retained descriptor: 169 static programs/unique TLS, 1008 controlled connections, 649 phases.", "Seven internal lane index ambiguity groups retained explicitly; all controlled from/to mappings unique, zero unmapped signal indices.", "21 targeted tests passed, including input mutation, relocation, checksum corruption and real project verification.", "Scoped Ruff passed; artifact artifacts/tmp/m0_snapshot_097/project_snapshot.json content_sha256 9762c47cc3c43bbe15217528530109ff3164ea66794a1ad3377248a50cd1be03."]
+risks = ["Snapshot verifies input identity and structure only; scientific experiment identity and runtime safety remain pending.", "Final full suite: 232 passed, one obsolete documentation-state assertion failed. Assertion updated for M0 in progress; its full file rerun passed 3 tests. Full Ruff passed.", "Changes remain uncommitted to avoid combining pre-existing user document work; no source map changes or scientific workload."]
+next_steps = ["Continue M0 shared experiment identity, contract versions, independent seed splits and full-run lifecycle; M2 demand still missing."]

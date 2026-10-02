@@ -1,0 +1,10 @@
+{
+  "schema_version": "geometry_manifest.v1",
+  "geometry_source": "sumo_net_xml",
+  "net_xml": "network.net.xml",
+  "coordinate_system": "sumo_xy_meters",
+  "bounds": {"min_x": 100.0, "min_y": 200.0, "max_x": 140.0, "max_y": 204.0},
+  "local_origin": {"x": 100.0, "y": 200.0},
+  "lane_count": 1,
+  "junction_count": 2
+}

@@ -1,0 +1,23 @@
+id = "TASK-091"
+owner = "objective_design"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "84436ff454791ae95cc54f94e10ab1d2358b88dc"
+allowed_paths = [
+  "coordination/tasks/091_rl_qubo_objective_rationale.toml",
+  "docs/02_ARCHITECTURE/RL_QUBO_OBJECTIVE_RATIONALE.md",
+]
+dependencies = ["TASK-083", "TASK-084", "TASK-085"]
+acceptance_commands = [
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/091_rl_qubo_objective_rationale.toml --skip-diff",
+]
+status = "handoff"
+
+[handoff]
+summary = "Audit implemented reward and QUBO, define aligned public-cost evaluation and report implementation gaps without fabricating calibration."
+validation = [
+  "Task manifest shape validation passed using --skip-diff on 2026-09-17.",
+  "git diff --check for owned files completed without errors; files are newly added and remain unstaged.",
+  "Read implemented economic evaluator, SUMO-RL callback, QUBO contribution paths, project objectives, reward config and source reviews; checked official SUMO output documentation.",
+]
+risks = ["Demand, economic calibration and candidate effects remain insufficient for policy claims."]
+next_steps = ["Integrator reviews objective rationale alongside dataset and runtime work."]

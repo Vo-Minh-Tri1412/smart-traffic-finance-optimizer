@@ -1,0 +1,40 @@
+id = "TASK-082"
+owner = "unreal_render_worker"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "00206367dafa7691f26f6dd14bea396cbaf04c6b"
+allowed_paths = [
+  "coordination/tasks/082_unreal_render_adapter_v1.toml",
+  "render_unreal/",
+  "scripts/render/unreal_contract_smoke.py",
+  "docs/02_ARCHITECTURE/UNREAL_RENDER_MIGRATION_PLAN.md",
+  "tests/integration/unreal/",
+]
+dependencies = [
+  "065_render_bridge_contracts_v1",
+  "080_render_lod_lifecycle_and_portability",
+]
+acceptance_commands = [
+  "uv run python scripts/render/unreal_contract_smoke.py --manifest <render_run_manifest.v1>",
+  "D:\\Starter Game\\UE_5.8\\Engine\\Build\\BatchFiles\\Build.bat TrafficRenderEditor Win64 Development -Project=<repo>\\render_unreal\\TrafficRender.uproject -WaitMutex -NoHotReloadFromIDE",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/082_unreal_render_adapter_v1.toml --skip-diff",
+]
+status = "in_progress"
+
+[handoff]
+summary = "Built the Unreal 5.8 render/sensor adapter scaffold: strict bridge-contract loaders, SUMO front-bumper geometry transform, deterministic vehicle replay skeleton, lane mesh ingestion, camera calibration validation, editor self-test and MCP/editor configuration notes. SUMO remains authoritative; Unreal is not a game."
+validation = [
+  "2026-09-16: all eight tests/integration/unreal tests pass; targeted Ruff check passes.",
+  "2026-09-16: UE build repeated, still fails in UBT rules with missing NetFxSDK before compilation; no system installation attempted.",
+  "UE MCP INI field names and config class verified against installed 5.8.2 source; project-local Codex MCP example documented.",
+  "Python contract smoke path implemented; run it with a prepared render_run_manifest.v1 artifact.",
+  "UE 5.8.2 UBT invocation attempted but blocked before compilation by missing host NetFxSDK required by SwarmInterface.",
+  "Task manifest shape validated with --skip-diff.",
+]
+risks = [
+  "Unreal binary compilation and in-editor replay remain unverified until NetFxSDK is installed on the UE host.",
+  "Depth-correct visibility, RGB/instance export and incremental ROI streaming are planned follow-ups; debug proxies are not production sensor assets.",
+]
+next_steps = [
+  "Install UE host prerequisites and run UBT plus the editor automation self-test.",
+  "Add Movie Render Queue sensor export and traffic-light/semantic visual layers using the existing contracts.",
+]

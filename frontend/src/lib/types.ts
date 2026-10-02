@@ -34,10 +34,10 @@ export interface MetricsSummary {
   average_queue_vehicles: number;
   stopped_vehicles: number;
   emergency_delay_seconds: number;
-  bus_passenger_delay_seconds: number;
+  bus_passenger_delay_seconds: number | null;
   truck_delay_seconds: number;
-  reroute_count: number;
-  failed_route_count: number;
+  reroute_count: number | null;
+  failed_route_count: number | null;
   controller_interventions: number;
 }
 
@@ -60,7 +60,7 @@ export interface IntersectionMetric {
   queue_vehicles: number;
   vehicles: number;
   emergency_delay_seconds: number;
-  bus_passenger_delay_seconds: number;
+  bus_passenger_delay_seconds: number | null;
   truck_delay_seconds: number;
 }
 
@@ -151,14 +151,14 @@ export interface CompareRow {
   average_queue_vehicles: number;
   stopped_vehicles: number;
   emergency_delay_seconds: number;
-  bus_passenger_delay_seconds: number;
+  bus_passenger_delay_seconds: number | null;
   truck_delay_seconds: number;
   controller_interventions: number;
   waiting_time_saved_vs_fixed_seconds: number;
   waiting_time_saved_vs_fixed_pct: number;
   throughput_gain_vs_fixed: number;
   emergency_delay_saved_vs_fixed_seconds: number;
-  bus_passenger_delay_saved_vs_fixed_seconds: number;
+  bus_passenger_delay_saved_vs_fixed_seconds: number | null;
   truck_delay_saved_vs_fixed_seconds: number;
   interpretation: string;
 }
@@ -446,4 +446,110 @@ export interface DistrictRegistryEntry {
 export interface DistrictsResponse {
   active_district_id: string;
   districts: DistrictRegistryEntry[];
+}
+
+// Read-only managed experiment/run views (dashboard experiment API).
+export type ExperimentIndexStatus = "not_configured" | "available" | "unavailable";
+export type ExperimentEntryState = "verified" | "verification_failed";
+export type ExperimentRunState =
+  | "not_configured"
+  | "unavailable"
+  | "not_found"
+  | "verification_failed"
+  | "unsealed"
+  | "outputs_verified";
+export type RuntimeAccountingState =
+  | "not_configured"
+  | "unavailable"
+  | "not_found"
+  | "unsealed"
+  | "verification_failed"
+  | "available";
+export type RuntimeSectionStatus = "available" | "partial" | "unavailable";
+
+export interface ExperimentListItem {
+  experiment_id: string;
+  state: ExperimentEntryState;
+  content_sha256?: string | null;
+  project_id?: string | null;
+  mode?: string | null;
+  discovered_run_ids: string[];
+}
+
+export interface ExperimentListResponse {
+  configured: boolean;
+  status: ExperimentIndexStatus;
+  experiments: ExperimentListItem[];
+}
+
+export interface ExperimentOutputSummary {
+  role: string;
+  state: "verified" | "unverified";
+  sha256?: string | null;
+  bytes?: number | null;
+}
+
+export interface ExperimentRunVerification {
+  configured: boolean;
+  state: ExperimentRunState;
+  experiment_id?: string | null;
+  run_id?: string | null;
+  content_sha256?: string | null;
+  mode?: string | null;
+  case_id?: string | null;
+  split?: string | null;
+  seed?: number | null;
+  controller_id?: string | null;
+  outputs: ExperimentOutputSummary[];
+}
+
+export interface ExperimentRuntimeAccountingResponse {
+  configured: boolean;
+  state: RuntimeAccountingState;
+  experiment_id?: string | null;
+  run_id?: string | null;
+  accounting?: RuntimeTripAccountingView | null;
+}
+
+export interface RuntimeDemandAccountingView {
+  status: RuntimeSectionStatus;
+  scope: "per_intended_requested_vehicle_trip";
+  reason?: string | null;
+  intended_trip_count?: number | null;
+  raw_ledger_row_count?: number | null;
+  status_counts: Record<string, number | null>;
+  tripinfo_observed_count?: number | null;
+  tripinfo_unfinished_requested?: boolean | null;
+}
+
+export interface RuntimeSummaryAccountingView {
+  status: RuntimeSectionStatus;
+  final_step_time_seconds?: number | null;
+  loaded?: number | null;
+  inserted?: number | null;
+  waiting?: number | null;
+  arrived?: number | null;
+  running?: number | null;
+  ended?: number | null;
+}
+
+export interface RuntimeStatisticAccountingView {
+  status: RuntimeSectionStatus;
+  total_teleports?: number | null;
+  safety_collisions?: number | null;
+}
+
+export interface RuntimeAggregateAccountingView {
+  scope: "whole_simulation_vehicle_and_event_counters";
+  status: RuntimeSectionStatus;
+  summary: RuntimeSummaryAccountingView;
+  statistic: RuntimeStatisticAccountingView;
+  limitations: string[];
+}
+
+export interface RuntimeTripAccountingView {
+  execution_status: "debug_simulation_finished" | "debug_simulation_failed_or_partial";
+  evidence_scope: "managed_debug_runtime_accounting_only";
+  demand_accounting: RuntimeDemandAccountingView;
+  aggregate_simulation_accounting: RuntimeAggregateAccountingView;
 }

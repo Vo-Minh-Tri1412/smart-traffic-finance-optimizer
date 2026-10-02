@@ -1,0 +1,42 @@
+id = "TASK-103"
+owner = "integrator"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "4d32368f5b9221b61c9da2864c1876d1d287c10f"
+allowed_paths = [
+  "coordination/tasks/103_runtime_action_guard.toml",
+  "ai_quantum_hvtc/rl/action_guard.py",
+  "scripts/training/rl_sumo_train.py",
+  "tests/unit/rl/test_action_guard.py",
+  "tests/integration/sumo/test_sumo_rl_action_guard.py",
+  "docs/04_STATUS/IMPLEMENTATION_STATUS.md",
+  "docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md",
+]
+dependencies = ["TASK-102"]
+acceptance_commands = [
+  "uv run pytest tests/unit/rl/test_action_guard.py tests/unit/rl/test_reward_profiles.py tests/integration/cli/test_rl_sumo_train_cli.py tests/integration/sumo/test_sumo_rl_action_guard.py -ra",
+  "uv run ruff check ai_quantum_hvtc/rl/action_guard.py scripts/training/rl_sumo_train.py tests/unit/rl/test_action_guard.py tests/integration/sumo/test_sumo_rl_action_guard.py",
+  "uv run mypy --follow-imports=silent ai_quantum_hvtc/rl/action_guard.py scripts/training/rl_sumo_train.py",
+  "git diff --check -- scripts/training/rl_sumo_train.py docs/04_STATUS/IMPLEMENTATION_STATUS.md docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md",
+  "uv run python -c 'import tomllib; from pathlib import Path; manifest = Path(\"coordination/tasks/103_runtime_action_guard.toml\"); tomllib.loads(manifest.read_text(encoding=\"utf-8\")); paths = [Path(\"coordination/tasks/103_runtime_action_guard.toml\"), Path(\"ai_quantum_hvtc/rl/action_guard.py\"), Path(\"scripts/training/rl_sumo_train.py\"), Path(\"tests/unit/rl/test_action_guard.py\"), Path(\"tests/integration/sumo/test_sumo_rl_action_guard.py\"), Path(\"docs/04_STATUS/IMPLEMENTATION_STATUS.md\"), Path(\"docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md\")]; bad = [(str(p), n) for p in paths for n, line in enumerate(p.read_text(encoding=\"utf-8\").splitlines(), 1) if line.endswith((\" \", \"\\t\"))]; print(\"trailing whitespace:\", bad); raise SystemExit(bool(bad))'",
+]
+status = "done"
+
+[handoff]
+summary = "Guard the padded multi-agent action path with pre-padding per-agent Discrete counts. Invalid actions are replaced only by a confirmed in-range non-yellow current green phase; unresolved batches and intervention-log I/O errors fail before SUMO advances. Versioned attempted-action events carry clone-specific env_instance_id and are flushed before stepping. Require raw delta_time > yellow_time per the pinned SUMO-RL 1.4.5 assertion. This is bounded infrastructure and does not implement emergency preemption or complete action safety."
+validation = [
+  "Focused pytest command passed: 33 passed, including the real SUMO-RL packaged single-intersection integration test; two PettingZoo render_mode warnings were emitted by the pinned upstream adapter.",
+  "The real SUMO-RL smoke reset the packaged 2way-single-intersection environment, submitted one invalid action through the guard, confirmed exactly one delta_time step, and verified the v1 attempted-action event in info and JSONL.",
+  "Scoped Ruff passed for action_guard.py, rl_sumo_train.py, and the focused unit/integration tests.",
+  "Scoped mypy with --follow-imports=silent passed for action_guard.py and rl_sumo_train.py.",
+  "Scoped git diff --check passed for the tracked training-path and owned documentation changes.",
+  "Task TOML parsed successfully and trailing-whitespace scan passed for every allowed path.",
+]
+risks = [
+  "Current-green holding is a bounded fallback for invalid discrete actions; it is not emergency preemption, a complete action mask, or proof of signal/action safety.",
+  "The real SUMO-RL packaged single-intersection smoke confirms wrapper compatibility and one safe step only; it is plumbing evidence, not map validity, calibrated demand, or research evidence.",
+  "Each vectorized clone appends to the exclusive run log and carries a lazily assigned per-instance identity. If the shared log cannot be written, the action step is blocked.",
+  "TASK-102 continues to block training because emergency action filtering is not implemented. Research gate remains closed and M0 remains in progress.",
+]
+next_steps = [
+  "Implement and separately validate emergency action filtering/clearance evidence before enabling the training path or research execution.",
+]

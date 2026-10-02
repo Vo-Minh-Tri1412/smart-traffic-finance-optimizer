@@ -1,0 +1,45 @@
+{
+  "schema_version": "current_roi_demand_dataset_spec.v1",
+  "status": "synthetic_design_not_calibrated",
+  "map_project": "simulation_projects/map_intake/district7.project.json",
+  "scope_decision": "preserve_current_prepared_map",
+  "geographic_bbox_diagnostic_only": [106.690981, 10.692829, 106.788488, 10.779370],
+  "timezone": "Asia/Ho_Chi_Minh",
+  "clock": {"origin": "local_midnight", "unit": "seconds", "daily_horizon_seconds": 86400, "bin_seconds": 900},
+  "random_seeds": {"train": [11, 23, 37], "validation": [53, 71], "test": [101, 131, 167]},
+  "facility_policy": {
+    "group_key": "source_element_id",
+    "group_status": "candidate_parent_not_reviewed_facility",
+    "cross_source_campus_merge": "manual_review_required",
+    "neutral_demand_enabled": false,
+    "centroid_nearest_edge_is_gate": false,
+    "capacity_counted_once_per_parent": true,
+    "required_gate_fields": ["parent_id", "edge_id", "position_m", "direction", "allowed_modes", "review_status"]
+  },
+  "boundary_classes": {
+    "II": {"origin": "internal_facility", "destination": "internal_facility"},
+    "IE": {"origin": "internal_facility", "destination": "external_zone_via_exit_gate"},
+    "EI": {"origin": "external_zone_via_entry_gate", "destination": "internal_facility"},
+    "EE": {"origin": "external_zone_via_entry_gate", "destination": "external_zone_via_exit_gate"}
+  },
+  "boundary_policy": {"infer_external_share_from_building_count": false, "require_directional_gates": true, "retain_true_external_endpoints": true, "EE_default_volume": null},
+  "quantity_policy": {"base_person_trips": null, "vehicle_mix": null, "occupancy": null, "observed_OD_available": false, "missing_is_zero": false},
+  "time_profile_source_id": "PROJECT-ENV-SPEC",
+  "time_profile_evidence_grade": "D",
+  "time_profile_is_assumption": true,
+  "profiles": [
+    {"purpose": "COMMUTE_WORK", "windows": [["06:30", "08:30"], ["16:30", "18:30"]], "directions": ["residential_to_work", "work_to_residential"], "boundary_classes": ["II", "IE", "EI"]},
+    {"purpose": "COMMUTE_SCHOOL", "windows": [["06:30", "07:30"], ["16:00", "17:30"]], "directions": ["residential_to_school", "school_to_residential"], "boundary_classes": ["II", "IE", "EI"]},
+    {"purpose": "INDUSTRIAL_SHIFT_IN", "windows": [["05:30", "07:30"]], "directions": ["residential_or_external_to_industry"], "boundary_classes": ["II", "EI"]},
+    {"purpose": "INDUSTRIAL_SHIFT_OUT", "windows": [["16:30", "18:30"]], "directions": ["industry_to_residential_or_external"], "boundary_classes": ["II", "IE"]},
+    {"purpose": "LOGISTICS_DELIVERY", "windows": [["08:00", "11:00"], ["13:00", "16:00"]], "directions": ["logistics_or_external_to_destination", "logistics_or_external_to_destination"], "boundary_classes": ["II", "IE", "EI", "EE"]},
+    {"purpose": "MEDICAL_EMERGENCY", "windows": [], "directions": [], "event_policy": "scenario_or_observed_dispatch_only", "boundary_classes": ["II", "IE", "EI"]},
+    {"purpose": "HOSPITAL_VISIT", "windows": [["00:00", "24:00"]], "directions": ["visit_and_return_separate_legs"], "boundary_classes": ["II", "IE", "EI"], "note": "All-day support, not uniform arrival density. Clinic-specific hours override only matching services."},
+    {"purpose": "SHOPPING_MARKET", "windows": [["06:00", "09:00"], ["16:00", "19:00"]], "directions": ["residential_to_market_and_return", "residential_to_market_and_return"], "boundary_classes": ["II", "IE", "EI"]},
+    {"purpose": "ENTERTAINMENT", "windows": [["18:00", "23:00"]], "directions": ["residential_or_work_to_nightlife_then_return"], "boundary_classes": ["II", "IE", "EI"], "note": "Return legs may cross midnight and must not be truncated."},
+    {"purpose": "EVENT_ATTENDANCE", "windows": [], "directions": [], "event_policy": "explicit_event_calendar_required", "boundary_classes": ["II", "IE", "EI"]},
+    {"purpose": "PUBLIC_SERVICE_VISIT", "windows": [["08:00", "11:00"], ["13:30", "16:00"]], "directions": ["residential_to_service_and_return", "residential_to_service_and_return"], "boundary_classes": ["II", "IE", "EI"]}
+  ],
+  "production_gates": ["reviewed_facility_capacity", "reviewed_directional_gates", "observed_counts_or_reviewed_synthetic_volume", "mode_and_occupancy_provenance", "route_feasibility", "held_out_validation", "source_license_review"],
+  "claim": "This is a reproducible design and inventory input, not a measured or calibrated trip dataset."
+}

@@ -31,7 +31,7 @@ Date:
 - [ ] Candidate investment intersections are plausible.
 - [ ] Demand flows can be described without code.
 
-## Open questions before Godot editing
+## Open questions before Unreal editing
 
 1.
 2.

@@ -1,0 +1,28 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "0.1.0",
+  "FriendlyName": "Traffic Render Bridge",
+  "Description": "Runtime SUMO artifact bridge plus editor automation for the Unreal render adapter.",
+  "Category": "AI Challenge HVTC",
+  "CreatedBy": "AI Challenge HVTC",
+  "CanContainContent": true,
+  "IsBetaVersion": true,
+  "Installed": false,
+  "Plugins": [
+    {"Name": "ProceduralMeshComponent", "Enabled": true}
+  ],
+  "Modules": [
+    {
+      "Name": "TrafficRenderRuntime",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    },
+    {
+      "Name": "TrafficRenderEditor",
+      "Type": "Editor",
+      "LoadingPhase": "PostEngineInit",
+      "TargetAllowList": ["Editor"]
+    }
+  ]
+}

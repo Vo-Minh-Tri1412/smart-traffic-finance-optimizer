@@ -1,6 +1,7 @@
 # AI Quantum HVTC Competition Facts
 
-Access date: 2026-06-28
+Access date: 2026-06-28. Historical source snapshot, not revalidated competition rules as of
+2026-09-20. Confirm with organizers before relying on deadlines, eligibility or requirements.
 
 ## Topic fit
 

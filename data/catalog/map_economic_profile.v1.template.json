@@ -1,0 +1,117 @@
+{
+  "schema_version": "map_economic_profile.v1",
+  "metadata": {
+    "profile_id": "REPLACE_ME",
+    "status": "draft",
+    "map_project_id": "REPLACE_ME",
+    "currency": "VND",
+    "price_year": 2025,
+    "generated_at": "YYYY-MM-DD",
+    "map_scope_status": "unverified_boundary",
+    "source_net_sha256": "REPLACE_ME",
+    "semantic_overlay_sha256": "REPLACE_ME",
+    "caveats": ["Template values are assumptions and must not be cited as measured facts."]
+  },
+  "sources": [
+    {
+      "source_id": "ASSUMPTION_REGISTER",
+      "title": "Reviewed assumption register",
+      "source_type": "assumption_register",
+      "publisher": "REPLACE_ME",
+      "uri": "",
+      "publication_date": "",
+      "accessed_at": "",
+      "geographic_scope": "REPLACE_ME",
+      "notes": "Replace or approve every assumption before production use."
+    }
+  ],
+  "valuations": [
+    {
+      "valuation_id": "VAL_GLOBAL",
+      "description": "Global fallback",
+      "value_of_time": {"estimate": 1, "lower": 1, "upper": 1, "unit": "VND/person_hour", "price_year": 2025, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER"], "is_assumption": true, "notes": "Replace."},
+      "reliability_value": {"estimate": 0, "lower": 0, "upper": 0, "unit": "VND/person_hour", "price_year": 2025, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER"], "is_assumption": true, "notes": "Replace."},
+      "persons_per_trip": {"estimate": 1, "lower": 1, "upper": 1, "unit": "persons/trip", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER"], "is_assumption": true, "notes": "Replace."},
+      "essential_service_multiplier": {"estimate": 1, "lower": 1, "upper": 1, "unit": "ratio", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER"], "is_assumption": true, "notes": "Replace."},
+      "economic_flow_multiplier": {"estimate": 1, "lower": 1, "upper": 1, "unit": "ratio", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER"], "is_assumption": true, "notes": "Replace."}
+    },
+    {
+      "valuation_id": "VAL_OD_A_B",
+      "description": "Example OD-specific valuation",
+      "value_of_time": {"estimate": 1, "lower": 1, "upper": 1, "unit": "VND/person_hour", "price_year": 2025, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER"], "is_assumption": true, "notes": "Replace."},
+      "reliability_value": {"estimate": 0, "lower": 0, "upper": 0, "unit": "VND/person_hour", "price_year": 2025, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER"], "is_assumption": true, "notes": "Replace."},
+      "persons_per_trip": {"estimate": 1, "lower": 1, "upper": 1, "unit": "persons/trip", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER"], "is_assumption": true, "notes": "Replace."},
+      "essential_service_multiplier": {"estimate": 1, "lower": 1, "upper": 1, "unit": "ratio", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER"], "is_assumption": true, "notes": "Replace."},
+      "economic_flow_multiplier": {"estimate": 1, "lower": 1, "upper": 1, "unit": "ratio", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER"], "is_assumption": true, "notes": "Replace."}
+    }
+  ],
+  "global_valuation_id": "VAL_GLOBAL",
+  "buildings": [
+    {"building_id": "BUILDING_A", "name": "Origin A", "entity_kind": "verified_building", "zone_id": "ZONE_A", "edge_ids": ["EDGE_A"], "mapping_method": "exact_anchor", "nearest_edge_distance_m": 0, "demand_enabled": true, "source_element_id": "", "confidence": 1, "valuation_id": "", "source_tags": {}},
+    {"building_id": "BUILDING_B", "name": "Destination B", "entity_kind": "verified_building", "zone_id": "ZONE_B", "edge_ids": ["EDGE_B"], "mapping_method": "exact_anchor", "nearest_edge_distance_m": 0, "demand_enabled": true, "source_element_id": "", "confidence": 1, "valuation_id": "", "source_tags": {}}
+  ],
+  "zones": [
+    {"zone_id": "ZONE_A", "name": "Origin zone", "zone_type": "residential", "building_ids": ["BUILDING_A"], "edge_ids": ["EDGE_A"], "valuation_id": "VAL_GLOBAL"},
+    {"zone_id": "ZONE_B", "name": "Destination zone", "zone_type": "commercial", "building_ids": ["BUILDING_B"], "edge_ids": ["EDGE_B"], "valuation_id": "VAL_GLOBAL"}
+  ],
+  "edges": [
+    {"edge_id": "EDGE_A", "zone_ids": ["ZONE_A"], "building_ids": ["BUILDING_A"], "corridor_ids": ["CORRIDOR_AB"]},
+    {"edge_id": "EDGE_B", "zone_ids": ["ZONE_B"], "building_ids": ["BUILDING_B"], "corridor_ids": ["CORRIDOR_AB"]}
+  ],
+  "corridors": [
+    {"corridor_id": "CORRIDOR_AB", "name": "A-B corridor", "edge_ids": ["EDGE_A", "EDGE_B"], "zone_ids": ["ZONE_A", "ZONE_B"], "valuation_id": "VAL_GLOBAL", "notes": "Replace with reviewed route grouping."}
+  ],
+  "od_pairs": [
+    {
+      "od_pair_id": "OD_A_B",
+      "valuation_id": "VAL_OD_A_B",
+      "origin_building_id": "BUILDING_A",
+      "destination_building_id": "BUILDING_B",
+      "origin_zone_id": "ZONE_A",
+      "destination_zone_id": "ZONE_B",
+      "route_edge_ids": ["EDGE_A", "EDGE_B"],
+      "corridor_ids": ["CORRIDOR_AB"],
+      "annual_trips": {"estimate": 1, "lower": 1, "upper": 1, "unit": "trips/year", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER"], "is_assumption": true, "notes": "Replace; assumption-only demand never passes the production gate."},
+      "notes": "Example only."
+    }
+  ],
+  "investment_candidates": [
+    {
+      "candidate_id": "CANDIDATE_A",
+      "name": "Example signal intervention",
+      "junction_ids": ["JUNCTION_A"],
+      "edge_ids": ["EDGE_A"],
+      "corridor_ids": ["CORRIDOR_AB"],
+      "capital_cost_vnd": {"estimate": 1, "lower": 1, "upper": 1, "unit": "VND", "price_year": 2025, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER"], "is_assumption": true, "notes": "Replace."},
+      "annual_operating_cost_vnd": {"estimate": 1, "lower": 1, "upper": 1, "unit": "VND", "price_year": 2025, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER"], "is_assumption": true, "notes": "Replace."},
+      "od_impacts": [
+        {
+          "od_pair_id": "OD_A_B",
+          "route_exposure_fraction": {"estimate": 1, "lower": 1, "upper": 1, "unit": "ratio", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER"], "is_assumption": true, "notes": "Replace."},
+          "delay_reduction_seconds_per_trip": {"estimate": 1, "lower": 0, "upper": 2, "unit": "seconds/trip", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER"], "is_assumption": true, "notes": "Replace."},
+          "annual_trips": {"estimate": 1, "lower": 1, "upper": 1, "unit": "trips/year", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER"], "is_assumption": true, "notes": "Required for annualization."},
+          "persons_per_trip": {"estimate": 1, "lower": 1, "upper": 1, "unit": "persons/trip", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER"], "is_assumption": true, "notes": "Required for annualization."},
+          "annual_person_delay_saved_hours": null,
+          "annual_economic_benefit_vnd": null,
+          "derivation_method": "explicit_od_impact",
+          "notes": "Alternatively provide an annual person-hour or explicit annual benefit record."
+        }
+      ],
+      "notes": "Example only."
+    }
+  ],
+  "reward_policy": {
+    "normalization_vnd_per_step": {"estimate": 1, "lower": 1, "upper": 1, "unit": "VND", "price_year": 2025, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER"], "is_assumption": true, "notes": "Numerical scaling, not a public-value claim."},
+    "clip_min": -10,
+    "clip_max": 10
+  },
+  "coverage_policy": {
+    "minimum_structural_edge_mapping_ratio": 0.95,
+    "minimum_non_global_valuation_ratio": 0.9,
+    "minimum_source_backed_valuation_ratio": 0.8,
+    "require_demand_weighted_coverage": true,
+    "minimum_demand_weighted_non_global_ratio": 0.9,
+    "minimum_demand_weighted_source_backed_ratio": 0.8
+  },
+  "coverage": null
+}

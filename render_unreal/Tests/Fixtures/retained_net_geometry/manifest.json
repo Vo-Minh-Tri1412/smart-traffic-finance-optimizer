@@ -1,0 +1,7 @@
+{
+  "schema_version": "render_run_manifest.v1",
+  "run_id": "retained_real_net_geometry_only_with_synthetic_fixture_trace",
+  "geometry_manifest": "geometry.json",
+  "vehicle_trace": "../replay_contract/trace.jsonl",
+  "renderer": "unreal"
+}

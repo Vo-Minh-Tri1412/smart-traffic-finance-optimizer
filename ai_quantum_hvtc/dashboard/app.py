@@ -14,6 +14,7 @@ from .jobs import JobManager
 from .routers import (
     compare_router,
     district_router,
+    experiments_router,
     finance_router,
     introspect_router,
     runs_router,
@@ -75,6 +76,7 @@ def create_app(config: DashboardConfig | None = None) -> FastAPI:
         system_router,
         district_router,
         runs_router,
+        experiments_router,
         compare_router,
         finance_router,
         introspect_router,

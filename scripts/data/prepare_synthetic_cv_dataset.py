@@ -29,11 +29,11 @@ def _class_names(value: str | None) -> tuple[str, ...]:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Initialize or validate the Godot synthetic-camera YOLO dataset contract. "
+            "Initialize or validate the Unreal synthetic-camera YOLO dataset contract. "
             "This prepares folders/manifests only; generated images and labels stay outside Git."
         )
     )
-    parser.add_argument("--dataset-id", help="Dataset id, e.g. SYNTH-CV-GODOT-V0.")
+    parser.add_argument("--dataset-id", help="Dataset id, e.g. SYNTH-CV-UE-V0.")
     parser.add_argument(
         "--dataset-root",
         default=None,

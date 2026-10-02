@@ -1,0 +1,40 @@
+id = "TASK-084"
+owner = "integrator"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "00206367dafa7691f26f6dd14bea396cbaf04c6b"
+allowed_paths = [
+  "coordination/tasks/084_map_aware_qubo_v1.toml",
+  "ai_quantum_hvtc/public_finance/map_qubo.py",
+  "scripts/finance/**",
+  "configs/finance/map_qubo_*.yaml",
+  "tests/unit/public_finance/test_map_qubo.py",
+  "docs/02_ARCHITECTURE/MAP_AWARE_QUBO.md",
+]
+dependencies = ["TASK-083"]
+acceptance_commands = [
+  "uv run pytest tests/unit/public_finance/test_map_qubo.py -q",
+  "uv run ruff check ai_quantum_hvtc/public_finance/map_qubo.py scripts/finance/solve_map_qubo.py tests/unit/public_finance/test_map_qubo.py",
+  "uv run mypy ai_quantum_hvtc/public_finance/map_qubo.py scripts/finance/solve_map_qubo.py",
+  "uv run python scripts/admin/validate_agent_tasks.py --task coordination/tasks/084_map_aware_qubo_v1.toml --changed-file ai_quantum_hvtc/public_finance/map_qubo.py --changed-file scripts/finance/solve_map_qubo.py --changed-file configs/finance/map_qubo_district7.example.yaml --changed-file tests/unit/public_finance/test_map_qubo.py --changed-file docs/02_ARCHITECTURE/MAP_AWARE_QUBO.md --changed-file coordination/tasks/084_map_aware_qubo_v1.toml",
+]
+status = "handoff"
+
+[handoff]
+summary = "Implemented evidence-bearing map-aware public-investment QUBO v1 over mapped OD/building routes, deterministic budget-slack encoding, safe penalty validation, a small exact reference solver, a versioned manifest CLI, tests, and architecture guidance."
+validation = [
+  "Audit 2026-09-16: 26 QUBO tests pass, including canonical template CLI smoke, signed adverse intervals, duplicate-channel rejection, strict binary assignments, route ordering, exhaustive matrix/objective parity, and conservative decimal budget rounding.",
+  "Canonical map_economic_profile.v1 valuation_id resolution is covered by unit tests.",
+  "Budget feasibility, infeasible high-benefit candidates, overlap, complementarity, deterministic row ordering, provenance, annualization validation, and CLI output are covered.",
+  "Ruff, mypy, scoped pytest, and task-manifest validation pass.",
+]
+risks = [
+  "The current District 7 profile contains no approved investment impacts or pair experiments, so this module must not yet emit a policy recommendation.",
+  "candidate_interactions is an optional optimizer extension until the canonical data producer adds measured pair coefficients.",
+  "The exact solver defaults to at most 22 candidates and is only a reference oracle for a production solver.",
+]
+next_steps = [
+  "Populate capital/operating costs and OD-specific marginal effects with sourced or explicitly assumed records.",
+  "Estimate singleton and pair/corridor effects from frozen SUMO masks across scenarios and seeds.",
+  "Run horizon, discount-rate, uncertainty, and budget sensitivity cases before ranking investments.",
+  "Re-evaluate selected portfolios on held-out SUMO scenarios and retain all artifact hashes.",
+]

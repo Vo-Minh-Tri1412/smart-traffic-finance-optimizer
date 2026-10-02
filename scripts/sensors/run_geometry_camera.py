@@ -1,4 +1,4 @@
-"""Run the deterministic SUMO-trace geometry camera without Godot or a GPU."""
+"""Run the deterministic SUMO-trace geometry camera without a renderer or GPU."""
 
 # ruff: noqa: E402
 

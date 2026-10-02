@@ -1,0 +1,31 @@
+id = "TASK-095"
+owner = "integrator"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "4d32368f5b9221b61c9da2864c1876d1d287c10f"
+allowed_paths = [
+  "coordination/tasks/095_retained_overlay_contract.toml",
+  "ai_quantum_hvtc/simulation/maps/overlay.py",
+  "ai_quantum_hvtc/simulation/maps/demand.py",
+  "ai_quantum_hvtc/simulation/cli.py",
+  "tests/unit/simulation/test_sumo_net_source_overlay.py",
+  "tests/integration/test_retained_project.py",
+  "docs/02_ARCHITECTURE/MAP_ECONOMIC_DATA_MODEL.md",
+  "docs/02_ARCHITECTURE/SIMULATION_BACKEND_ARCHITECTURE.md",
+  "docs/02_ARCHITECTURE/RENDER_BRIDGE_CONTRACTS.md",
+  "docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md",
+  "docs/04_STATUS/IMPLEMENTATION_STATUS.md",
+  "simulation_projects/map_intake/README.md",
+]
+dependencies = []
+acceptance_commands = [
+  "uv run pytest tests/unit/simulation/test_sumo_net_source_overlay.py tests/integration/test_retained_project.py",
+  "uv run python -m ai_quantum_hvtc simulate validate-sumo-net --project simulation_projects/map_intake/district7.project.json",
+  "uv run ruff check ai_quantum_hvtc/simulation/maps/overlay.py ai_quantum_hvtc/simulation/maps/demand.py ai_quantum_hvtc/simulation/cli.py tests/unit/simulation/test_sumo_net_source_overlay.py tests/integration/test_retained_project.py",
+]
+status = "done"
+
+[handoff]
+summary = "M0 subset: validate the retained polygon schema without inventing demand gates or modifying map data."
+validation = ["Reproduced unsupported roi_semantic_overlay.v2 before changes; retained project CLI now passes with demand_status missing.", "33 targeted tests and full suite 194 passed; one existing Starlette/httpx warning.", "Scoped Ruff and task manifest shape passed.", "Real-map roundtrip explicitly rejects missing demand before routing; no simulation evidence claimed.", "Local reports: artifacts/tmp/m0_overlay_095/project_validation.json and input_hashes.json."]
+risks = ["Existing working-tree documentation and UE edits are preserved; this task does not complete M0 or behavior demand."]
+next_steps = ["Continue M0 input identities, seed/split registry and no-overwrite run lifecycle; demand generation remains M2 work."]

@@ -1,9 +1,9 @@
 # Trace replay design
 
-`simulation_trace.jsonl` is one JSON object per frame or timestep. It is the shared contract between
-SUMO, the future React dashboard, and the Godot render app.
+Trace files use one JSON object per frame or timestep. File names alone do not identify a schema.
+The dashboard legacy path and native UE v2 reader do not accept identical contracts.
 
-Current schema version:
+Legacy aggregate schema version (vehicle replay uses vehicle_trace.v2):
 
 ```text
 simulation_trace_frame.v1
@@ -12,14 +12,16 @@ simulation_trace_frame.v1
 Every frame must include `schema_version`. Consumers should fail clearly on unsupported versions
 instead of silently guessing field semantics.
 
-SUMO is the official simulation backend. Godot should prefer FCD-derived vehicle trace frames when
+SUMO is the official simulation backend. Unreal uses FCD-derived vehicle trace frames when
 they are available. Aggregate frames are still acceptable for dashboards and validation-only
-backends, but they are not enough for a convincing Godot replay.
+backends, but they are not enough for vehicle replay.
 
 ## Detailed vehicle replay frame
 
-Godot uses this vehicle-level frame as its primary replay input. It is produced from SUMO FCD-derived
-trace export and contains one frame per timestep:
+The legacy example below describes compatibility data, not the complete physical vehicle contract.
+New UE/sensor runs require vehicle_trace.v2 canonical dimensions, ground offsets and front-bumper
+reference semantics; see [bridge contracts](../../docs/02_ARCHITECTURE/RENDER_BRIDGE_CONTRACTS.md).
+The FCD-derived export contains one frame per timestep:
 
 - `timestep`
 - `schema_version`
@@ -87,18 +89,18 @@ React dashboards may also consume aggregate frames:
 - `events`
 - `metrics`
 
-## Godot boundary
+## Unreal boundary
 
-Godot should not infer traffic physics. It should read vehicle-level trace frames, map SUMO
-coordinates into Godot world coordinates, instance scenes from
-`render/resources/configs/asset_manifest*.json`, and render camera outputs.
+Unreal must not infer traffic physics. It reads vehicle traces and maps SUMO metres to UE centimetres
+with an explicit origin and front-bumper correction. Planned Data Assets select meshes/materials;
+camera output remains a separate validated sensor feature.
 
-If a trace only has aggregate metrics, Godot may show dashboard-style overlays, but it should not be
+If a trace only has aggregate metrics, the UI may show dashboard-style overlays, but it must not be
 presented as a full vehicle-level replay.
 
 ## Versioning rule
 
 Trace JSONL is a cross-system contract, so it stays language-neutral and versioned. If the schema
 changes in a breaking way, create a new version string such as `simulation_trace_frame.v2` and update
-Python exporters, frontend schema/tests, and Godot loaders together. Do not add breaking fields and
+Python exporters, frontend schema/tests, and Unreal loaders together. Do not add breaking fields and
 hope downstream consumers infer the change.

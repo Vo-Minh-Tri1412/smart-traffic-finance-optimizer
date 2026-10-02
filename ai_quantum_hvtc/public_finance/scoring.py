@@ -7,6 +7,10 @@ from ai_quantum_hvtc.simulation.domain import DistrictSpec, InvestmentCandidate
 from ai_quantum_hvtc.simulation.metrics import IntersectionMetric, SimulationResult
 
 
+class UnavailableMetricsError(ValueError):
+    """Raised when public-finance scoring inputs are incomplete."""
+
+
 @dataclass(frozen=True)
 class CandidateScore:
     scenario_id: str
@@ -40,8 +44,21 @@ def _score_candidate(
     candidate: InvestmentCandidate,
 ) -> CandidateScore:
     finance = spec.finance_assumptions
+    if (
+        candidate.intersection_id not in baseline.intersections
+        or candidate.intersection_id not in alternative.intersections
+    ):
+        raise UnavailableMetricsError(
+            "Cannot score candidate; baseline and alternative must both include "
+            f"intersection {candidate.intersection_id!r} with bus delay metrics"
+        )
     base = _metric_for(baseline, candidate.intersection_id)
     alt = _metric_for(alternative, candidate.intersection_id)
+    if base.bus_passenger_delay_seconds is None or alt.bus_passenger_delay_seconds is None:
+        raise UnavailableMetricsError(
+            "Cannot score candidate; bus passenger delay is unavailable at "
+            f"intersection {candidate.intersection_id!r}"
+        )
 
     delay_saved_seconds = max(0.0, base.delay_seconds - alt.delay_seconds)
     emergency_saved_seconds = max(0.0, base.emergency_delay_seconds - alt.emergency_delay_seconds)
@@ -95,6 +112,16 @@ def score_candidates(
     baseline: SimulationResult,
     alternative: SimulationResult,
 ) -> list[CandidateScore]:
+    unavailable = [
+        name
+        for name in ("bus_passenger_delay_seconds", "reroute_count", "failed_route_count")
+        if getattr(baseline, name) is None or getattr(alternative, name) is None
+    ]
+    if unavailable:
+        fields = ", ".join(unavailable)
+        raise UnavailableMetricsError(
+            f"Cannot score candidates; required metrics are unavailable: {fields}"
+        )
     return [
         _score_candidate(spec, baseline, alternative, candidate)
         for candidate in spec.investment_candidates.values()

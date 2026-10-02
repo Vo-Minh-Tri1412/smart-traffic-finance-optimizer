@@ -88,6 +88,6 @@ def _events_for_frame(result: SimulationResult, frame_index: int) -> list[dict[s
         )
     if result.emergency_delay_seconds > 0 and frame_index == 2:
         events.append({"type": "emergency_delay_observed"})
-    if result.failed_route_count > 0 and frame_index == 3:
+    if result.failed_route_count is not None and result.failed_route_count > 0 and frame_index == 3:
         events.append({"type": "failed_routes_observed", "count": result.failed_route_count})
     return events

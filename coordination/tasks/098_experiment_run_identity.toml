@@ -1,0 +1,27 @@
+id = "TASK-098"
+owner = "integrator"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "4d32368f5b9221b61c9da2864c1876d1d287c10f"
+allowed_paths = [
+  "coordination/tasks/098_experiment_run_identity.toml",
+  "ai_quantum_hvtc/experiments/",
+  "ai_quantum_hvtc/__main__.py",
+  "ai_quantum_hvtc/simulation/engines/sumo/existing_net.py",
+  "tests/unit/experiments/",
+  "tests/integration/sumo/test_existing_sumo_net_runner.py",
+  "docs/02_ARCHITECTURE/DATA_ARTIFACT_WORKFLOW.md",
+  "docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md",
+  "docs/04_STATUS/IMPLEMENTATION_STATUS.md",
+]
+dependencies = ["TASK-095", "TASK-096", "TASK-097"]
+acceptance_commands = [
+  "uv run pytest tests/unit/experiments tests/integration/sumo/test_existing_sumo_net_runner.py",
+  "uv run ruff check ai_quantum_hvtc/experiments ai_quantum_hvtc/__main__.py ai_quantum_hvtc/simulation/engines/sumo/existing_net.py tests/unit/experiments tests/integration/sumo/test_existing_sumo_net_runner.py",
+]
+status = "done"
+
+[handoff]
+summary = "Versioned experiment/run identity, source and input hashes, independent partitions, paired-input/checkpoint bindings, exclusive output lifecycle and a fixed-time debug existing-net executor with render-input metadata."
+validation = ["`uv run pytest tests/unit/experiments tests/integration/sumo/test_existing_sumo_net_runner.py`: 88 passed; integration ran SUMO 1.27.1 against a one-vehicle toy fixture and checked IDs, sealed outputs, duplicate reservation and corruption detection; unit tests prove research execution is rejected before SUMO resolution or reservation.", "`uv run pytest -ra`: 320 passed, one Starlette/httpx deprecation warning.", "Scoped TASK-098 Ruff command passed. Full repository Ruff reports I001 in user-owned `scripts/presentation/build_canva_motion.py`, outside this task; it was left untouched.", "Scoped tracked-file `git diff --check` passed. Repository-wide check only reports a pre-existing trailing blank line in `render_unreal/Config/DefaultEngine.ini`; it was left untouched.", "Reward arithmetic script: 11 checks passed; this is formula testing, not a SUMO evaluator or research result.", "Retained-map identity created and verified: `artifacts/tmp/m0_identity_098/experiments/M0-RETAINED-IDENTITY-098`, SHA-256 `ab4188d8775eae37f827a4bba9a334a536f62787dd381ddf5f231f4d7c9986c5`, 98 source files, zero runs because the unchanged map has zero demand flows."]
+risks = ["Research execution remains blocked until intended-demand ledger and runtime safety exist; identity checks and toy-fixture output hashes are not scientific acceptance.", "Experiment manifests retain source/data path+hash references, not archived bytes; verification requires original inputs at those paths. Failed reservations cannot resume; use a new ID.", "Render manifests are metadata only; traffic-light/event traces and an actual Unreal render are not produced by this executor.", "All pre-existing user worktree changes and retained map bytes were preserved; nothing was staged or committed."]
+next_steps = ["M0 remains in progress. Extend lifecycle integration to research runners/dashboard only after data and runtime gates are satisfied; retained-map work must first supply defensible demand, then ledger/safety/evaluator. Preserve separate R0/R1 reward-profile identities with one frozen evaluator."]

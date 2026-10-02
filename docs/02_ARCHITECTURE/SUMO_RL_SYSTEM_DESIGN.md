@@ -1,169 +1,62 @@
-# SUMO-RL System Design
+# Thiết kế RL trên map giữ nguyên
 
-## Scope and target
+Cập nhật 2026-09-20. Phân biệt code scaffold với thiết kế mục tiêu.
+Nguồn: `scripts/training/rl_sumo_train.py`, `rl/reward_profiles.py`,
+`rl/map_economic_reward.py`, `simulation/engines/sumo/existing_net.py`.
 
-SUMO is the official traffic simulator and SUMO-RL is the official signal-control environment.
-The current project target is the full Quận 7 OSM/SUMO map or a reviewed ROI of roughly 100
-signalized intersections. The small package fixture and the one-intersection SUMO smoke test remain
-CI/runtime checks only; they are not the research environment or final demo claim.
+## Hiện có
 
-The latest map/render work uses the SUMO net, semantic overlay, DVC/Drive artifacts and Godot LOD
-replay path. A renderer must not replace SUMO traffic dynamics.
+- CLI nhận DistrictSpec, scenario và reward profile; dry-run báo validation/blockers.
+- Training export spec thành net mới bằng netconvert. Không có đường nhận retained project/net
+  trực tiếp trong CLI này. Đổi spec ID không biến fixture thành map thật.
+- SUMO-RL parallel_env, SuperSuit padding và vectorization dùng shared policy.
+- PPO, frame-stack và RecurrentPPO là lựa chọn có code; chưa có kết quả so sánh trên retained map.
+- SUMO-RL observation mặc định; chưa truyền project observation_class hay online geometry sensor.
+- Reward kỹ thuật cũ hoặc map-economic callback incremental theo lane của từng signal.
+- Có gate kiểm tra draft profile và hard constraints pending. Cờ acknowledge chỉ bỏ blocker,
+  không thực thi emergency filter hoặc movement-aware safety.
+- Existing-net runner chỉ hỗ trợ fixed_time. Rule-based của spec runner không đồng nghĩa
+  có generic rule-based trên các nút thật.
 
-## End-to-end architecture
+## Mục tiêu được giữ
 
-```text
-Quận 7 SUMO net + semantic overlay + demand scenarios
-        |
-        v
-SUMO / SUMO-RL traffic dynamics and signal phases
-        |
-        +--> fixed-time baseline
-        +--> rule-based baseline
-        +--> shared multi-agent RL policy
-        |
-        +--> vehicle/signal/event traces
-                    |
-                    v
-      calibrated optical visibility sensor (optional at first)
-                    |
-                    v
-      lane features + uncertainty + temporal memory
-                    |
-                    v
-      RL observations and policy actions
-        |
-        v
-metrics -> public-value scoring -> QUBO/budget allocation
-```
+Demand từ hoạt động/tour, prepared net và định giá phải có cùng provenance.
+Tối đa 8 TLS đủ điều kiện làm pilot; mọi xe và nút khác vẫn chạy trong mạng đầy đủ.
+Không đòi điều khiển 100–160 nút hoặc chọn một bản đồ mới.
 
-## Environment interfaces
+Observation thực tế cần đặc tả thứ tự feature, kích thước, padding, normalization,
+missing state và thông tin được phép nhìn. [Observation proposal](OBSERVATION_SPACE_V1.md)
+chưa là tensor runtime đã triển khai. Baseline oracle chạy trước; CV không là dependency bắt buộc.
 
-SUMO-RL supports Gymnasium and PettingZoo interfaces. The project training entrypoint uses the
-PettingZoo parallel interface for multi-agent mode, converts it to a Stable-Baselines vector
-environment through SuperSuit, and applies one shared policy across signal agents.
+Action chọn pha từ movement mapping thật. Runtime phải enforce minimum-green, clearance,
+yellow/all-red và reject/hold padded actions không hợp lệ. Không suy action mask từ padding.
+Emergency không được bỏ clearance. TLS chưa kiểm tra giữ baseline.
 
-The current train scaffold supports:
+Reward mục tiêu dùng cost accrued toàn mạng, một ledger/environment:
+`r_shared = -delta(A_accrued)/S`. Xem [objective](RL_QUBO_OBJECTIVE_RATIONALE.md).
+Reward local hiện có là ablation/debug, không báo thành total VND. Không thêm queue/speed/priority
+weights tùy ý vào objective chung. Safety và tiêu chí tiếp cận vẫn là điều kiện riêng.
 
-- `multi_agent` shared-policy mode for all traffic signals in the loaded SUMO network;
-- `single_agent` mode only as a debugging fallback;
-- plain PPO, vector frame stacking, or RecurrentPPO LSTM memory;
-- the existing reward callback and route/export contracts as templates;
-- configurable parallel environment copies for cloud training.
+## Thí nghiệm còn thiếu
 
-The scaffold does not claim that the final project observation adapter, reward profile, flow
-calibration or hard safety constraints are approved.
+1. Existing-net online control và action mapping/safety.
+2. Demand/arrival/insertion/error ledger đầy đủ.
+3. Mask-conditioned shared policy; nút ngoài mask giữ baseline.
+4. Train/validation/test theo ngày/profile/seed và checkpoint selection độc lập.
+5. Memoryless PPO, frame-stack 4, RecurrentPPO với reset đúng agent/episode.
+6. Evaluator chạy lại cùng intended demand, routing assumptions, simulator settings và raw cost.
+7. Nếu mở rộng sensor: observation lấy từ SUMO state hiện tại. Prerecorded baseline trace chỉ dùng
+   offline; không thể thay state của policy đang làm thay đổi quỹ đạo.
 
-## Observation, action and memory
+Default cấu hình hiện tại không là quyết định model tốt nhất. Chưa chọn checkpoint thắng.
+Không nhân bản cùng seed rồi coi các environment là mẫu độc lập.
 
-The canonical observation contract is [Observation Space v1](OBSERVATION_SPACE_V1.md). It is a
-per-signal local observation, not a single vector containing the whole district.
+## Liên kết QUBO
 
-Every agent should observe:
+Protocol đầu tiên freeze shared checkpoint và evaluator trước khi đo singleton/pair.
+Không train/fine-tune khác nhau theo mask rồi quy chênh lệch cho đầu tư.
+Không dùng alternating optimization làm yêu cầu đợt đầu; xem
+[protocol kép](MAP_AWARE_QUBO.md).
 
-- local incoming approach pressure and waiting time;
-- approaching vehicles and downstream capacity risk;
-- current signal phase and timing safety;
-- emergency, bus and truck pressure;
-- time/scenario context;
-- when camera-based sensing is enabled, estimated counts, confidence, visible fraction and
-  time-since-last-observed.
-
-Memory is part of the policy contract for partial observation:
-
-1. memoryless PPO baseline;
-2. 4–8 snapshots of compact lane features;
-3. RecurrentPPO/LSTM shared policy;
-4. graph/neighborhood message passing or centralized training if network coordination remains weak.
-
-Raw RGB frame stacking is not the first signal-control target. Camera frames should first be reduced
-to a fixed-size sensor observation by a geometry-based visibility model, tracker and optional YOLO
-detector.
-
-## Structured optical occlusion
-
-The RL policy may be trained before YOLO exists. The first sensor can use deterministic or randomized
-3D visibility:
-
-```text
-camera height/pitch/FOV
-  + SUMO x/y/angle and lane geometry
-  + vehicle length/width/height
-  -> projected boxes and depth ordering
-  -> visible fraction and lane-level observation
-```
-
-The traffic state in SUMO is not corrupted. Only the observation is partially observed. This permits
-training under bus/truck occlusion without inventing detector-specific errors. Later, YOLO errors,
-weather, blur and class confusion may be calibrated and inserted after the visibility model. See
-[Structured Occlusion and Sensor-Based RL](STRUCTURED_OCCLUSION_AND_SENSOR_RL.md).
-
-## Action and reward
-
-The action remains a legal signal-phase choice supplied by SUMO-RL. The environment must enforce
-yellow/minimum-green safety timing. A policy must not be credited for illegal phase changes.
-
-The current reward callback remains a template until the reward profile is approved. The initial
-traffic objective may use waiting time, queue pressure and switching penalties. Final evaluation must
-also report emergency, bus passenger, truck/logistics, fairness and spillback effects.
-
-The RL reward and public-value score are related but not identical:
-
-```text
-RL: learn safe operational signal control
-finance: choose where investment creates public value under budget
-```
-
-## Scope and scaling
-
-The full Quận 7/ROI network is the target. The fixture at
-`tests/fixtures/specs/toy_public_district_v1.json` is a reproducible test input only.
-
-At approximately 100–160 signals, the project should use:
-
-- shared policy parameters rather than one model per signal;
-- fixed-size local observations and adjacency/neighborhood summaries;
-- scenario and seed randomization;
-- centralized training/decentralized execution or graph policies when local policies cannot
-  coordinate;
-- LOD and camera-window rendering so Godot does not instantiate the whole map unnecessarily.
-
-The number of signals alone is not evidence of a stable policy. Claims require network-level metrics,
-per-signal metrics, unseen demand scenarios and multiple seeds.
-
-## Required baselines
-
-Every RL claim must be compared with:
-
-- fixed-time control;
-- rule-based adaptive control;
-- the same SUMO network, demand scenarios, seeds and signal scope.
-
-For camera-based runs, also compare clean geometry visibility against structured occlusion and
-optional detector-noise conditions.
-
-## QUBO/RL relationship
-
-The long-horizon investment decision and short-horizon signal policy should be coupled through a
-bilevel or alternating workflow. QUBO selects an upgrade mask under budget; RL is evaluated or
-fine-tuned for that mask. QUBO coefficients must eventually include measured corridor interactions,
-not only independent candidate values. See [QUBO and RL Joint Optimization](QUBO_RL_JOINT_OPTIMIZATION.md).
-
-## Outputs
-
-Required outputs remain:
-
-- `simulation_summary`: scenario, controller, signal scope, total waiting time, throughput and queue
-  statistics;
-- `sensor_summary`: camera/visibility configuration, observation error, occlusion rate and tracker
-  continuity;
-- `public_finance_summary`: value-of-time, emergency, bus and logistics effects with caveats;
-- `budget_priority`: candidate/mask, cost assumption, public value and robustness rank;
-- `sensitivity_summary`: changed demand, visibility, reward or cost assumption and decision impact;
-- `training_manifest`: agent mode, memory mode, seeds, scenario, checkpoint and environment contract.
-
-## Implementation status
-
-Read [Implementation Status](../04_STATUS/IMPLEMENTATION_STATUS.md) for verified runtime
-capability, unresolved approval dependencies and the boundary on research claims. This document
-owns the intended control-system design and evaluation contract.
+Các bước này là backlog có nghiệm thu trong [plan](SYSTEM_DELIVERY_PLAN.md),
+không phải kết quả hoặc bảo đảm hội tụ.

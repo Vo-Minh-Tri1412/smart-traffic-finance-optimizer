@@ -46,15 +46,29 @@ data/**
 !data/catalog/*.template.csv
 !data/catalog/*.template.md
 !data/catalog/*.template.json
+!data/catalog/map_economic_sources.research.v1.json
+!data/catalog/current_roi_demand_sources.v1.csv
 
-# Godot editor cache and generated render outputs stay out of Git.
-render/.godot/
-render/**/*.gd.uid
-render/generated/
-render/exports/
-render/screenshots/
-render/datasets/
-render/videos/
-render/captures/
-render/outputs/*
-!render/outputs/.gitkeep
+# Unreal Engine source is reviewable; generated editor/build state is not.
+render_unreal/.vs/
+render_unreal/*.sln
+render_unreal/**/Binaries/
+render_unreal/**/Build/
+render_unreal/**/DerivedDataCache/
+render_unreal/**/Intermediate/
+render_unreal/**/Saved/
+render_unreal/**/.idea/
+render_unreal/**/*.VC.db
+render_unreal/**/*.opensdf
+render_unreal/**/*.sdf
+render_unreal/Content/Demo092/
+render_unreal/Content/City/
+
+# Local personal documents, temporary reviews and the generated duplicate checkout.
+/Giay_to/
+/tmp/
+/render_unreal 5.8/
+
+# Verification-only profile copies; keep the editable application profiles.
+render_unreal/Content/LiveTraffic/Profiles/*_EditCheck.uasset
+render_unreal/Content/LiveTraffic/Profiles/*_HeightCheck.uasset

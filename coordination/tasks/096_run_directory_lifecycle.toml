@@ -1,0 +1,24 @@
+id = "TASK-096"
+owner = "integrator"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "4d32368f5b9221b61c9da2864c1876d1d287c10f"
+allowed_paths = [
+  "coordination/tasks/096_run_directory_lifecycle.toml",
+  "scripts/artifacts/prepare_run_dir.py",
+  "scripts/artifacts/README.md",
+  "tests/unit/artifacts/test_prepare_run_dir.py",
+  "docs/02_ARCHITECTURE/DATA_ARTIFACT_WORKFLOW.md",
+  "docs/04_STATUS/IMPLEMENTATION_STATUS.md",
+]
+dependencies = ["TASK-095"]
+acceptance_commands = [
+  "uv run pytest tests/unit/artifacts/test_prepare_run_dir.py",
+  "uv run ruff check scripts/artifacts/prepare_run_dir.py tests/unit/artifacts/test_prepare_run_dir.py",
+]
+status = "done"
+
+[handoff]
+summary = "M0 subset: prohibit accidental reuse/overwrite of artifact run directories; validate IDs and leave failed reservations inspectable."
+validation = ["Reproduced existing metadata being overwritten on temporary run before changes.", "20 targeted tests passed including concurrent creation and partial initialization.", "Scoped Ruff passed.", "CLI created artifacts/tmp/m0_lifecycle_096/rl/M0-LIFECYCLE-096; duplicate command exited 1 without overwrite."]
+risks = ["Does not yet provide the common experiment manifest/hash/seed registry or orchestrator resume.", "Existing document edits and completed TASK-095 remain uncommitted and are preserved."]
+next_steps = ["Continue shared experiment manifest with input hashes, contract versions, seed/split and verified outputs; no scientific run has been claimed."]

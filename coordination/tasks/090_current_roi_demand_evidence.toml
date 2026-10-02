@@ -1,0 +1,36 @@
+id = "TASK-090"
+owner = "finish_demand"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "84436ff454791ae95cc54f94e10ab1d2358b88dc"
+allowed_paths = [
+  "coordination/tasks/090_current_roi_demand_evidence.toml",
+  "docs/02_ARCHITECTURE/CURRENT_ROI_DEMAND_DATASET_DESIGN.md",
+  "configs/demand/current_roi_dataset.v1.json",
+  "data/catalog/current_roi_demand_sources.v1.csv",
+  "scripts/data/prepare_demand_inventory.py",
+  "tests/unit/data/test_demand_inventory.py",
+]
+dependencies = ["TASK-088"]
+acceptance_commands = [
+  "uv run python scripts/data/prepare_demand_inventory.py --config configs/demand/current_roi_dataset.v1.json --output artifacts/demand/20260917/inventory.json",
+  "uv run pytest tests/unit/data/test_demand_inventory.py",
+  "uv run ruff check scripts/data/prepare_demand_inventory.py tests/unit/data/test_demand_inventory.py",
+]
+status = "handoff"
+
+[handoff]
+summary = "Preserved original purpose/time rationale; built reproducible parent inventory and historical WorldPop grid diagnostic; documented II IE EI EE demand generation and empirical gaps."
+validation = [
+  "Inventory run: 2588 entities, 340 candidate parents, 252 multipiece parents, zero observed OD rows.",
+  "WorldPop downloaded archive SHA256 verified; optional parser selected 131 grid centers in diagnostic bbox, not an ROI population census.",
+  "10 unit tests passed; scoped Ruff checks passed on 2026-09-17.",
+]
+risks = [
+  "Parent groups are not reviewed facilities; gates and capacity remain unknown.",
+  "Historical modeled population is not current building population or observed travel demand.",
+  "This delivers runnable inventory and design, not a calibrated SUMO trip dataset.",
+]
+next_steps = [
+  "Review gates and acquire or explicitly approve synthetic capacity, volume, occupancy and boundary-class priors before route generation.",
+  "Integrate demand uncertainty and paired simulation runs into RL/QUBO evaluation.",
+]

@@ -1,0 +1,8 @@
+{
+  "schema_version": "geometry_manifest.v1",
+  "geometry_source": "sumo_net_xml",
+  "net_xml": "../../../../simulation_projects/map_intake/02_prepared_sources/district7_osm_seed_20260702/district7_seed.net.xml",
+  "coordinate_system": "sumo_xy_meters",
+  "bounds": {"min_x": 0.0, "min_y": 0.0, "max_x": 10646.44, "max_y": 9563.72},
+  "local_origin": {"x": 0.0, "y": 0.0}
+}

@@ -1,31 +1,29 @@
-# React-ready UI architecture
+# Dashboard architecture
 
-The future UI should be a replay and decision-support app, not a second simulator.
+The existing React/Vite frontend and FastAPI service provide views for district, runs, replay,
+comparison, finance and system status. They are not a second simulator.
+The current default remains a toy DistrictSpec/reference-engine demo; real-map integration is planned.
+
+Audit 2026-09-20: finance APIs gọi scoring/investment legacy, chưa gọi map-aware QUBO.
+Legacy cắt adverse savings và dùng budget equality penalty không slack; không trình bày ranking
+này như kết quả nghiên cứu retained map. Đường dữ liệu dưới đây là đích tích hợp, chưa end-to-end.
 
 ## Data flow
 
-```text
-district_spec.json
-  -> Python simulation backend
-  -> simulation_trace.jsonl + metrics_summary.json + public_finance_summary.json
-  -> React UI
-```
+Retained SUMO project + demand + controller → run artifacts and cost ledger →
+dashboard and Unreal consuming the same experiment/run identity.
 
-For map creation, Godot is the authoring tool. The React UI should not become a map editor in v1;
-it should read the same exported specs, traces, and summaries for dashboard/demo presentation.
+The source SUMO net owns geometry; semantic overlays own meaning. UE owns replaceable visual assets
+and camera presets. React is not a map editor and must not modify generated inputs as a source of truth.
 
-## Main views
+## Delivery requirements
 
-- District map: zones, roads, intersections, hospitals, schools, industry, logistics, nightlife,
-  exported from the Godot-authored map or backend fixtures.
-- Replay timeline: traffic light state, queue size, scenario events, controller changes.
-- Compare mode: fixed-time vs rule-based vs RL.
-- Public-finance panel: cost, public value, benefit-cost ratio, uncertainty/caveats.
+- District view: retained geometry, zones, facility/candidate IDs and coverage.
+- Replay: trace/TLS/event time; do not fabricate vehicles from aggregate counts.
+- Compare: same demand/settings across fixed-time, rule-based and RL.
+- Finance: measured QUBO impacts, raw cost, budget, uncertainty and evidence status.
+- Explicit missing/error/synthetic state; disable automatic reference demo seeding for official runs.
+- No separate reward or valuation calculation in the browser.
 
-## Non-goals for v1
-
-- No custom physics in React.
-- No direct SUMO-GUI dependency.
-- No React map editor in v1. Godot Editor is the drag-and-drop map authoring surface.
-- Do not edit generated `district_spec.generated.json` as the source of truth when a Godot
-  authoring scene exists.
+These requirements are not completed integration. See the
+[delivery plan](../../docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md) for gates.

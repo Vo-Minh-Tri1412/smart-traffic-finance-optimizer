@@ -1,0 +1,41 @@
+id = "TASK-107"
+owner = "integrator"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "4d32368f5b9221b61c9da2864c1876d1d287c10f"
+allowed_paths = [
+  "coordination/tasks/107_dashboard_runtime_accounting_view.toml",
+  "ai_quantum_hvtc/experiments/store.py",
+  "ai_quantum_hvtc/dashboard/schemas.py",
+  "ai_quantum_hvtc/dashboard/routers/experiments.py",
+  "tests/unit/experiments/test_store.py",
+  "tests/unit/dashboard/test_experiments_api.py",
+  "docs/04_STATUS/IMPLEMENTATION_STATUS.md",
+  "docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md",
+]
+dependencies = ["TASK-101", "TASK-106"]
+acceptance_commands = [
+  "uv run pytest tests/unit/dashboard/test_experiments_api.py tests/unit/experiments/test_store.py -ra",
+  "uv run ruff check ai_quantum_hvtc/experiments/store.py ai_quantum_hvtc/dashboard/schemas.py ai_quantum_hvtc/dashboard/routers/experiments.py tests/unit/experiments/test_store.py tests/unit/dashboard/test_experiments_api.py",
+  "uv run mypy --follow-imports=silent ai_quantum_hvtc/experiments/store.py ai_quantum_hvtc/dashboard/schemas.py ai_quantum_hvtc/dashboard/routers/experiments.py",
+  "git diff --check -- ai_quantum_hvtc/experiments/store.py ai_quantum_hvtc/dashboard/schemas.py ai_quantum_hvtc/dashboard/routers/experiments.py tests/unit/experiments/test_store.py tests/unit/dashboard/test_experiments_api.py docs/04_STATUS/IMPLEMENTATION_STATUS.md docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md",
+  "uv run python -c 'import tomllib; from pathlib import Path; manifest = Path(\"coordination/tasks/107_dashboard_runtime_accounting_view.toml\"); tomllib.loads(manifest.read_text(encoding=\"utf-8\")); paths = [manifest, Path(\"ai_quantum_hvtc/experiments/store.py\"), Path(\"ai_quantum_hvtc/dashboard/schemas.py\"), Path(\"ai_quantum_hvtc/dashboard/routers/experiments.py\"), Path(\"tests/unit/experiments/test_store.py\"), Path(\"tests/unit/dashboard/test_experiments_api.py\"), Path(\"docs/04_STATUS/IMPLEMENTATION_STATUS.md\"), Path(\"docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md\")]; bad = [(str(p), n) for p in paths for n, line in enumerate(p.read_text(encoding=\"utf-8\").splitlines(), 1) if line.endswith((\" \", \"\\t\"))]; print(\"trailing whitespace:\", bad); raise SystemExit(bool(bad))'",
+]
+status = "done"
+
+[handoff]
+summary = "Expose selected runtime-trip-accounting fields only after the declared output role is sealed and hash-verified. Recheck the bytes read against the sealed SHA-256 and length. Keep all path, error, per-trip, reward/finance, and safety claims out of the dashboard view."
+validation = [
+  "uv run pytest tests/unit/dashboard/test_experiments_api.py tests/unit/experiments/test_store.py -ra: 61 passed, 1 unrelated Starlette/httpx deprecation warning.",
+  "Scoped Ruff command passed.",
+  "Scoped mypy command passed with no issues in 3 source files.",
+  "Scoped git diff --check passed.",
+  "Task TOML parsed and allowed-path trailing-whitespace scan passed with no findings.",
+]
+risks = [
+  "The sanitized view is limited to the existing runtime_trip_accounting.v1 contract and does not establish complete action safety; simulator collision counts are not complete safety evidence.",
+  "The view does not read unsealed output, but run verification still depends on original input files at their manifest paths; paths and verifier errors are never returned by this endpoint.",
+  "This is an optional read-only presentation layer, not metric recomputation, common dashboard/experiment identity, research acceptance, or a change to the closed research gate.",
+]
+next_steps = [
+  "Keep M0 open until retained-map intended/served-demand and route-failure evidence plus runtime-safety evidence are complete.",
+]

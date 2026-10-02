@@ -7,6 +7,8 @@
 !**/*.dvc
 !*.project.json
 !**/*.project.json
+!netconvert_profiles/
+!netconvert_profiles/district7_full_road_seed.v1.json
 !templates/**
 !04_review_notes/**
 !05_semantic_overlays/**

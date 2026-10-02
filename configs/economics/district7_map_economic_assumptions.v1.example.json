@@ -1,0 +1,165 @@
+{
+  "schema_version": "map_economic_assumptions.v1",
+  "metadata": {
+    "profile_id": "district7_seed_economic_profile_draft_v1",
+    "status": "draft",
+    "currency": "VND",
+    "price_year": 2025,
+    "generated_at": "2026-09-16",
+    "map_scope_status": "reviewed_roi",
+    "caveats": [
+      "All numeric economic values in this example are explicit modelling assumptions, not measured District 7 facts.",
+      "On 2026-09-16 the user explicitly retained the existing prepared ROI unchanged. This is scope approval, not verification of the administrative District 7 boundary or economic calibration.",
+      "The current semantic overlay has no reviewed OD demand, corridors, or investment candidates."
+    ]
+  },
+  "maximum_nearest_edge_distance_m": 1000.0,
+  "sources": [
+    {
+      "source_id": "ASSUMPTION_REGISTER_V1",
+      "title": "Map-economic v1 modelling assumption register",
+      "source_type": "assumption_register",
+      "publisher": "AI Quantum HVTC team",
+      "geographic_scope": "Existing prepared seed ROI retained by user on 2026-09-16; not a verified administrative district",
+      "notes": "Controls every numeric example below. Replace with reviewed sources before approval."
+    },
+    {
+      "source_id": "HCMC_STATISTICAL_YEARBOOK_2024_CANDIDATE",
+      "title": "Ho Chi Minh City Statistical Yearbook 2024",
+      "source_type": "official_statistics",
+      "publisher": "Ho Chi Minh City Statistics Office",
+      "uri": "https://thongkehochiminh.gso.gov.vn/Niengiam/2024/Gui%20duyet_NIEN%20GIAM%20TPHCM%2025.7.25_In-413-451.pdf",
+      "publication_date": "2025",
+      "geographic_scope": "Ho Chi Minh City",
+      "notes": "Candidate calibration source only; no example numeric value is attributed to it until table-level review."
+    },
+    {
+      "source_id": "GSO_STATISTICAL_DATA_CANDIDATE",
+      "title": "General Statistics Office statistical data",
+      "source_type": "official_statistics",
+      "publisher": "General Statistics Office of Vietnam",
+      "uri": "https://www.gso.gov.vn/so-lieu-thong-ke/",
+      "geographic_scope": "Vietnam",
+      "notes": "Candidate escalation and income/employment source; requires dataset/table/date citation before use."
+    },
+    {
+      "source_id": "JICA_HCMC_LINE_3A_CBA_CANDIDATE",
+      "title": "HCMC Urban Railway Line 3A economic appraisal",
+      "source_type": "appraisal_study",
+      "publisher": "Japan International Cooperation Agency",
+      "uri": "https://openjicareport.jica.go.jp/pdf/12305124_03.pdf",
+      "geographic_scope": "Ho Chi Minh City",
+      "notes": "Method candidate for travel-time, vehicle-operating-cost, and emissions benefits; transferability and price-year escalation require review."
+    },
+    {
+      "source_id": "WORLD_BANK_HCMC_GREEN_TRANSPORT_CBA_CANDIDATE",
+      "title": "Ho Chi Minh City Green Transport Development Project appraisal",
+      "source_type": "appraisal_study",
+      "publisher": "World Bank",
+      "uri": "https://documents1.worldbank.org/curated/en/558961468179946764/pdf/PAD1305-PAD-P126507-IDA-R2015-0120-1-Box391444B-OUO-9.pdf",
+      "geographic_scope": "Ho Chi Minh City",
+      "notes": "Method candidate only; old monetary estimates must not be reused without explicit price-year conversion."
+    }
+  ],
+  "global_valuation_id": "VAL_GLOBAL_ASSUMPTION",
+  "zone_valuation_by_type": {
+    "residential": "VAL_RESIDENTIAL_ASSUMPTION",
+    "commercial": "VAL_COMMERCIAL_ASSUMPTION",
+    "education": "VAL_EDUCATION_ASSUMPTION",
+    "healthcare": "VAL_HEALTHCARE_ASSUMPTION",
+    "industrial": "VAL_INDUSTRIAL_ASSUMPTION",
+    "port_logistics": "VAL_PORT_LOGISTICS_ASSUMPTION",
+    "market_retail": "VAL_MARKET_RETAIL_ASSUMPTION"
+  },
+  "building_valuation_by_id": {},
+  "valuations": [
+    {
+      "valuation_id": "VAL_GLOBAL_ASSUMPTION",
+      "description": "Conservative global fallback; not map-specific evidence.",
+      "value_of_time": {"estimate": 50000, "lower": 30000, "upper": 80000, "unit": "VND/person_hour", "price_year": 2025, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Placeholder prior."},
+      "reliability_value": {"estimate": 10000, "lower": 0, "upper": 25000, "unit": "VND/person_hour", "price_year": 2025, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Placeholder schedule-reliability prior."},
+      "persons_per_trip": {"estimate": 1.3, "lower": 1.0, "upper": 2.0, "unit": "persons/trip", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Mode-agnostic placeholder occupancy."},
+      "essential_service_multiplier": {"estimate": 1.0, "lower": 1.0, "upper": 1.0, "unit": "ratio", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Neutral baseline for RL/QUBO consistency; no sourced marginal premium established."},
+      "economic_flow_multiplier": {"estimate": 1.0, "lower": 1.0, "upper": 1.0, "unit": "ratio", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Neutral baseline for RL/QUBO consistency; no sourced marginal premium established."}
+    },
+    {
+      "valuation_id": "VAL_RESIDENTIAL_ASSUMPTION",
+      "description": "Residential access placeholder.",
+      "value_of_time": {"estimate": 50000, "lower": 30000, "upper": 80000, "unit": "VND/person_hour", "price_year": 2025, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Placeholder prior."},
+      "reliability_value": {"estimate": 10000, "lower": 0, "upper": 25000, "unit": "VND/person_hour", "price_year": 2025, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Placeholder prior."},
+      "persons_per_trip": {"estimate": 1.3, "lower": 1.0, "upper": 2.0, "unit": "persons/trip", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Placeholder prior."},
+      "essential_service_multiplier": {"estimate": 1.0, "lower": 1.0, "upper": 1.0, "unit": "ratio", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Neutral baseline for RL/QUBO consistency; no sourced marginal premium established."},
+      "economic_flow_multiplier": {"estimate": 1.0, "lower": 1.0, "upper": 1.0, "unit": "ratio", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Neutral baseline for RL/QUBO consistency; no sourced marginal premium established."}
+    },
+    {
+      "valuation_id": "VAL_COMMERCIAL_ASSUMPTION",
+      "description": "Commercial-destination placeholder.",
+      "value_of_time": {"estimate": 50000, "lower": 30000, "upper": 80000, "unit": "VND/person_hour", "price_year": 2025, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Placeholder prior."},
+      "reliability_value": {"estimate": 12000, "lower": 0, "upper": 30000, "unit": "VND/person_hour", "price_year": 2025, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Placeholder prior."},
+      "persons_per_trip": {"estimate": 1.4, "lower": 1.0, "upper": 2.5, "unit": "persons/trip", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Placeholder prior."},
+      "essential_service_multiplier": {"estimate": 1.0, "lower": 1.0, "upper": 1.0, "unit": "ratio", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Neutral baseline for RL/QUBO consistency; no sourced marginal premium established."},
+      "economic_flow_multiplier": {"estimate": 1.0, "lower": 1.0, "upper": 1.0, "unit": "ratio", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Neutral baseline for RL/QUBO consistency; no sourced marginal premium established."}
+    },
+    {
+      "valuation_id": "VAL_EDUCATION_ASSUMPTION",
+      "description": "Education-access placeholder.",
+      "value_of_time": {"estimate": 50000, "lower": 30000, "upper": 80000, "unit": "VND/person_hour", "price_year": 2025, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Placeholder prior."},
+      "reliability_value": {"estimate": 15000, "lower": 0, "upper": 35000, "unit": "VND/person_hour", "price_year": 2025, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Placeholder prior."},
+      "persons_per_trip": {"estimate": 1.5, "lower": 1.0, "upper": 3.0, "unit": "persons/trip", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Placeholder prior."},
+      "essential_service_multiplier": {"estimate": 1.0, "lower": 1.0, "upper": 1.0, "unit": "ratio", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Neutral baseline for RL/QUBO consistency; no sourced marginal premium established."},
+      "economic_flow_multiplier": {"estimate": 1.0, "lower": 1.0, "upper": 1.0, "unit": "ratio", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Neutral baseline for RL/QUBO consistency; no sourced marginal premium established."}
+    },
+    {
+      "valuation_id": "VAL_HEALTHCARE_ASSUMPTION",
+      "description": "Healthcare-access placeholder; not an emergency-vehicle class weight.",
+      "value_of_time": {"estimate": 50000, "lower": 30000, "upper": 80000, "unit": "VND/person_hour", "price_year": 2025, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Placeholder prior."},
+      "reliability_value": {"estimate": 20000, "lower": 0, "upper": 50000, "unit": "VND/person_hour", "price_year": 2025, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Placeholder prior."},
+      "persons_per_trip": {"estimate": 1.5, "lower": 1.0, "upper": 3.0, "unit": "persons/trip", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Placeholder prior."},
+      "essential_service_multiplier": {"estimate": 1.0, "lower": 1.0, "upper": 1.0, "unit": "ratio", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Neutral baseline for RL/QUBO consistency; no sourced marginal premium established."},
+      "economic_flow_multiplier": {"estimate": 1.0, "lower": 1.0, "upper": 1.0, "unit": "ratio", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Neutral baseline for RL/QUBO consistency; no sourced marginal premium established."}
+    },
+    {
+      "valuation_id": "VAL_INDUSTRIAL_ASSUMPTION",
+      "description": "Industrial destination and shift-continuity placeholder.",
+      "value_of_time": {"estimate": 50000, "lower": 30000, "upper": 80000, "unit": "VND/person_hour", "price_year": 2025, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Placeholder prior."},
+      "reliability_value": {"estimate": 15000, "lower": 0, "upper": 40000, "unit": "VND/person_hour", "price_year": 2025, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Placeholder prior."},
+      "persons_per_trip": {"estimate": 1.3, "lower": 1.0, "upper": 2.5, "unit": "persons/trip", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Placeholder prior."},
+      "essential_service_multiplier": {"estimate": 1.0, "lower": 1.0, "upper": 1.0, "unit": "ratio", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Neutral baseline for RL/QUBO consistency; no sourced marginal premium established."},
+      "economic_flow_multiplier": {"estimate": 1.0, "lower": 1.0, "upper": 1.0, "unit": "ratio", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Neutral baseline for RL/QUBO consistency; no sourced marginal premium established."}
+    },
+    {
+      "valuation_id": "VAL_PORT_LOGISTICS_ASSUMPTION",
+      "description": "Port/logistics destination placeholder.",
+      "value_of_time": {"estimate": 50000, "lower": 30000, "upper": 80000, "unit": "VND/person_hour", "price_year": 2025, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Placeholder prior."},
+      "reliability_value": {"estimate": 18000, "lower": 0, "upper": 50000, "unit": "VND/person_hour", "price_year": 2025, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Placeholder prior."},
+      "persons_per_trip": {"estimate": 1.2, "lower": 1.0, "upper": 2.0, "unit": "persons/trip", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Person-equivalent occupancy placeholder; freight calibration remains separate."},
+      "essential_service_multiplier": {"estimate": 1.0, "lower": 1.0, "upper": 1.0, "unit": "ratio", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Neutral baseline for RL/QUBO consistency; no sourced marginal premium established."},
+      "economic_flow_multiplier": {"estimate": 1.0, "lower": 1.0, "upper": 1.0, "unit": "ratio", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Neutral baseline for RL/QUBO consistency; no sourced marginal premium established."}
+    },
+    {
+      "valuation_id": "VAL_MARKET_RETAIL_ASSUMPTION",
+      "description": "Market/retail destination placeholder.",
+      "value_of_time": {"estimate": 50000, "lower": 30000, "upper": 80000, "unit": "VND/person_hour", "price_year": 2025, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Placeholder prior."},
+      "reliability_value": {"estimate": 12000, "lower": 0, "upper": 30000, "unit": "VND/person_hour", "price_year": 2025, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Placeholder prior."},
+      "persons_per_trip": {"estimate": 1.4, "lower": 1.0, "upper": 2.5, "unit": "persons/trip", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Placeholder prior."},
+      "essential_service_multiplier": {"estimate": 1.0, "lower": 1.0, "upper": 1.0, "unit": "ratio", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Neutral baseline for RL/QUBO consistency; no sourced marginal premium established."},
+      "economic_flow_multiplier": {"estimate": 1.0, "lower": 1.0, "upper": 1.0, "unit": "ratio", "price_year": null, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "Neutral baseline for RL/QUBO consistency; no sourced marginal premium established."}
+    }
+  ],
+  "corridors": [],
+  "od_pairs": [],
+  "investment_candidates": [],
+  "reward_policy": {
+    "normalization_vnd_per_step": {"estimate": 1000, "lower": 1000, "upper": 1000, "unit": "VND", "price_year": 2025, "evidence_grade": "D", "source_ids": ["ASSUMPTION_REGISTER_V1"], "is_assumption": true, "notes": "RL numerical scaling only; not a benefit estimate."},
+    "clip_min": -10.0,
+    "clip_max": 10.0
+  },
+  "coverage_policy": {
+    "minimum_structural_edge_mapping_ratio": 0.95,
+    "minimum_non_global_valuation_ratio": 0.90,
+    "minimum_source_backed_valuation_ratio": 0.80,
+    "require_demand_weighted_coverage": true,
+    "minimum_demand_weighted_non_global_ratio": 0.90,
+    "minimum_demand_weighted_source_backed_ratio": 0.80
+  }
+}

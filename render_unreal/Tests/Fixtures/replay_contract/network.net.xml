@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Minimal geometry parser fixture; not a routable production SUMO network. -->
+<net>
+  <edge id="fixture_edge" from="a" to="b">
+    <lane id="fixture_edge_0" index="0" speed="10.0" length="40.0" width="3.2" shape="100,202 120,202 140,202"/>
+  </edge>
+  <junction id="a" x="100" y="202"/>
+  <junction id="b" x="140" y="202"/>
+</net>

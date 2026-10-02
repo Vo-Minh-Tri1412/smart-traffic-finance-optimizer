@@ -1,7 +1,7 @@
 """Deterministic, headless geometry visibility for camera-partial observations.
 
 The module intentionally consumes SUMO metres and canonical vehicle boxes.  It does not use
-Godot meshes, player-camera LOD, RGB pixels, or a learned detector.
+renderer meshes, player-camera LOD, RGB pixels, or a learned detector.
 """
 
 from __future__ import annotations

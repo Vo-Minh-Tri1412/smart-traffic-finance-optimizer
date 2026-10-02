@@ -93,6 +93,7 @@ class DashboardConfig:
     demo_seed_scenarios: tuple[str, ...] = DEMO_SEED_SCENARIOS
     demo_seed_controllers: tuple[str, ...] = DEMO_SEED_CONTROLLERS
     districts: tuple[DistrictRegistryEntry, ...] = field(default_factory=tuple)
+    experiments_dir: Path | None = None
 
     def resolved_districts(self) -> tuple[DistrictRegistryEntry, ...]:
         return self.districts or default_district_registry(self.spec_path)
@@ -112,6 +113,8 @@ def config_from_env() -> DashboardConfig:
     )
     models_dir = Path(os.environ.get("AIQ_DASHBOARD_MODELS_DIR", str(DEFAULT_MODELS_DIR)))
     configs_dir = Path(os.environ.get("AIQ_DASHBOARD_CONFIGS_DIR", str(DEFAULT_CONFIGS_DIR)))
+    experiments_value = os.environ.get("AIQ_DASHBOARD_EXPERIMENTS_DIR")
+    experiments_dir = Path(experiments_value) if experiments_value else None
     seed_demo = os.environ.get("AIQ_DASHBOARD_SEED_DEMO", "1") not in {"0", "false", "no"}
     return DashboardConfig(
         spec_path=spec_path,
@@ -121,5 +124,6 @@ def config_from_env() -> DashboardConfig:
         rl_training_config_path=rl_training_config_path,
         models_dir=models_dir,
         configs_dir=configs_dir,
+        experiments_dir=experiments_dir,
         seed_demo_runs=seed_demo,
     )

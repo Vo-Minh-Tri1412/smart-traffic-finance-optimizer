@@ -38,10 +38,10 @@ class MetricsSummary(BaseModel):
     average_queue_vehicles: float
     stopped_vehicles: int
     emergency_delay_seconds: float
-    bus_passenger_delay_seconds: float
+    bus_passenger_delay_seconds: float | None
     truck_delay_seconds: float
-    reroute_count: int
-    failed_route_count: int
+    reroute_count: int | None
+    failed_route_count: int | None
     controller_interventions: int
 
 
@@ -64,7 +64,7 @@ class IntersectionMetricModel(BaseModel):
     queue_vehicles: float
     vehicles: int
     emergency_delay_seconds: float
-    bus_passenger_delay_seconds: float
+    bus_passenger_delay_seconds: float | None = None
     truck_delay_seconds: float
 
 
@@ -74,6 +74,115 @@ class RunDetail(RunSummary):
 
 class RunListResponse(BaseModel):
     runs: list[RunSummary]
+
+
+class ExperimentListItem(BaseModel):
+    experiment_id: str
+    state: Literal["verified", "verification_failed"]
+    content_sha256: str | None = None
+    project_id: str | None = None
+    mode: str | None = None
+    discovered_run_ids: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Direct child run-directory names; each run remains unverified until requested."
+        ),
+    )
+
+
+class ExperimentListResponse(BaseModel):
+    configured: bool
+    status: Literal["not_configured", "available", "unavailable"]
+    experiments: list[ExperimentListItem] = Field(default_factory=list)
+
+
+class ExperimentOutputSummary(BaseModel):
+    role: str
+    state: Literal["verified", "unverified"]
+    sha256: str | None = None
+    bytes: int | None = None
+
+
+class ExperimentRunVerification(BaseModel):
+    configured: bool
+    state: Literal[
+        "not_configured",
+        "unavailable",
+        "not_found",
+        "verification_failed",
+        "unsealed",
+        "outputs_verified",
+    ]
+    experiment_id: str | None = None
+    run_id: str | None = None
+    content_sha256: str | None = None
+    mode: str | None = None
+    case_id: str | None = None
+    split: str | None = None
+    seed: int | None = None
+    controller_id: str | None = None
+    outputs: list[ExperimentOutputSummary] = Field(default_factory=list)
+
+
+class RuntimeDemandAccountingView(BaseModel):
+    status: Literal["available", "partial", "unavailable"]
+    scope: Literal["per_intended_requested_vehicle_trip"]
+    reason: str | None
+    intended_trip_count: int | None
+    raw_ledger_row_count: int | None
+    status_counts: dict[str, int | None]
+    tripinfo_observed_count: int | None
+    tripinfo_unfinished_requested: bool | None
+
+
+class RuntimeSummaryAccountingView(BaseModel):
+    status: Literal["available", "partial", "unavailable"]
+    final_step_time_seconds: float | None
+    loaded: int | None
+    inserted: int | None
+    waiting: int | None
+    arrived: int | None
+    running: int | None
+    ended: int | None
+
+
+class RuntimeStatisticAccountingView(BaseModel):
+    status: Literal["available", "partial", "unavailable"]
+    total_teleports: int | None
+    safety_collisions: int | None
+
+
+class RuntimeAggregateAccountingView(BaseModel):
+    scope: Literal["whole_simulation_vehicle_and_event_counters"]
+    status: Literal["available", "partial", "unavailable"]
+    summary: RuntimeSummaryAccountingView
+    statistic: RuntimeStatisticAccountingView
+    limitations: list[str]
+
+
+class RuntimeTripAccountingView(BaseModel):
+    execution_status: Literal[
+        "debug_simulation_finished",
+        "debug_simulation_failed_or_partial",
+    ]
+    evidence_scope: Literal["managed_debug_runtime_accounting_only"]
+    demand_accounting: RuntimeDemandAccountingView
+    aggregate_simulation_accounting: RuntimeAggregateAccountingView
+
+
+class ExperimentRuntimeAccountingResponse(BaseModel):
+    configured: bool
+    state: Literal[
+        "not_configured",
+        "unavailable",
+        "not_found",
+        "unsealed",
+        "verification_failed",
+        "available",
+    ]
+    experiment_id: str | None = None
+    run_id: str | None = None
+    accounting: RuntimeTripAccountingView | None = None
 
 
 class RunCoverageResponse(BaseModel):

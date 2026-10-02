@@ -1,10 +1,10 @@
 # District 7 OSM intake analysis — 2026-07-02
 
 This is an infrastructure-readiness note for using a real OpenStreetMap seed instead of hand-authoring
-the full road network in Godot.
+the full road network in Unreal.
 
 The goal is **not** to trim the map into another toy grid. The goal is to understand what the
-project must support if OSM/SUMO becomes the primary map source and Godot becomes the visual and
+project must support if OSM/SUMO becomes the primary map source and Unreal becomes the visual and
 semantic authoring layer.
 
 ## Source
@@ -157,7 +157,7 @@ Create a separate overlay format for:
 - scenario demand multipliers;
 - notes/caveats.
 
-Godot can become the editor for this overlay, but should not be forced to redraw the OSM road
+Unreal can become the editor for this overlay, but should not be forced to redraw the OSM road
 network manually.
 
 ### 4. Add network indexing and candidate selection
@@ -196,9 +196,9 @@ The current project can generate SUMO artifacts from its own spec. For OSM maps,
 - parse tripinfo/summary/edge/lane/fcd outputs into the existing `SimulationResult`;
 - keep `district_spec` optional for road geometry and required only for semantic overlays if needed.
 
-### 7. Upgrade Godot replay to render SUMO net geometry first
+### 7. Upgrade Unreal replay to render SUMO net geometry first
 
-For OSM, Godot should not draw roads from a hand-authored toy spec. It should import:
+For OSM, Unreal should not draw roads from a hand-authored toy spec. It should import:
 
 - lane shapes from `district.net.xml`;
 - junction polygons;
@@ -227,7 +227,7 @@ Every imported map should produce a small QA report:
 - disconnected-edge warning summary;
 - traffic-light mismatch summary;
 - smoke simulation result;
-- whether the map is ready for baseline, Godot replay, or RL.
+- whether the map is ready for baseline, Unreal replay, or RL.
 
 ### 10. Remove the synthetic project-map folder
 
@@ -249,6 +249,6 @@ Scope:
 2. add a Python wrapper for Overpass download + netconvert;
 3. produce an import QA JSON/Markdown report;
 4. allow `simulate run` or a new map-intake command to accept an existing SUMO `.net.xml`;
-5. add Godot/SUMO geometry-readiness notes, but do not build the whole Godot overlay editor yet.
+5. add Unreal/SUMO geometry-readiness notes, but do not build the whole Unreal overlay editor yet.
 
 This keeps the real map mostly intact and upgrades the project infrastructure around it.

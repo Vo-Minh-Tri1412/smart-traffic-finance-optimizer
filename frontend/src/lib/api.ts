@@ -3,6 +3,9 @@ import type {
   DataResponse,
   DistrictResponse,
   DistrictsResponse,
+  ExperimentListResponse,
+  ExperimentRunVerification,
+  ExperimentRuntimeAccountingResponse,
   FinanceOptimizeRequest,
   FinanceOptimizeResponse,
   HealthResponse,
@@ -86,4 +89,13 @@ export const api = {
   systemData: () => request<DataResponse>("/api/system/data"),
   systemState: () => request<SystemStateResponse>("/api/system/state"),
   districts: () => request<DistrictsResponse>("/api/districts"),
+  experiments: () => request<ExperimentListResponse>("/api/experiments"),
+  experimentRun: (experimentId: string, runId: string) =>
+    request<ExperimentRunVerification>(
+      `/api/experiments/${encodeURIComponent(experimentId)}/runs/${encodeURIComponent(runId)}`,
+    ),
+  experimentRuntimeAccounting: (experimentId: string, runId: string) =>
+    request<ExperimentRuntimeAccountingResponse>(
+      `/api/experiments/${encodeURIComponent(experimentId)}/runs/${encodeURIComponent(runId)}/runtime-accounting`,
+    ),
 };

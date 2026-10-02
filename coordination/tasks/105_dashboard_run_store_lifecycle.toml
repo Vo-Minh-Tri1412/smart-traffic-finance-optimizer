@@ -1,0 +1,38 @@
+id = "TASK-105"
+owner = "integrator"
+branch = "feature/unreal-map-economics-qubo"
+base_commit = "4d32368f5b9221b61c9da2864c1876d1d287c10f"
+allowed_paths = [
+  "coordination/tasks/105_dashboard_run_store_lifecycle.toml",
+  "ai_quantum_hvtc/dashboard/store.py",
+  "tests/unit/dashboard/test_run_store_lifecycle.py",
+  "docs/04_STATUS/IMPLEMENTATION_STATUS.md",
+  "docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md",
+]
+dependencies = ["TASK-098", "TASK-099"]
+acceptance_commands = [
+  "uv run pytest tests/unit/dashboard/test_run_store_lifecycle.py tests/unit/dashboard/test_metric_availability.py tests/unit/dashboard/test_dashboard_api.py -ra",
+  "uv run ruff check ai_quantum_hvtc/dashboard/store.py tests/unit/dashboard/test_run_store_lifecycle.py",
+  "uv run mypy --follow-imports=silent ai_quantum_hvtc/dashboard/store.py",
+  "git diff --check -- ai_quantum_hvtc/dashboard/store.py docs/04_STATUS/IMPLEMENTATION_STATUS.md docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md",
+  "uv run python -c 'import tomllib; from pathlib import Path; manifest = Path(\"coordination/tasks/105_dashboard_run_store_lifecycle.toml\"); tomllib.loads(manifest.read_text(encoding=\"utf-8\")); paths = [manifest, Path(\"ai_quantum_hvtc/dashboard/store.py\"), Path(\"tests/unit/dashboard/test_run_store_lifecycle.py\"), Path(\"docs/04_STATUS/IMPLEMENTATION_STATUS.md\"), Path(\"docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md\")]; bad = [(str(p), n) for p in paths for n, line in enumerate(p.read_text(encoding=\"utf-8\").splitlines(), 1) if line.endswith((\" \", \"\\t\"))]; print(\"trailing whitespace:\", bad); raise SystemExit(bool(bad))'",
+]
+status = "done"
+
+[handoff]
+summary = "Reserve each dashboard RunStore run directory exclusively before any serializer runs. Duplicate or partial run IDs fail without modifying prior contents; concurrent same-ID saves have one owner; failed partial writes are never resumed. This preserves the existing API/schema and run-ID behavior, and does not integrate dashboard data with TASK-098 experiment identity or verified-output manifests."
+validation = [
+  "uv run pytest tests/unit/dashboard/test_run_store_lifecycle.py tests/unit/dashboard/test_metric_availability.py tests/unit/dashboard/test_dashboard_api.py -ra: 16 passed, 1 unrelated Starlette/httpx deprecation warning.",
+  "uv run ruff check ai_quantum_hvtc/dashboard/store.py tests/unit/dashboard/test_run_store_lifecycle.py: passed.",
+  "uv run mypy --follow-imports=silent ai_quantum_hvtc/dashboard/store.py: passed (1 source file).",
+  "git diff --check -- ai_quantum_hvtc/dashboard/store.py docs/04_STATUS/IMPLEMENTATION_STATUS.md docs/02_ARCHITECTURE/SYSTEM_DELIVERY_PLAN.md: passed.",
+  "Task TOML parsed and allowed-path trailing-whitespace scan passed with no findings.",
+]
+risks = [
+  "A failure after directory reservation leaves a partial run directory; a retry with the same ID fails and no recovery/resume path is provided.",
+  "This task prevents filesystem overwrites only. It does not bind dashboard runs to experiment manifests, hashes, input ledgers, or verified outputs.",
+  "M0 remains in progress and the research gate remains closed.",
+]
+next_steps = [
+  "Design and implement common dashboard/experiment run identity separately, with manifest/hash verification and explicit API/job bindings.",
+]

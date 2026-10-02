@@ -31,13 +31,15 @@ def parse_sumo_result(
     total_vehicles = len(tripinfos)
     average_waiting = total_waiting / total_vehicles if total_vehicles else 0.0
     intersections = {
-        intersection_id: IntersectionMetric(intersection_id=intersection_id)
+        intersection_id: IntersectionMetric(
+            intersection_id=intersection_id,
+            bus_passenger_delay_seconds=None,
+        )
         for intersection_id in spec.intersections
     }
     route_by_prefix = _route_edges_by_vehicle_prefix(spec, scenario_id)
 
     emergency_delay = 0.0
-    bus_passenger_delay = 0.0
     truck_delay = 0.0
 
     for row in tripinfos:
@@ -56,20 +58,11 @@ def parse_sumo_result(
                 metric.vehicles += 1
                 if vehicle_type_id == "AMBULANCE":
                     metric.emergency_delay_seconds += per_road_delay
-                if vehicle_type_id in {"BUS", "SCHOOL_BUS", "WORKER_SHUTTLE"}:
-                    passenger_delay = (
-                        per_road_delay * spec.vehicle_types[vehicle_type_id].passenger_count
-                    )
-                    metric.bus_passenger_delay_seconds += passenger_delay
                 if vehicle_type_id in {"LIGHT_TRUCK", "HEAVY_TRUCK"}:
                     metric.truck_delay_seconds += per_road_delay
 
         if vehicle_type_id == "AMBULANCE":
             emergency_delay += waiting_time
-        if vehicle_type_id in {"BUS", "SCHOOL_BUS", "WORKER_SHUTTLE"}:
-            bus_passenger_delay += (
-                waiting_time * spec.vehicle_types[vehicle_type_id].passenger_count
-            )
         if vehicle_type_id in {"LIGHT_TRUCK", "HEAVY_TRUCK"}:
             truck_delay += waiting_time
 
@@ -92,10 +85,10 @@ def parse_sumo_result(
         ),
         stopped_vehicles=sum(1 for value in waiting_times if value > 0),
         emergency_delay_seconds=round(emergency_delay, 3),
-        bus_passenger_delay_seconds=round(bus_passenger_delay, 3),
+        bus_passenger_delay_seconds=None,
         truck_delay_seconds=round(truck_delay, 3),
-        reroute_count=0,
-        failed_route_count=0,
+        reroute_count=_reroute_count(tripinfos),
+        failed_route_count=None,
         controller_interventions=_controller_intervention_count(paths),
         intersections=intersections,
         vehicle_trace_frames=_fcd_trace_frames(
@@ -124,19 +117,18 @@ def parse_existing_sumo_net_result(
     intersections: dict[str, IntersectionMetric] = {}
 
     emergency_delay = 0.0
-    bus_passenger_delay = 0.0
     truck_delay = 0.0
     for row in tripinfos:
         vehicle_type_id = row.get("vType", "")
         waiting_time = _float_attr(row, "waitingTime")
         if vehicle_type_id == "AMBULANCE":
             emergency_delay += waiting_time
-        if vehicle_type_id in {"BUS", "SCHOOL_BUS", "WORKER_SHUTTLE"}:
-            bus_passenger_delay += waiting_time * 20.0
         if vehicle_type_id in {"LIGHT_TRUCK", "HEAVY_TRUCK"}:
             truck_delay += waiting_time
 
     _apply_existing_edge_queue_metrics(paths=paths, intersections=intersections)
+    for metric in intersections.values():
+        metric.bus_passenger_delay_seconds = None
     queue_values = [metric.queue_vehicles for metric in intersections.values()]
 
     return SimulationResult(
@@ -155,10 +147,10 @@ def parse_existing_sumo_net_result(
         ),
         stopped_vehicles=sum(1 for value in waiting_times if value > 0),
         emergency_delay_seconds=round(emergency_delay, 3),
-        bus_passenger_delay_seconds=round(bus_passenger_delay, 3),
+        bus_passenger_delay_seconds=None,
         truck_delay_seconds=round(truck_delay, 3),
-        reroute_count=0,
-        failed_route_count=0,
+        reroute_count=_reroute_count(tripinfos),
+        failed_route_count=None,
         controller_interventions=_controller_intervention_count(paths),
         intersections=intersections,
         vehicle_trace_frames=_existing_fcd_trace_frames(
@@ -176,6 +168,28 @@ def _tripinfo_rows(paths: SumoExportPaths) -> list[dict[str, str]]:
         return []
     tree = ET.parse(paths.tripinfo)
     return [dict(element.attrib) for element in tree.getroot().iter("tripinfo")]
+
+
+def _reroute_count(tripinfos: list[dict[str, str]]) -> int | None:
+    """Sum observed reroutes only when every emitted TripInfo row is complete.
+
+    Both SUMO config builders request unfinished-vehicle output, so the rows
+    cover arrived and still-active vehicles (including vaporized records).
+    Vehicles that have not departed are omitted and cannot have rerouted.
+    """
+    if not tripinfos:
+        return None
+
+    counts: list[int] = []
+    for row in tripinfos:
+        value = row.get("rerouteNo")
+        if value is None or not value.isascii() or not value.isdigit():
+            return None
+        count = int(value)
+        if count < 0:
+            return None
+        counts.append(count)
+    return sum(counts)
 
 
 def _controller_intervention_count(paths: SumoExportPaths) -> int:

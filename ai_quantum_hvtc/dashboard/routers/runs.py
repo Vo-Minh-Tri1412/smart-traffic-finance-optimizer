@@ -40,12 +40,20 @@ def _metrics_summary(result: dict[str, Any]) -> MetricsSummary:
         average_queue_vehicles=float(result.get("average_queue_vehicles", 0.0)),
         stopped_vehicles=int(result.get("stopped_vehicles", 0)),
         emergency_delay_seconds=float(result.get("emergency_delay_seconds", 0.0)),
-        bus_passenger_delay_seconds=float(result.get("bus_passenger_delay_seconds", 0.0)),
+        bus_passenger_delay_seconds=_optional_float(result.get("bus_passenger_delay_seconds")),
         truck_delay_seconds=float(result.get("truck_delay_seconds", 0.0)),
-        reroute_count=int(result.get("reroute_count", 0)),
-        failed_route_count=int(result.get("failed_route_count", 0)),
+        reroute_count=_optional_int(result.get("reroute_count")),
+        failed_route_count=_optional_int(result.get("failed_route_count")),
         controller_interventions=int(result.get("controller_interventions", 0)),
     )
+
+
+def _optional_float(value: Any) -> float | None:
+    return None if value is None else float(value)
+
+
+def _optional_int(value: Any) -> int | None:
+    return None if value is None else int(value)
 
 
 def _run_summary(ctx: DashboardContext, meta: StoredRunMeta) -> RunSummary | None:
